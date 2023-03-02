@@ -33,5 +33,5 @@
 
 ## Deployment / scaling
 
-- Docker compose with nginx load balancer
+- Docker compose with nginx load balancer (https://pspdfkit.com/blog/2018/how-to-use-docker-compose-to-run-multiple-instances-of-a-service-in-development/)
 - Multiple worker instances
