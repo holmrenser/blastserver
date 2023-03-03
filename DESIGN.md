@@ -4,10 +4,13 @@
 
 - Run BLAST jobs of various flavors (blastp, blastn, etc.) against all relevant databases
 - Use NCBI taxonomy (could simply be linking to NCBI)
+- Use Diamond instead of NCBI BLAST
 
 ## Should
 
 - Load balancing to allow (many) simultaneous jobs
+- Taxonomy distribution of hits
+- Diamond formatted database for using database
 
 ## Could
 
