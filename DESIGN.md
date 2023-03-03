@@ -16,8 +16,15 @@
 
 - Email notification when job finishes
 - Integraded taxonomy browsing
+- Filtering of blast results
 
 ## Will not
+
+# Similar work
+
+- Genenotebook has some BLAST functionality, but only for custom DBs. BLAST output parsing code can be reused. No taxonomy. (https://genenotebook.github.io/)
+- React-bio-viz has some components for visualization. BLAST visualization could be implemented here. (https://github.com/genenotebook/react-bio-viz)
+- SequenceServer only handles custom DBs, could use nr and nt. No taxonomy. (https://sequenceserver.com/)
 
 # Implementation
 
