@@ -38,7 +38,7 @@
 
 - Node w/ express API
 - BullMQ for redis jobqueue (https://docs.bullmq.io/guide/connections)
-- BLAST (obviously)
+- BLAST/diamond
 - NCBI databases
 
 ## Deployment / scaling
