@@ -9,18 +9,26 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^2.9.11",
+    "@prisma/client": "^4.11.0",
     "@types/node": "18.14.5",
+    "@types/object-hash": "^3.0.2",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
     "@zeit/next-sass": "^1.0.1",
+    "bullmq": "^3.10.1",
     "bulma": "^0.9.4",
     "eslint": "8.35.0",
     "eslint-config-next": "13.2.3",
     "next": "13.2.3",
     "node-sass": "^8.0.0",
+    "object-hash": "^3.0.0",
+    "prisma": "^4.11.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-hook-form": "^7.43.5",
     "sass": "^1.58.3",
-    "typescript": "4.9.5"
+    "typescript": "4.9.5",
+    "yup": "^1.0.2"
   }
 }
