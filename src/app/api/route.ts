@@ -1,20 +1,28 @@
 'use server';
 
 import hash from 'object-hash';
+import { readFile } from 'fs/promises';
 import { Worker, Job } from "bullmq";
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 
 import { queue, connection } from './queue';
+import prisma from './database';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
+
+// function sleep(ms: number) {
+//  return new Promise(resolve => setTimeout(resolve, ms))
+//}
 
 async function jobProcessor(job: Job) {
   console.log(`Processing job ${job.id}`);
-  job.updateProgress(10);
-  return await prisma.blastjob.update({
+  const results = await readFile('/Users/rensholmer/Code/blastserver/src/app/api/test.xml2', { encoding: 'utf-8' })
+  // await sleep(5000)
+  await prisma.blastjob.update({
     where: {id: job.id},
-    data: { results: 'finished'}
+    data: { results }
   });
+  return 'finished'
 }
 
 const worker = new Worker("jobqueue", jobProcessor, { connection });
@@ -30,26 +38,31 @@ worker.on("completed", (job, returnValue) => {
 });
 
 worker.on("failed", (job, err) => {
-  console.log(`Failed job ${job?.id}: ${err}`);
+  console.warn(`Failed job ${job?.id}: ${err}`);
+  prisma.blastjob.update({
+    where: {id: job?.id},
+    data: { err: err.message }
+  })
 });
 
 worker.on("error", (err) => {
-  console.log({ err });
+  console.error({ err });
 });
 
 export async function POST(request: Request) {
   const parameters = await request.json();
   const jobId = hash(parameters);
   const existingJob = await prisma.blastjob.findFirst({ where: { id: jobId }});
-  console.log({ existingJob })
   if (!existingJob) {
-    await prisma.blastjob.create({
+    prisma.blastjob.create({
       data: {
         id: jobId,
         parameters
       }
-    })
-    await queue.add('blast', parameters, { jobId });
+    }).then(() => queue.add('blast', parameters, { jobId }))
+    // await queue.add('blast', parameters, { jobId });
+  } else {
+    console.log(`Found existing job: ${existingJob.id}`)
   }
   return Response.json({ jobId })
 }

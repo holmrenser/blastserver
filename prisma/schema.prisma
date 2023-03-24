@@ -14,4 +14,6 @@ model blastjob {
   id         String  @id @unique
   parameters Json
   results    String? @db.Xml
+  log        String?
+  err        String?
 }
