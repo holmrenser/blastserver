@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -16,4 +17,10 @@ model blastjob {
   results    String? @db.Xml
   log        String?
   err        String?
+}
+
+model taxonomy {
+  id        String @id @unique
+  name      String
+  ancestors String
 }

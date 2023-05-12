@@ -4,10 +4,9 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-// import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 import './blastFlavour.scss';
-
 
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
 type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
@@ -115,13 +114,6 @@ const formSchema = Yup.object().shape({
     .required()
     .trim(),
 })
-
-export function getStaticPaths(){
-  return {
-    paths: ALLOWED_FLAVOURS.map(blast_flavour => ({params:{blast_flavour}})),
-    fallback: false
-  }
-}
 
 function EnterQuery({ register, errors }){
   return (
@@ -494,8 +486,11 @@ function AlgorithmParameters({ register, errors, getValues }) {
   )
 }
 
-export default function BlastFlavourPage({params}:{params:{blastFlavour:BlastFlavour}}) {
-  const {blastFlavour} = params;
+export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
+  const { blastFlavour } = params;
+  if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
+    notFound()
+  }
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
   
   const { register, handleSubmit, getValues, formState: {errors} } = useForm<FormData<typeof blastFlavour>>({

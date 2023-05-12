@@ -3,20 +3,14 @@
 import hash from 'object-hash';
 import { readFile } from 'fs/promises';
 import { Worker, Job } from "bullmq";
-// import { PrismaClient } from '@prisma/client';
 
 import { queue, connection } from './queue';
 import prisma from './database';
 
-// const prisma = new PrismaClient();
-
-// function sleep(ms: number) {
-//  return new Promise(resolve => setTimeout(resolve, ms))
-//}
 
 async function jobProcessor(job: Job) {
   console.log(`Processing job ${job.id}`);
-  const results = await readFile('/Users/rensholmer/Code/blastserver/src/app/api/test.xml2', { encoding: 'utf-8' })
+  const results = await readFile('/Users/rensholmer/Code/blastserver/src/app/api/test_2.xml2', { encoding: 'utf-8' })
   // await sleep(5000)
   await prisma.blastjob.update({
     where: {id: job.id},
@@ -60,7 +54,6 @@ export async function POST(request: Request) {
         parameters
       }
     }).then(() => queue.add('blast', parameters, { jobId }))
-    // await queue.add('blast', parameters, { jobId });
   } else {
     console.log(`Found existing job: ${existingJob.id}`)
   }

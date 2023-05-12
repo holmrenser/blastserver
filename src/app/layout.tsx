@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <main className={font.className}>
-          <nav className="navbar" role="navigation" aria-label="main navigation">
+          <nav className="navbar has-background-light" role="navigation" aria-label="main navigation">
           <div className="navbar-brand">
             <Link className="navbar-item" href="/">
               BLAST
@@ -61,7 +61,7 @@ export default function RootLayout({
             </div>
           </nav>
           
-          <section className='section has-background-light'>
+          <section className='section has-background-white'>
             <div className='container is-max-desktop'>
               {children}
             </div>
