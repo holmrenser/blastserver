@@ -40,3 +40,5 @@ next-env.d.ts
 .vscode
 
 names.tsv
+
+taxonomy/*
