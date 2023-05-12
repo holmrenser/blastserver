@@ -1,0 +1,13 @@
+.blastHitRect {
+  cursor: pointer;
+  stroke-width: 1.5px;
+  &:hover {
+    stroke-width: 1.5px;
+    stroke: hsl(204, 86%, 53%); //Bulma info color
+  }
+}
+
+.figureBox {
+  padding: 10px;
+  margin: 0px !important;
+}
