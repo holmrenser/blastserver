@@ -3,6 +3,7 @@
 import hash from 'object-hash';
 import { readFile } from 'fs/promises';
 import { Worker, Job } from "bullmq";
+import { NextResponse } from 'next/server';
 
 import { queue, connection } from './queue';
 import prisma from './database';
@@ -57,5 +58,5 @@ export async function POST(request: Request) {
   } else {
     console.log(`Found existing job: ${existingJob.id}`)
   }
-  return Response.json({ jobId })
+  return NextResponse.json({ jobId })
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { BlastHit } from './page';
 import styles from './descriptions.module.scss';
 
 function truncate(string: string, limit=10){
@@ -8,7 +9,7 @@ function truncate(string: string, limit=10){
   return string.slice(0, limit) + '...'
 }
 
-export default function Descriptions({ hits }) {
+export default function Descriptions({ hits }: {hits: BlastHit[]}) {
   const pathname = usePathname();
   return (
     <div className={`container has-background-light description-container ${styles.descriptionContainer}`}>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, RegisterOptions, FieldErrors } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { notFound } from 'next/navigation';
@@ -29,7 +29,7 @@ const PROGRAMS = new Map<string, Array<string>>([
     'Blastn (Somewhat similar sequences)'
   ]]])
 
-type FormData<F> = {
+type FormData<BlastFlavour> = {
   query: string;
   queryFrom?: number;
   queryTo?: number;
@@ -48,7 +48,7 @@ type FormData<F> = {
   compositionalAdjustment: string;
 }
 
-function numberTransform(_,val){
+function numberTransform(_unused: any, val: string){
   return val !== '' ? Number(val): null
 }
 
@@ -115,7 +115,7 @@ const formSchema = Yup.object().shape({
     .trim(),
 })
 
-function EnterQuery({ register, errors }){
+function EnterQuery({ register, errors }: {register: Function, errors: FieldErrors }){
   return (
     <fieldset className='box'>
       <legend className='label has-text-centered'>Enter Query Sequence</legend>
@@ -198,7 +198,7 @@ function EnterQuery({ register, errors }){
   )
 }
 
-function ChooseSearchSet({ register, errors }) {
+function ChooseSearchSet({ register, errors }: {register: Function, errors: FieldErrors }) {
   return (
     <fieldset className='box'>
       <legend className='label has-text-centered'>Choose Search Set</legend>
@@ -244,7 +244,17 @@ function ChooseSearchSet({ register, errors }) {
   )
 }
 
-function ProgramSelection({blastFlavour, register, errors, getValues}){
+function ProgramSelection({
+  blastFlavour,
+  register,
+  errors,
+  getValues
+}: {
+  blastFlavour: BlastFlavour,
+  register: Function,
+  errors: FieldErrors,
+  getValues: Function
+}){
   if (!PROGRAMS.has(blastFlavour)) return null
   const selectedProgram = getValues('program');
   return (
@@ -259,7 +269,7 @@ function ProgramSelection({blastFlavour, register, errors, getValues}){
           <div className="field">
             <div className="control">
               {
-                PROGRAMS.get(blastFlavour ).map((program:string) => (
+                PROGRAMS.get(blastFlavour)?.map((program:string) => (
                   <React.Fragment key={program}>
                   <label className="radio is-small">
                     <input
@@ -283,7 +293,15 @@ function ProgramSelection({blastFlavour, register, errors, getValues}){
   )
 }
 
-function SubmitButton({ register, errors, getValues }) {
+function SubmitButton({
+  register,
+  errors,
+  getValues
+}: {
+  register: Function,
+  errors: FieldErrors,
+  getValues: Function
+}) {
   const db = getValues('database');
   const program = getValues('program');
   return (
@@ -306,7 +324,15 @@ function SubmitButton({ register, errors, getValues }) {
   )
 }
 
-function AlgorithmParameters({ register, errors, getValues }) {
+function AlgorithmParameters({
+  register,
+  errors,
+  getValues
+}: {
+  register: Function,
+  errors: FieldErrors,
+  getValues: Function
+}) {
   return (
     <div className='panel is-info'>
       <p className='panel-heading'>Algorithm parameters</p>
@@ -509,7 +535,6 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   });
 
   async function onSubmit(formData: FormData<typeof blastFlavour>){
-    // console.log({ formData })
     fetch('/api', {
       body: JSON.stringify(formData),
       headers: {
@@ -520,7 +545,6 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     })
     .then(res => res.json())
     .then(data => {
-      // console.log({ data });
       const { jobId } = data;
       window.location.replace(`/results/${jobId}`) // HACK
     })

@@ -1,15 +1,22 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { scaleLinear, scaleThreshold } from 'd3';
+import { scaleLinear, ScaleLinear, scaleThreshold } from 'd3';
 
+import { BlastHit } from './page';
 import styles from './graphicSummary.module.scss';
 
 function ColorScale(){
 
 }
 
-function XAxis({ scale, numTicks }) {
+function XAxis({
+  scale,
+  numTicks
+}: {
+  scale: ScaleLinear<number, number>,
+  numTicks: number
+}) {
   const range = scale.range();
   const width = range[1];
 
@@ -58,17 +65,25 @@ function XAxis({ scale, numTicks }) {
 }
 
 function HitPlotLine({
-  hit, index, height, xScale
+  hit,
+  index,
+  height,
+  xScale
+}: {
+  hit: BlastHit,
+  index: number,
+  height: number,
+  xScale: ScaleLinear<number, number>
 }) {
   const pathname = usePathname();
 
   const { hsps, accession, title } = hit;
   
-  const colorMap = scaleThreshold()
+  const colorMap = scaleThreshold<number, string>()
     .domain([40, 50, 80, 200])
     .range(['black', 'blue', 'green', 'magenta', 'red']);
-  const hspMin = Math.min(...hsps.map(({ queryFrom }) => queryFrom));
-  const hspMax = Math.max(...hsps.map(({ queryTo }) => queryTo));
+  const hspMin = Math.min(...hsps.map(({ queryFrom }) => queryFrom as any));
+  const hspMax = Math.max(...hsps.map(({ queryTo }) => queryTo as any));
 
   return (
     <g transform={`translate(0,${index * height})`}>
@@ -82,7 +97,7 @@ function HitPlotLine({
         }}  
       />
       {hsps.map(({ queryFrom, queryTo, bitScore }) => {
-        const width = queryTo - queryFrom;
+        const width = (queryTo as any) - (queryFrom as any);
         return (
           <Link
             key={`${queryFrom}_${queryTo}`}

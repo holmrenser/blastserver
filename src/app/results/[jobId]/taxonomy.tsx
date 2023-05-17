@@ -1,8 +1,9 @@
 import { flattenDeep } from 'lodash';
 
+import { TaxonomyNode, BlastHit } from './page';
 import styles from './taxonomy.module.scss';
 
-function *depthFirst(trees, depth=0){
+function *depthFirst(trees: TaxonomyNode[], depth=0): Generator<TaxonomyNode>{
   for (const tree of trees) {
     yield {depth, ...tree};
     if (typeof tree.children !== 'undefined'){
@@ -11,7 +12,13 @@ function *depthFirst(trees, depth=0){
   }
 }
 
-export default function Taxonomy({ hits, taxonomyTrees }) {
+export default function Taxonomy({
+  hits,
+  taxonomyTrees
+}: {
+  hits: BlastHit[],
+  taxonomyTrees: TaxonomyNode[]
+}) {
   const flatTree = flattenDeep(Array.from(depthFirst(taxonomyTrees)));
   return (
     <div>
@@ -42,7 +49,7 @@ export default function Taxonomy({ hits, taxonomyTrees }) {
               flatTree.map(({ name, count, id, depth, children }) => (
                 <tr key={id}>
                   <td>
-                    {`${'. '.repeat(depth)}`}
+                    {`${'. '.repeat(depth || 0)}`}
                     <a
                       href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${id}`}
                       target='_blank'
@@ -52,7 +59,7 @@ export default function Taxonomy({ hits, taxonomyTrees }) {
                     </a>
                   </td>
                   <td>{count}</td>
-                  <td>{!children.length && name}</td>
+                  <td>{!children?.length && name}</td>
                 </tr>
               ))
             }
