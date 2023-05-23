@@ -8,6 +8,7 @@ const TAXONOMY_FILE = `${process.cwd()}/taxonomy/taxonomy.tsv`;
 const nextConfig = {
   experimental: {
     appDir: true,
+    serverComponentsExternalPackages: ["bullmq"],
   },
 };
 

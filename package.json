@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev:app": "next dev",
+    "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
+    "build:app": "rm -rf .next && next build",
+    "build:worker": "rm -f worker/worker.js && npx tsc -p tsconfig.worker.json && mv worker/worker.js worker/worker.mjs",
+    "start:app": "next start",
+    "start:worker": "node worker/worker.mjs",
     "lint": "next lint"
   },
   "dependencies": {
@@ -17,12 +20,13 @@
     "@types/object-hash": "^3.0.2",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
-    "@zeit/next-sass": "^1.0.1",
     "bullmq": "^3.10.1",
     "bulma": "^0.9.4",
     "d3": "^7.8.3",
+    "dotenv": "^16.0.3",
     "eslint": "8.35.0",
     "eslint-config-next": "13.2.3",
+    "lodash": "^4.17.21",
     "next": "13.2.3",
     "node-sass": "^8.0.0",
     "object-hash": "^3.0.0",
@@ -31,11 +35,12 @@
     "react-dom": "18.2.0",
     "react-hook-form": "^7.43.5",
     "sass": "^1.58.3",
-    "typescript": "4.9.5",
+    "swr": "^2.1.5",
+    "typescript": "^4.9.5",
     "xml-js": "^1.6.11",
     "yup": "^1.0.2"
   },
   "devDependencies": {
-    "lodash": "^4.17.21"
+    "supports-color": "^8.1.1"
   }
 }

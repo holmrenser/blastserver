@@ -11,7 +11,7 @@ import Taxonomy from './taxonomy';
 import styles from './resultspage.module.scss';
 
 
-const PANEL_COMPONENTS = {
+const PANEL_COMPONENTS: Record<string, Function> = {
   descriptions: Descriptions,
   graphic_summary: GraphicSummary,
   alignments: Alignments,
@@ -25,17 +25,17 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-export default function ResultsPage({ blastResults }: { blastResults: any }) {
+export default function ResultsPage({ blastResults, err }: { blastResults: any, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  if (err) return <p>{err}</p>
   if (!blastResults) {
-    return <p>This page will refresh in 1second</p>
+    return <p>This page will automatically update once your job is ready</p>
   }
   const activePanel = searchParams.get('panel') || 'descriptions';
   const PanelComponent = PANEL_COMPONENTS[activePanel];
-  const { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees } = blastResults;
+  const { queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees } = blastResults;
   
-  console.log({ params, program })
   return (
     <div className='container'>
       <p>Program: {version}</p>

@@ -58,9 +58,20 @@ const formSchema = Yup.object().shape({
     .max(10e4)
     .trim()
     .test(
-      'is-fasta',
-      'Query is not FASTA formatted',
-      (value, context) => value[0] === '>'),
+      'is-not-multifasta',
+      'Query contains multiple FASTA sequences',
+      (value, context) => (value.match(/>/g) || []).length < 2
+    )
+    .test(
+      'is-not-short',
+      'Query is shorter than 25 characters',
+      (value, context) => value.length >= 25
+    )
+    .test(
+      'is-not-long',
+      'Query is longer than 10,000 characters',
+      (value, context) => value.length <= 10_000
+    ),
   queryFrom: Yup.number()
     .notRequired()
     .moreThan(0, 'Query FROM cannot be negative')
@@ -123,13 +134,20 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
       <div className="field">
         <div className='field-body'>
           <div className='field'>
-            <label className="label">Enter accession number(s), gi(s), or FASTA sequence(s)</label>
+            <label className="label">Enter (single) FASTA sequence</label>
             <div className="control">
               <textarea
                 className={`textarea is-small ${errors.query?.message ? 'is-danger' : ''}`}
                 placeholder="QUERY SEQUENCE/IDENTIFIER"
                 {...register('query')} />
             </div>
+            {
+              errors.query && (
+                <p className='help is-danger'>
+                  {String(errors.query?.message)}
+                </p>
+              )
+            }
           </div>
 
           <div className='field'>

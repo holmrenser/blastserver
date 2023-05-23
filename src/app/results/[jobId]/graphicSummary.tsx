@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { scaleLinear, ScaleLinear, scaleThreshold } from 'd3';
 
-import { BlastHit } from './page';
+import { BlastHit } from '../../api/[...jobId]/route';
 import styles from './graphicSummary.module.scss';
 
 function ColorScale(){
@@ -24,12 +24,14 @@ function XAxis({
   const queryLength = domain[1];
 
   // https://heyjavascript.com/how-to-round-numbers-to-arbitrary-values/
-  const stepSize = Math.floor(((queryLength / numTicks) / 100) + .5) * 100;
+  const roundTo = 10;
+  const stepSize = Math.floor(((queryLength / numTicks) / roundTo) + .5) * roundTo;
   const ticks = [];
 
-  for (let i = 1; i < numTicks; i += 1) {
+  for (let i = 1; i < numTicks - 1; i += 1) {
     ticks.push(i * stepSize);
   }
+  console.log({ ticks, queryLength, numTicks, stepSize })
   return (
     <g className="x-axis" transform="translate(0,0)">
       {/* backbone line */}
@@ -82,8 +84,8 @@ function HitPlotLine({
   const colorMap = scaleThreshold<number, string>()
     .domain([40, 50, 80, 200])
     .range(['black', 'blue', 'green', 'magenta', 'red']);
-  const hspMin = Math.min(...hsps.map(({ queryFrom }) => queryFrom as any));
-  const hspMax = Math.max(...hsps.map(({ queryTo }) => queryTo as any));
+  const hspMin = Math.min(...hsps.map(({ queryFrom }) => Number(queryFrom)));
+  const hspMax = Math.max(...hsps.map(({ queryTo }) => Number(queryTo)));
 
   return (
     <g transform={`translate(0,${index * height})`}>
@@ -97,10 +99,10 @@ function HitPlotLine({
         }}  
       />
       {hsps.map(({ queryFrom, queryTo, bitScore }) => {
-        const width = (queryTo as any) - (queryFrom as any);
+        const width = Number(queryTo) - Number(queryFrom);
         return (
           <Link
-            key={`${queryFrom}_${queryTo}`}
+            key={`${queryFrom}_${queryTo}_${bitScore}`}
             href={{
               pathname,
               query: { panel: 'alignments' },
@@ -109,12 +111,12 @@ function HitPlotLine({
           >
             <rect
               className={styles.blastHitRect}
-              x={xScale(queryFrom)}
+              x={xScale(Number(queryFrom))}
               y={0}
               width={xScale(width)}
               height={height/2}
               style={{
-                fill: colorMap(bitScore),
+                fill: colorMap(Number(bitScore)),
               }}
             >
               <title>
@@ -180,7 +182,7 @@ export default function GraphicSummary({
                   {
                     subset.map((hit, index) => (
                       <HitPlotLine
-                        key={index}
+                        key={hit.accession}
                         hit={hit}
                         index={index}
                         xScale={xScale}

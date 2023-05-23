@@ -12,9 +12,11 @@ datasource db {
 }
 
 model blastjob {
-  id         String  @id @unique
+  id         String    @id @unique
   parameters Json
-  results    String? @db.Xml
+  submitted  DateTime
+  finished   DateTime?
+  results    String?   @db.Xml
   log        String?
   err        String?
 }

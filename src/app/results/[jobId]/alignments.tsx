@@ -1,3 +1,5 @@
+import { BlastHit } from "./page";
+
 function padAligmentStrings(
   qseq: string, midline: string, hseq: string,
   queryFrom: string, queryTo: string, hitFrom: string, hitTo: string){
@@ -10,7 +12,7 @@ function padAligmentStrings(
     return [paddedQseq, paddedMidline, paddedHseq];
 }
 
-export default function Alignments({ hits }) {
+export default function Alignments({ hits }: { hits: BlastHit[] }) {
   console.log(hits[0])
   return (
     <div>
