@@ -1,6 +1,6 @@
 import { flattenDeep } from 'lodash';
 
-import { TaxonomyNode, BlastHit } from './page';
+import { TaxonomyNode, BlastHit } from "../../api/[...jobId]/route";
 import styles from './taxonomy.module.scss';
 
 function *depthFirst(trees: TaxonomyNode[], depth=0): Generator<TaxonomyNode>{

@@ -136,7 +136,6 @@ async function formatResults(blastResults: any) {
     const { accession, title, taxid } = hitDescription[0];
     const _hsps = Array.isArray(hsps.Hsp) ? hsps.Hsp : [hsps.Hsp]
     const formattedHsps: Hsp[] = _hsps.map(hsp => mapKeys(hsp, (_, key) => camelCase(key))) as any[];
-    console.log({ _hsps, formattedHsps })
     const queryCoverTotal = formattedHsps
       .map(({ queryFrom, queryTo }) => ((queryTo as any) - (queryFrom as any)))
       .reduce((a: number, b: number) =>  a + b, 0); // https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers

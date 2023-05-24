@@ -10,7 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { spawnSync } from "child_process";
 import path from "path";
 import { Worker } from "bullmq";
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 import * as dotenv from 'dotenv';
 dotenv.config();
 const prisma = new PrismaClient();

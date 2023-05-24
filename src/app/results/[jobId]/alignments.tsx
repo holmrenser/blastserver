@@ -1,4 +1,4 @@
-import { BlastHit } from "./page";
+import { BlastHit } from "../../api/[...jobId]/route";
 
 function padAligmentStrings(
   qseq: string, midline: string, hseq: string,
@@ -13,7 +13,6 @@ function padAligmentStrings(
 }
 
 export default function Alignments({ hits }: { hits: BlastHit[] }) {
-  console.log(hits[0])
   return (
     <div>
       <nav className='navbar has-background-info-light' role='navigation'>

@@ -1,18 +1,21 @@
 /** @type {import('next').NextConfig} */
-
+/*
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 const TAXONOMY_FILE = `${process.cwd()}/taxonomy/taxonomy.tsv`;
+*/
 
-const nextConfig = {
+module.exports = {
+  output: "standalone",
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ["bullmq"],
+    instrumentationHook: true,
   },
 };
 
-module.exports = async function (phase, { defaultConfig }) {
+/*
+async function (phase, { defaultConfig }) {
   console.log("STARTUP");
   const taxonomyCount = await prisma.taxonomy.count();
   if (taxonomyCount) {
@@ -32,3 +35,4 @@ module.exports = async function (phase, { defaultConfig }) {
   // await prisma.blastjob.findFirst().then(() => prisma.$disconnect());
   return nextConfig;
 };
+*/

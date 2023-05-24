@@ -5,7 +5,7 @@
   "scripts": {
     "dev:app": "next dev",
     "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
-    "build:app": "rm -rf .next && next build",
+    "build:app": "rm -rf .next && next build && cp -r .next/static .next/standalone/.next/static",
     "build:worker": "rm -f worker/worker.js && npx tsc -p tsconfig.worker.json && mv worker/worker.js worker/worker.mjs",
     "start:app": "next start",
     "start:worker": "node worker/worker.mjs",
@@ -27,8 +27,7 @@
     "eslint": "8.35.0",
     "eslint-config-next": "13.2.3",
     "lodash": "^4.17.21",
-    "next": "13.2.3",
-    "node-sass": "^8.0.0",
+    "next": "^13.4.3",
     "object-hash": "^3.0.0",
     "prisma": "^4.11.0",
     "react": "18.2.0",

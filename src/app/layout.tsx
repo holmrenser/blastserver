@@ -6,7 +6,7 @@ import './globals.scss'
 
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
 
-const font = Hanken_Grotesk({ subsets: ['latin']})
+const font = Inter({ subsets: ['latin']})
 
 export const metadata = {
   title: 'BLAST',

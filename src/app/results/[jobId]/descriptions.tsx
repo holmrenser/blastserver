@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { BlastHit } from './page';
+import { BlastHit } from "../../api/[...jobId]/route";
 import styles from './descriptions.module.scss';
 
 function truncate(string: string, limit=10){
