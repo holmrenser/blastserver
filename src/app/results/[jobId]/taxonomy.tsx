@@ -18,7 +18,7 @@ export default function Taxonomy({
 }: {
   hits: BlastHit[],
   taxonomyTrees: TaxonomyNode[]
-}) {
+}): JSX.Element {
   const flatTree = flattenDeep(Array.from(depthFirst(taxonomyTrees)));
   return (
     <div>

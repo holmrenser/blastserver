@@ -4,12 +4,12 @@ import { usePathname } from 'next/navigation';
 import { BlastHit } from "../../api/[...jobId]/route";
 import styles from './descriptions.module.scss';
 
-function truncate(string: string, limit=10){
+function truncate(string: string, limit=20){
   if (string.length <= limit) return string;
   return string.slice(0, limit) + '...'
 }
 
-export default function Descriptions({ hits }: {hits: BlastHit[]}) {
+export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element {
   const pathname = usePathname();
   return (
     <div className={`container has-background-light description-container ${styles.descriptionContainer}`}>
@@ -30,7 +30,7 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}) {
         <input type='checkbox'/>
         Select all
       </label>
-      <table className='table is-size-7 is-narrow is-hoverable'>
+      <table className='table is-size-7 is-narrow is-hoverable is-fullwidth'>
         <thead>
           <tr>
             <th></th>
@@ -46,8 +46,9 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}) {
           </tr>
         </thead>
         <tbody>
-          {hits.map(( { accession, title, taxid, name, queryCover, num, len, hsps }) => {
-            const { evalue, score } = hsps[0]
+          {hits.map(( { accession, title, taxid, name, queryCover, num, len, hsps, percentIdentity }) => {
+            const { evalue, score } = hsps[0];
+            const formattedEvalue = evalue === '0' ? Number(evalue) : Number(evalue).toExponential(2)
             return <tr key={num}>
               <td><input type='checkbox'/></td>
               <td>
@@ -74,9 +75,9 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}) {
               </td>
               <td>{score}</td>
               <td>{score}</td>
-              <td>{192}%</td>
-              <td>{evalue}</td>
-              <td>99</td>
+              <td>{queryCover}%</td>
+              <td>{formattedEvalue}</td>
+              <td>{percentIdentity.toFixed(2)}%</td>
               <td>{len}</td>
               <td>
                 <a href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`} target='_blank'>

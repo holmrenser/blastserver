@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -9,9 +7,15 @@ import Alignments from './alignments';
 import Taxonomy from './taxonomy';
 
 import styles from './resultspage.module.scss';
+import { mutate } from 'swr';
 
+type PANEL_COMPONENT = (arg0: {
+  hits: any[],
+  queryLength: number,
+  taxonomyTrees: any
+}) => JSX.Element;
 
-const PANEL_COMPONENTS: Record<string, Function> = {
+const PANEL_COMPONENTS: Record<string, PANEL_COMPONENT> = {
   descriptions: Descriptions,
   graphic_summary: GraphicSummary,
   alignments: Alignments,
@@ -25,24 +29,33 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-export default function ResultsPage({ blastResults, err }: { blastResults: any, err: string }) {
+function AutoReload({ mutate, blastResults }: {mutate: Function, blastResults: any}) {
+  /*console.log({ blastResults})
+  const interval = setInterval(() => {
+    if (!blastResults) {
+      console.log('called mutate callback from results')
+      mutate(undefined, false)
+    } else {
+      console.log('cleared interval')
+      clearInterval(interval)
+    }
+  }, 5_000);*/
+  return <p>This page will automatically update once your job is ready</p>
+}
+
+export default function ResultsPage({ blastResults, err }: { blastResults: any, mutate: Function, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
   if (err) return <p>{err}</p>
-  if (!blastResults) {
-    return <p>This page will automatically update once your job is ready</p>
-  }
+  if (!blastResults) return <AutoReload mutate={mutate} blastResults={blastResults} />
+
   const activePanel = searchParams.get('panel') || 'descriptions';
   const PanelComponent = PANEL_COMPONENTS[activePanel];
-  const { queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees } = blastResults;
+  const { queryLen, hits, taxonomyTrees } = blastResults;
   
   return (
     <div className='container'>
-      <p>Program: {version}</p>
-      <p>DB: {db}</p>
-      <p>Query ID: {queryId}</p>
-      <p>Query def: {queryTitle}</p>
-      <p>Query length: {queryLen}</p>
       <div className={`tabs is-boxed panel-nav has-background-light ${styles.navPanel}`}>
         <ul>
           {

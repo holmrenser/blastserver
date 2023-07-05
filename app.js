@@ -1,8 +1,18 @@
 const { PrismaClient } = require("@prisma/client");
+const { spawnSync } = require("child_process");
+
+function initDb() {
+  const { stdout, stderr } = spawnSync(
+    "npx",
+    "prisma migrate dev --name init".split(" ")
+  );
+  console.log(stdout?.toString("utf8"));
+  console.error(stderr?.toString("utf8"));
+}
 
 async function insertTaxonmy() {
   const prisma = new PrismaClient();
-  const TAXONOMY_FILE = `${process.cwd()}/taxonomy/taxonomy.tsv`;
+  const { TAXONOMY_FILE } = process.env; // `${process.env.}/taxonomy/taxonomy.tsv`;
   const taxonomyCount = await prisma.taxonomy.count();
   if (taxonomyCount) {
     console.log(`FOUND ${taxonomyCount} TAXONOMY ENTRIES`);
@@ -21,6 +31,7 @@ async function insertTaxonmy() {
 }
 
 async function main() {
+  await initDb();
   await insertTaxonmy();
   await import("./.next/standalone/server.js");
 }

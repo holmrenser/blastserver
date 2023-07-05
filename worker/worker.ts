@@ -2,9 +2,9 @@ import { spawnSync } from "child_process";
 import path from "path";
 import { Worker, Job } from "bullmq";
 import { PrismaClient } from '@prisma/client';
-import * as dotenv from 'dotenv';
+// import * as dotenv from 'dotenv';
 
-dotenv.config()
+// dotenv.config()
 
 const prisma = new PrismaClient();
 
@@ -15,16 +15,26 @@ const connection = {
 
 export default async function jobProcessor(job: Job) {
   console.log(`Started job ${job.id}`);
-  const { data: { program, query, expectThreshold, matrix } } = job;
-  const dbPath = path.join(process.env.BLASTDB_PATH || '', 'landmark')
+  const { data: 
+    { program, query, expectThreshold, matrix, database, gapCosts, wordSize, maxTargetSeqs }
+  } = job;
+  const [gapOpen,gapExtend] = gapCosts.split(',');
+  const dbPath = path.join(process.env.BLASTDB_PATH || '', database);
+  const numThreads = process.env.NUM_BLAST_THREADS || '4';
   const args = [
     '-db', dbPath,
     '-evalue', expectThreshold,
     '-matrix', matrix,
     '-outfmt', '16',
+    '-gapopen', gapOpen,
+    '-gapextend', gapExtend,
+    '-word_size', wordSize,
+    '-num_threads', numThreads,
+    '-max_target_seqs', maxTargetSeqs
   ];
-  const options = { input: query };
+  const options = { input: query, maxBuffer: 1_000_000_000_000 };
   const result = spawnSync(program, args, options);
+  // console.dir({ result }, { depth: null})
   const stderr = result.stderr.toString('utf8');
   if (stderr) throw new Error(stderr);
   const stdout = result.stdout.toString('utf8');

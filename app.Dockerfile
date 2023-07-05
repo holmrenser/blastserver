@@ -12,6 +12,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build:app
+RUN node ./node_modules/.bin/prisma generate
 
 
 # final runner
@@ -19,9 +20,10 @@ FROM base as runner
 ENV NODE_ENV production
 
 WORKDIR /app
+COPY --from=builder /app/.env.production ./.env
 COPY --from=builder /app/app.js ./
 COPY --from=builder /app/.next/standalone ./.next/standalone
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules/
+COPY --from=builder /app/prisma ./
 
-CMD node app.js
+CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config app.js

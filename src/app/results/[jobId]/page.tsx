@@ -12,6 +12,7 @@ class DataFetchError extends Error {
 
 
 async function fetcher(url: string){
+  // console.log(`Fetching ${url}`)
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/json',
@@ -19,6 +20,7 @@ async function fetcher(url: string){
     },
     method: 'GET'
   })
+  // console.log({ res })
 
   if (!res.ok) {
     const error = new DataFetchError('An error occured while fetching the data.');
@@ -29,6 +31,24 @@ async function fetcher(url: string){
   return res.json()
 }
 
+function ResultsTable({ results }: {results: any}){
+  const { queryId, queryLen, queryTitle } = results;
+  return <>
+    <tr>
+      <td>Query ID</td>
+      <td>{queryId}</td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td>{queryTitle}</td>
+    </tr>
+    <tr>
+      <td>Query length</td>
+      <td>{queryLen}</td>
+    </tr>
+  </>
+}
+
 export default function ResultsWrapper({
   params
 }:{
@@ -37,20 +57,64 @@ export default function ResultsWrapper({
   }
 }) {
   const { jobId } = params;
-  const url = `/api/${jobId}`;
-  const { data, isLoading, error } = useSWR(url, fetcher);
+  
+  
+  const { data, isLoading, error, mutate } = useSWR(
+    `/api/${jobId}`,
+    fetcher,
+    {
+      refreshInterval: (data) => {
+        // check whether blast is finished every 4 seconds, stop checking when done
+        return data?.results ? 0 : 4_000
+      },
+      revalidateOnMount: true
+    }
+  );
+  
+  // console.log({ data, isLoading, error })
   
   if (error) return <ErrorComponent statusCode={500} />
-  if (isLoading) return <p>Loading</p>
-  const { submitted, results, finished, parameters, program, err } = data;
+  if (isLoading) return <p>Connecting</p>
+  if (!data) return <p>Fetching</p>
+  const { submitted, results, finished, parameters, err } = data;
+  const { jobTitle, program, database } = parameters;
+
+  // console.log({ parameters, results })
+  
 
   return (
     <>
       <h2 className='subtitle'>Results</h2>
-      <p>Job ID: {jobId}</p>
-      <p>Submitted: {new Date(submitted)?.toLocaleString('en-GB')}</p>
-      <p>Status: {results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</p>
-      <ResultsPage blastResults={results} err={err}/>
+      <table className='table is-small is-size-7'>
+        <tbody>
+          <tr>
+            <td>Job ID</td>
+            <td>{jobId}</td>
+          </tr>
+          <tr>
+            <td>Job Title</td>
+            <td>{jobTitle || 'Protein Sequence'}</td>
+          </tr>
+          <tr>
+            <td>Program</td>
+            <td>{program.toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>{database}</td>
+          </tr>
+          <tr>
+            <td>Submitted</td>
+            <td>{new Date(submitted)?.toLocaleString('en-GB')}</td>
+          </tr>
+          <tr>
+            <td>Status</td>
+            <td>{results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</td>
+          </tr>
+          { results && <ResultsTable results={results} />}
+        </tbody>
+      </table>
+      <ResultsPage blastResults={results} mutate={mutate} err={err}/>
     </>
   )
 } 

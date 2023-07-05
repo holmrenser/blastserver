@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    image: blastserver_app:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT}:3000"
+    env_file: .env.production
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    image: blastserver_worker:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    env_file: .env.production
+    volumes:
+      - ./blastdb:/app/blastdb
+
+  redis:
+    image: redis:latest
+    deploy:
+      replicas: 1
+    expose:
+      - "6379"
+    env_file: .env.production
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:latest
+    deploy:
+      replicas: 1
+    expose:
+      - "5432"
+    env_file: .env.production
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - "./data/db:${PGDATA}"
+      - "./taxonomy:/app/taxonomy"

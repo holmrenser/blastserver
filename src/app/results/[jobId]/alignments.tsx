@@ -12,7 +12,7 @@ function padAligmentStrings(
     return [paddedQseq, paddedMidline, paddedHseq];
 }
 
-export default function Alignments({ hits }: { hits: BlastHit[] }) {
+export default function Alignments({ hits }: { hits: BlastHit[] }): JSX.Element {
   return (
     <div>
       <nav className='navbar has-background-info-light' role='navigation'>

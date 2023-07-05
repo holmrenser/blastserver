@@ -11,13 +11,34 @@ import './blastFlavour.scss';
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
 type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
+const NUCLEOTIDE_DBS = new Map<string, string>([
+  ['nt','Nucleotide collection'],
+  ['refseq_select', 'RefSeq Select RNA sequences']
+])
+const PROTEIN_DBS = new Map<string, string>([
+  ['nr', 'Non-redundant protein sequences'],
+  ['landmark', 'Model organisms']
+])
+
+const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS])
+
+const BLAST_DBS = new Map<BlastFlavour, string[]>([
+  ['blastp', Array.from(PROTEIN_DBS.keys())],
+  ['blastx', Array.from(PROTEIN_DBS.keys())],
+  ['blastn', Array.from(NUCLEOTIDE_DBS.keys())],
+  ['tblastx', Array.from(NUCLEOTIDE_DBS.keys())],
+  ['tblastn', Array.from(NUCLEOTIDE_DBS.keys())]
+])
+
+/*
 const BLAST_DBS = [
   'Nucleotide collection (nr/nt)',
   'Refseq representative genomes',
   'Refseq genome database',
   '...'
 ]
-const PROGRAMS = new Map<string, Array<string>>([
+*/
+const PROGRAMS = new Map<string, string[]>([
   //[
   //'blastp', [
   //  'Quick BLASTP (Accelerated protein-protein BLAST)',
@@ -88,7 +109,7 @@ const formSchema = Yup.object().shape({
     .email()
     .trim(),
   database: Yup.string()
-    .oneOf(BLAST_DBS)
+    .oneOf(Array.from(BLAST_DBS.values()).flat())
     .required('Must choose a database')
     .trim(),
   organism: Yup.string()
@@ -216,7 +237,8 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
   )
 }
 
-function ChooseSearchSet({ register, errors }: {register: Function, errors: FieldErrors }) {
+function ChooseSearchSet({ register, errors, blastFlavour }: {register: Function, errors: FieldErrors, blastFlavour: BlastFlavour }) {
+  const dbOptions = BLAST_DBS.get(blastFlavour);
   return (
     <fieldset className='box'>
       <legend className='label has-text-centered'>Choose Search Set</legend>
@@ -231,8 +253,10 @@ function ChooseSearchSet({ register, errors }: {register: Function, errors: Fiel
             <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''}`}>
               <select {...register('database')}>
                 {
-                  BLAST_DBS.map(db => (
-                    <option key={db}>{db}</option>
+                  dbOptions && dbOptions.map(db => (
+                    <option key={db} value={db}>
+                      {`${DB_NAMES.get(db)} (${db})`}
+                    </option>
                   ))
                 }
               </select>
@@ -538,10 +562,11 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
   
   const { register, handleSubmit, getValues, formState: {errors} } = useForm<FormData<typeof blastFlavour>>({
+    //@ts-ignore
     resolver: yupResolver(formSchema),
     defaultValues: {
       program: defaultProgram,
-      database: BLAST_DBS[0],
+      database: (BLAST_DBS.get(blastFlavour) as string[])[0],
       maxTargetSeqs: 100,
       shortQueries: true,
       expectThreshold: 0.05,
@@ -564,6 +589,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     .then(res => res.json())
     .then(data => {
       const { jobId } = data;
+      // console.log({ jobId, formData })
       window.location.replace(`/results/${jobId}`) // HACK
     })
   }
@@ -572,7 +598,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     <form onSubmit={handleSubmit(onSubmit)}>
       <h1 className='title'>{blastFlavour}</h1>
       <EnterQuery register={register} errors={errors} />
-      <ChooseSearchSet register={register} errors={errors} />
+      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} />
       <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} />
       <SubmitButton register={register} errors={errors} getValues={getValues} />
       <AlgorithmParameters register={register} errors={errors} getValues={getValues}/>

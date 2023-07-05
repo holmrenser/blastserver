@@ -43,3 +43,7 @@ names.tsv
 
 taxonomy/*
 blastdb/*
+
+data/*
+
+.env*

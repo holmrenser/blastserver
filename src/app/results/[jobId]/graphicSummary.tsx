@@ -137,10 +137,10 @@ export default function GraphicSummary({
   lineHeight=6
 }: {
   hits: Array<any>,
-  width: number,
+  width?: number,
   queryLength: number,
   lineHeight?: number
-}) {
+}): JSX.Element {
   const padding = {
     top: 20,
     bottom: 10,

@@ -1,3 +1,4 @@
+//@ts-ignore
 import { NextResponse, NextRequest } from 'next/server';
 import { xml2js, ElementCompact } from 'xml-js';
 import { camelCase, mapKeys, partition } from 'lodash';
@@ -28,7 +29,9 @@ type Hsp = {
   midline: string,
   num: string,
   hitFrom: string,
-  hitTo: string
+  hitTo: string,
+  identity: string,
+  alignLen: string,
 }
 
 type RawBlastHit = {
@@ -44,10 +47,16 @@ type RawBlastHit = {
   title: string
 }
 
-export type BlastHit = Omit<RawBlastHit, 'description' | 'hsps'> & {
+type BlastHitNoTaxInfo = Omit<RawBlastHit, 'description' | 'hsps'> & {
   hsps: Hsp[],
   taxid: string,
   queryCover: number,
+  percentIdentity: number,
+  // ancestors: string,
+  // name: string
+}
+
+export type BlastHit = BlastHitNoTaxInfo & {
   ancestors: string,
   name: string
 }
@@ -95,8 +104,17 @@ export type TaxonomyNode = {
   count?: number
 }
 
+function add(total: number, element: number): number {
+  /**
+   * Helper function that solely exists because JS doesn't have a normal sum function
+   * https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
+   */
+  return total + element
+}
+
 async function formatResults(blastResults: any) {
   const results = xml2js(blastResults, { compact: true, trim: true, textFn: replaceJsonTextAttribute })
+  // console.log({ results });
   const {   
     BlastXML2: { 
       BlastOutput2: {
@@ -129,7 +147,7 @@ async function formatResults(blastResults: any) {
     } 
   } = results as any as BlastResult;
 
-  const hits: BlastHit[] = await Promise.all(_hits.map(async ({ description, hsps, len, num }) => {
+  async function processHit({ description, hsps, len, num }: RawBlastHit): Promise<BlastHitNoTaxInfo>{
     const hitDescription = Array.isArray(description.HitDescr)
       ? description.HitDescr 
       : [description.HitDescr]
@@ -137,24 +155,49 @@ async function formatResults(blastResults: any) {
     const _hsps = Array.isArray(hsps.Hsp) ? hsps.Hsp : [hsps.Hsp]
     const formattedHsps: Hsp[] = _hsps.map(hsp => mapKeys(hsp, (_, key) => camelCase(key))) as any[];
     const queryCoverTotal = formattedHsps
-      .map(({ queryFrom, queryTo }) => ((queryTo as any) - (queryFrom as any)))
-      .reduce((a: number, b: number) =>  a + b, 0); // https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
-    const queryCover = Math.floor((queryCoverTotal / (len as any)) * 100);
-    
-    
-    const taxonomyInfo = await prisma.taxonomy.findFirst({ where: { id: taxid }});
+      .map(({ queryFrom, queryTo }) => (Number(queryTo) - Number(queryFrom)))
+      .reduce(add, 0); 
+    const alignLen = formattedHsps.map(({alignLen}) => Number(alignLen)).reduce(add, 0);
+    const identity = formattedHsps.map(({ identity }) => Number(identity)).reduce(add, 0);
+    const percentIdentity = (identity / alignLen) * 100;
+    const queryCover = Math.floor((queryCoverTotal / Number(len)) * 100);
+    /*
+    console.log('trying prisma.taxonomy.findFirst')
+    let taxonomyInfo;
+    try {
+      taxonomyInfo = await prisma.taxonomy.findFirst({ where: { id: taxid }});
+    } catch (err) {
+      console.error(`prisma.taxonomy.findFirst: ${err}`)
+    }
     const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: 'NotFound' };
-    
-    return { accession, title, taxid, name, queryCover, num, len, hsps: formattedHsps, ancestors }
-  }))
+    */
+    return { accession, title, taxid, /*name,*/ percentIdentity, queryCover, num, len, hsps: formattedHsps, /*ancestors*/ }
+  }
 
+  const intermediateHits: BlastHitNoTaxInfo[] = await Promise.all(_hits.map(processHit))
+  const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
+  const hitTaxInfo = await prisma.taxonomy.findMany({ where: { id: {in: hitTaxids }}})
+  const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(({id, name, ancestors}) => [id, {id, name, ancestors}]))
+  const hits = intermediateHits.map(({ taxid, ...rest}) => {
+    const taxonomyInfo = hitTaxidMap[taxid];
+    const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: 'NotFound' };
+    return { taxid, name, ancestors, ...rest}
+  })
+  
   const ancestorIds: Set<string> = new Set(hits
     .map(({ ancestors } : { ancestors: string }) => ancestors.split('.'))
     .flat())
   
   const allTaxIds = [...ancestorIds, ...hits.map(({ taxid }: { taxid: string }) => taxid)]
-
-  const taxonomy: TaxonomyNode[] = await prisma.taxonomy.findMany({ where: { id: { in: allTaxIds }}})
+  
+  // console.log('trying prisma.taxonomy.findMany')
+  let taxonomy: TaxonomyNode[];
+  try {
+    taxonomy = await prisma.taxonomy.findMany({ where: { id: { in: allTaxIds }}});
+  } catch (err) {
+    console.error(`prisma.taxonomy.findMany: ${err}`);
+    taxonomy = [];
+  }
   const taxidMap = Object.fromEntries(taxonomy.map(({id, name, ancestors}) => [id, {id, name, ancestors}]))
 
   // count all taxids and their ancestors, we only keep taxids that are not present in all hits
@@ -217,8 +260,21 @@ async function formatResults(blastResults: any) {
 }
 
 export async function GET(request: NextRequest, context: {params: { jobId: string[]}}) {
+  // console.log({ request })
   const { params: { jobId }} = context;
-  const job = await prisma.blastjob.findFirst({ where: { id: jobId[0] }});
+  console.log(`Requested job ${jobId}`);
+
+  let job;
+  try {
+    job = await prisma.blastjob.findFirst({ where: { id: jobId[0] }});
+  } catch (err) {
+    console.error(err);
+  }
+  // console.log(`Job finished: ${job?.finished}`);
   const formattedResults = job?.results ? await formatResults(job.results) : null;
-  return NextResponse.json({...job, results: formattedResults });
+  // console.log({ formattedResults });
+  // const res = NextResponse.json({...job, results: formattedResults }, { status: 200 });
+  const res = new Response(JSON.stringify({...job, results: formattedResults }));
+  // console.log({ res });
+  return res
 }

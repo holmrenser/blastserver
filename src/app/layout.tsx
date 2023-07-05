@@ -1,12 +1,12 @@
 import Link from 'next/link';
 
-import { Inter, Hanken_Grotesk } from 'next/font/google'
+import { Inter, Hanken_Grotesk, Open_Sans } from 'next/font/google'
 
 import './globals.scss'
 
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
 
-const font = Inter({ subsets: ['latin']})
+const font = Hanken_Grotesk({ subsets: ['latin']})
 
 export const metadata = {
   title: 'BLAST',
@@ -62,7 +62,7 @@ export default function RootLayout({
           </nav>
           
           <section className='section has-background-white'>
-            <div className='container is-max-desktop'>
+            <div className='container is-fullhd'>
               {children}
             </div>
           </section>
