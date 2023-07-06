@@ -13,7 +13,7 @@ class DataFetchError extends Error {
 
 
 async function fetcher(url: string){
-  // console.log(`Fetching ${url}`)
+  console.log(`Fetching ${url}`)
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/json',
@@ -21,7 +21,6 @@ async function fetcher(url: string){
     },
     method: 'GET'
   })
-  // console.log({ res })
 
   if (!res.ok) {
     const error = new DataFetchError('An error occured while fetching the data.');
@@ -73,7 +72,7 @@ export default function ResultsWrapper({
     }
   );
   
-  // console.log({ data, isLoading, error })
+  console.log({ data, isLoading, error })
   
   if (error) return <ErrorComponent statusCode={500} />
   if (isLoading) return <p>Connecting</p>

@@ -560,7 +560,6 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   const { blastFlavour } = params;
   const pathName = usePathname();
   const basePath = pathName.split(blastFlavour)[0].slice(0, -1);
-  console.log({ basePath });
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound()
   }
@@ -594,7 +593,6 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     .then(res => res.json())
     .then(data => {
       const { jobId } = data;
-      // console.log({ jobId, formData })
       window.location.replace(`${basePath}/results/${jobId}`) // HACK
     })
   }
