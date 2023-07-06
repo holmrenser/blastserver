@@ -9,7 +9,7 @@ module.exports = {
     instrumentationHook: true,
   },
   basePath: process.env.BASE_PATH,
-  async headers() {
+  /* async headers() {
     // used to enable CORS requests
     return [
       {
@@ -30,5 +30,5 @@ module.exports = {
         ],
       },
     ];
-  },
+  },*/
 };
