@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
     // retrieve the current response
     const response = NextResponse.next()
     const { pathname } = request.nextUrl;
-    console.log(`MIDDLEWARE request pathname: ${pathname}`);
+    // console.log(`MIDDLEWARE request pathname: ${pathname}`);
 
     if (pathname.startsWith("/api")) {
         response.headers.append("Access-Control-Allow-Origin", "*")
