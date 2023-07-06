@@ -11,9 +11,8 @@ FROM base as builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build:app
 RUN node ./node_modules/.bin/prisma generate
-
+RUN npm run build:app
 
 # final runner
 FROM base as runner
