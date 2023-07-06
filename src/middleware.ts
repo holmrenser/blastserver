@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
     // retrieve the current response
+    console.log('MIDDLEWARE')
     const response = NextResponse.next()
 
     if (request.nextUrl.pathname.startsWith("/api")) {

@@ -38,7 +38,7 @@ export default function jobProcessor(job) {
         ];
         const options = { input: query, maxBuffer: 1000000000000 };
         const result = spawnSync(program, args, options);
-        console.dir({ result }, { depth: null });
+        // console.dir({ result }, { depth: null})
         const stderr = result.stderr.toString('utf8');
         if (stderr)
             throw new Error(stderr);

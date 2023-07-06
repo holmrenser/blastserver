@@ -1,5 +1,6 @@
 //@ts-ignore
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { xml2js, ElementCompact } from 'xml-js';
 import { camelCase, mapKeys, partition } from 'lodash';
 
@@ -255,8 +256,7 @@ async function formatResults(blastResults: any) {
   return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees }
 }
 
-export async function GET(request: NextRequest, context: {params: { jobId: string[]}}) {
-  // console.log({ request })
+export async function GET(request: NextRequest, context: { params: { jobId: string[]}}) {
   const { params: { jobId }} = context;
   console.log(`Requested job ${jobId}`);
 
@@ -266,11 +266,7 @@ export async function GET(request: NextRequest, context: {params: { jobId: strin
   } catch (err) {
     console.error(err);
   }
-  // console.log(`Job finished: ${job?.finished}`);
   const formattedResults = job?.results ? await formatResults(job.results) : null;
-  // console.log({ formattedResults });
-  // const res = NextResponse.json({...job, results: formattedResults }, { status: 200 });
-  const res = new Response(JSON.stringify({...job, results: formattedResults }));
-  // console.log({ res });
-  return res
+
+  return NextResponse.json({...job, results: formattedResults }) // res
 }
