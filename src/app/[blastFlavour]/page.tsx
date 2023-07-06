@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useForm, RegisterOptions, FieldErrors } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
@@ -554,8 +555,11 @@ function AlgorithmParameters({
   )
 }
 
+
 export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
   const { blastFlavour } = params;
+  const pathName = usePathname();
+  const basePath = pathName.split(blastFlavour)[0].slice(0, -1);
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound()
   }
@@ -578,7 +582,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   });
 
   async function onSubmit(formData: FormData<typeof blastFlavour>){
-    fetch(`/api`, {
+    fetch(`${basePath}/api`, {
       body: JSON.stringify(formData),
       headers: {
         'Accept': 'application/json',
@@ -590,7 +594,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     .then(data => {
       const { jobId } = data;
       // console.log({ jobId, formData })
-      window.location.replace(`/results/${jobId}`) // HACK
+      window.location.replace(`${basePath}/results/${jobId}`) // HACK
     })
   }
 

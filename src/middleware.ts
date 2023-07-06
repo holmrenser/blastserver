@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
     // retrieve the current response
-    console.log('MIDDLEWARE')
     const response = NextResponse.next()
+    const { pathname } = request.nextUrl;
+    console.log(`MIDDLEWARE request pathname: ${pathname}`);
 
-    if (request.nextUrl.pathname.startsWith("/api")) {
+    if (pathname.startsWith("/api")) {
         response.headers.append("Access-Control-Allow-Origin", "*")
         response.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
         response.headers.append(
