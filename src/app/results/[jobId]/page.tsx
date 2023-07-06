@@ -59,6 +59,7 @@ export default function ResultsWrapper({
   const { jobId } = params;
   const pathName = usePathname();
   const basePath = pathName.split('results')[0].slice(0, -1);
+  console.log(`Resultswrapper basepath is: ${basePath}`)
   
   const { data, isLoading, error, mutate } = useSWR(
     `${basePath}/api/${jobId}`,
@@ -66,7 +67,7 @@ export default function ResultsWrapper({
     {
       refreshInterval: (data) => {
         // check whether blast is finished every 4 seconds, stop checking when done
-        return data?.results ? 0 : 4_000
+        return data?.results || data?.err ? 0 : 4_000
       },
       revalidateOnMount: true
     }
