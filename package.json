@@ -5,7 +5,8 @@
   "scripts": {
     "dev:app": "dotenv -e .env.development -- next dev",
     "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
-    "build:app": "rm -rf .next && next build && cp -r .next/static .next/standalone/.next/static",
+    "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && cp -r .next/static .next/standalone/.next/static",
+    "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build && cp -r .next/static .next/standalone/.next/static",
     "build:worker": "rm -f worker/worker.js && npx tsc -p tsconfig.worker.json && mv worker/worker.js worker/worker.mjs",
     "start:app": "next start",
     "start:worker": "node -r dotenv/config worker/worker.mjs dotenv_config_path=./.env.development",
