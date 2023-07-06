@@ -107,6 +107,7 @@ export type TaxonomyNode = {
 function add(total: number, element: number): number {
   /**
    * Helper function that solely exists because JS doesn't have a normal sum function
+   * To be used with Array.reduce: total is the accumulator, element is the current number
    * https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
    */
   return total + element
@@ -161,23 +162,18 @@ async function formatResults(blastResults: any) {
     const identity = formattedHsps.map(({ identity }) => Number(identity)).reduce(add, 0);
     const percentIdentity = (identity / alignLen) * 100;
     const queryCover = Math.floor((queryCoverTotal / Number(len)) * 100);
-    /*
-    console.log('trying prisma.taxonomy.findFirst')
-    let taxonomyInfo;
-    try {
-      taxonomyInfo = await prisma.taxonomy.findFirst({ where: { id: taxid }});
-    } catch (err) {
-      console.error(`prisma.taxonomy.findFirst: ${err}`)
-    }
-    const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: 'NotFound' };
-    */
-    return { accession, title, taxid, /*name,*/ percentIdentity, queryCover, num, len, hsps: formattedHsps, /*ancestors*/ }
+
+    return { accession, title, taxid, percentIdentity, queryCover, num, len, hsps: formattedHsps }
   }
 
   const intermediateHits: BlastHitNoTaxInfo[] = await Promise.all(_hits.map(processHit))
   const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
   const hitTaxInfo = await prisma.taxonomy.findMany({ where: { id: {in: hitTaxids }}})
-  const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(({id, name, ancestors}) => [id, {id, name, ancestors}]))
+  const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(
+    ({id, name, ancestors}: {id: string, name: string, ancestors: string}) => {
+      return [id, {id, name, ancestors}]
+    }
+  ))
   const hits = intermediateHits.map(({ taxid, ...rest}) => {
     const taxonomyInfo = hitTaxidMap[taxid];
     const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: 'NotFound' };
