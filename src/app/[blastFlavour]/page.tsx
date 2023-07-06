@@ -578,7 +578,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   });
 
   async function onSubmit(formData: FormData<typeof blastFlavour>){
-    fetch('/api', {
+    fetch(`${process.env.BASE_PATH}/api`, {
       body: JSON.stringify(formData),
       headers: {
         'Accept': 'application/json',
