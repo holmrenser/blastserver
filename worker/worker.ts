@@ -2,9 +2,6 @@ import { spawnSync } from "child_process";
 import path from "path";
 import { Worker, Job } from "bullmq";
 import { PrismaClient } from '@prisma/client';
-// import * as dotenv from 'dotenv';
-
-// dotenv.config()
 
 const prisma = new PrismaClient();
 
@@ -48,7 +45,8 @@ export default async function jobProcessor(job: Job) {
   return 'finished'
 }
 
-const worker = new Worker("jobqueue", jobProcessor, { connection });
+// HACK: extreme lock duration (1 hour) to prevent multiple workers picking up the same job 
+const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 3_600_000 });
 
 console.log("worker started");
 
