@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import useSWR from 'swr';
 
 import ErrorComponent  from '../error';
@@ -57,10 +58,11 @@ export default function ResultsWrapper({
   }
 }) {
   const { jobId } = params;
-  
+  const pathName = usePathname();
+  const basePath = pathName.split('results')[0].slice(0, -1);
   
   const { data, isLoading, error, mutate } = useSWR(
-    `/api/${jobId}`,
+    `${basePath}/api/${jobId}`,
     fetcher,
     {
       refreshInterval: (data) => {

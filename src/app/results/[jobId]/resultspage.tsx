@@ -29,26 +29,12 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-function AutoReload({ mutate, blastResults }: {mutate: Function, blastResults: any}) {
-  /*console.log({ blastResults})
-  const interval = setInterval(() => {
-    if (!blastResults) {
-      console.log('called mutate callback from results')
-      mutate(undefined, false)
-    } else {
-      console.log('cleared interval')
-      clearInterval(interval)
-    }
-  }, 5_000);*/
-  return <p>This page will automatically update once your job is ready</p>
-}
-
 export default function ResultsPage({ blastResults, err }: { blastResults: any, mutate: Function, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   if (err) return <p>{err}</p>
-  if (!blastResults) return <AutoReload mutate={mutate} blastResults={blastResults} />
+  if (!blastResults) return <p>This page will automatically update once your job is ready</p>
 
   const activePanel = searchParams.get('panel') || 'descriptions';
   const PanelComponent = PANEL_COMPONENTS[activePanel];
