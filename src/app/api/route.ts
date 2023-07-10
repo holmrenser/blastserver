@@ -1,5 +1,3 @@
-'use server';
-
 import hash from 'object-hash';
 import { NextResponse, NextRequest } from 'next/server';
 
