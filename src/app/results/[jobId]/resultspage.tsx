@@ -33,6 +33,8 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  console.log(`Resultspage pathName is: ${pathname}`)
+
   if (err) return <p>{err}</p>
   if (!blastResults) return <p>This page will automatically update once your job is ready</p>
 

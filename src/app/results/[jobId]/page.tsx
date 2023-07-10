@@ -59,6 +59,7 @@ export default function ResultsWrapper({
   const { jobId } = params;
   const pathName = usePathname();
   const basePath = pathName.split('results')[0].slice(0, -1);
+  console.log(`Resultswrapper pathName is: ${pathName}`)
   console.log(`Resultswrapper basepath is: ${basePath}`)
   
   const { data, isLoading, error, mutate } = useSWR(

@@ -54,8 +54,8 @@ export default function jobProcessor(job) {
         return 'finished';
     });
 }
-// HACK: extreme lock duration (1 hour) to prevent multiple workers picking up the same job 
-const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 3600000 });
+// HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job 
+const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 7200000 });
 console.log("worker started");
 worker.on("progress", (job, progress) => {
     console.log(`Progress job ${job.id}: ${progress}`);
