@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+/**
+ * Captures all api requests and inserts CORS headers
+ * @param request any incomming html request
+ * @returns modified response with CORS headers injected for api requests
+ */
 export async function middleware(request: NextRequest) {
-    // retrieve the current response
     const response = NextResponse.next()
     const { pathname } = request.nextUrl;
-    // console.log(`MIDDLEWARE request pathname: ${pathname}`);
 
     if (pathname.startsWith("/api")) {
         response.headers.append("Access-Control-Allow-Origin", "*")

@@ -13,8 +13,10 @@ const connection = {
 export default async function jobProcessor(job: Job) {
   console.log(`Started job ${job.id}`);
   const { data: 
-    { program, query, expectThreshold, matrix, database, gapCosts, wordSize, maxTargetSeqs }
+    { program, query, expectThreshold, matrix, database,
+      gapCosts, wordSize, maxTargetSeqs, queryTo, queryFrom }
   } = job;
+  // console.dir(job.data, { depth: null });
   const [gapOpen,gapExtend] = gapCosts.split(',');
   const dbPath = path.join(process.env.BLASTDB_PATH || '', database);
   const numThreads = process.env.NUM_BLAST_THREADS || '4';
@@ -27,9 +29,13 @@ export default async function jobProcessor(job: Job) {
     '-gapextend', gapExtend,
     '-word_size', wordSize,
     '-num_threads', numThreads,
-    '-max_target_seqs', maxTargetSeqs
+    '-max_target_seqs', maxTargetSeqs,
+    '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`
   ];
   const options = { input: query, maxBuffer: 1_000_000_000_000 };
+
+  console.log(`Running '${program} ${args.join(' ')}'`)
+
   const result = spawnSync(program, args, options);
   // console.dir({ result }, { depth: null})
   const stderr = result.stderr.toString('utf8');
@@ -45,8 +51,8 @@ export default async function jobProcessor(job: Job) {
   return 'finished'
 }
 
-// HACK: extreme lock duration (1 hour) to prevent multiple workers picking up the same job 
-const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 3_600_000 });
+// HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job 
+const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 7_200_000 });
 
 console.log("worker started");
 
