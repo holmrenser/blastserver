@@ -4,6 +4,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { queue } from '../queue';
 import prisma from '../database';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const parameters = await request.json();
   const jobId = hash(parameters);

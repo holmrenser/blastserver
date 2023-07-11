@@ -256,6 +256,8 @@ async function formatResults(blastResults: any) {
   return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest, context: { params: { jobId: string[]}}) {
   const { params: { jobId }} = context;
   console.log(`Requested job ${jobId}`);
