@@ -559,7 +559,7 @@ function AlgorithmParameters({
 export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
   const { blastFlavour } = params;
   const pathName = usePathname();
-  const basePath = pathName.split(blastFlavour)[0].slice(0, -1);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound()
   }
@@ -582,7 +582,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   });
 
   async function onSubmit(formData: FormData<typeof blastFlavour>){
-    fetch(`${basePath}/api`, {
+    fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
       headers: {
         'Accept': 'application/json',

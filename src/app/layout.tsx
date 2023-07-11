@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import { Inter, Hanken_Grotesk, Open_Sans } from 'next/font/google'
 
+import { QueueStatus } from './queuestatus';
+
 import './globals.scss'
 
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
@@ -54,9 +56,10 @@ export default function RootLayout({
               </div>
             </div>
             <div className='navbar-end'>
-              <Link className="navbar-item" href='/jobqueue'>
-                Jobqueue
-              </Link>
+              <p className='navbar-item'>Queue</p>
+              <div className='navbar-item'>
+                <QueueStatus />
+              </div>
             </div>
             </div>
           </nav>

@@ -44,7 +44,7 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
   const { queryLen, hits, taxonomyTrees } = blastResults;
   
   return (
-    <div className='container'>
+    <>
       <div className={`tabs is-boxed panel-nav has-background-light ${styles.navPanel}`}>
         <ul>
           {
@@ -63,6 +63,6 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
         </ul>
       </div>
       <PanelComponent hits={hits} queryLength={queryLen} taxonomyTrees={taxonomyTrees} />
-    </div>
+    </>
   )
 }

@@ -12,7 +12,7 @@ function truncate(string: string, limit=20){
 export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element {
   const pathname = usePathname();
   return (
-    <div className={`container has-background-light description-container ${styles.descriptionContainer}`}>
+    <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
       <nav className='navbar has-background-info-light' role='navigation'>
         <div className='navbar-brand'>
           <b className='navbar-item'>Sequences producing significant alignments</b>

@@ -34,7 +34,7 @@ export default function Taxonomy({
           </div>
         </div>
       </nav>
-      <div className='container has-background-light'>
+      <div className='has-background-light'>
         <div className={`columns is-centered ${styles.centerTable}`}>
           <table className='table is-size-6 is-narrow is-hoverable'>
             <thead>

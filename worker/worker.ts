@@ -20,7 +20,7 @@ export default async function jobProcessor(job: Job) {
   const [gapOpen,gapExtend] = gapCosts.split(',');
   const dbPath = path.join(process.env.BLASTDB_PATH || '', database);
   const numThreads = process.env.NUM_BLAST_THREADS || '4';
-  const args = [
+  const args: string[] = [
     '-db', dbPath,
     '-evalue', expectThreshold,
     '-matrix', matrix,
@@ -32,12 +32,13 @@ export default async function jobProcessor(job: Job) {
     '-max_target_seqs', maxTargetSeqs,
     '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`
   ];
+
+  // Very large max buffer so we capture all BLAST output
   const options = { input: query, maxBuffer: 1_000_000_000_000 };
 
   console.log(`Running '${program} ${args.join(' ')}'`)
 
   const result = spawnSync(program, args, options);
-  // console.dir({ result }, { depth: null})
   const stderr = result.stderr.toString('utf8');
   if (stderr) throw new Error(stderr);
   const stdout = result.stdout.toString('utf8');

@@ -169,7 +169,7 @@ export default function GraphicSummary({
           </div>
         </div>
       </nav>
-      <div className='container has-background-light'>
+      <div className='has-background-light'>
         <div className={`columns is-centered ${styles.figureBox}`}>
           <svg width={width} height={paddedHeight} style={{backgroundColor: 'white'}}>
             <g className="blast-hit-plot" transform={`translate(${padding.left},${padding.top})`}>
