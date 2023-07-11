@@ -7,7 +7,6 @@ import Alignments from './alignments';
 import Taxonomy from './taxonomy';
 
 import styles from './resultspage.module.scss';
-import { mutate } from 'swr';
 
 type PANEL_COMPONENT = (arg0: {
   hits: any[],
@@ -32,8 +31,10 @@ function formatPanelName(panelName: string): string {
 export default function ResultsPage({ blastResults, err }: { blastResults: any, mutate: Function, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  console.log(`Resultspage pathName is: ${pathname}`)
+  
+  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const linkPath = pathname.slice(basePath.length)
 
   if (err) return <p>{err}</p>
   if (!blastResults) return <p>This page will automatically update once your job is ready</p>
@@ -51,7 +52,7 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
               return <li key={panel} className={panel === activePanel ? 'is-active' : ''}>
                 <Link 
                   href={{ 
-                    pathname, 
+                    pathname: linkPath, 
                     query: { panel } 
                   }}>
                     { formatPanelName(panel) }
