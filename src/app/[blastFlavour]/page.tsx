@@ -18,7 +18,9 @@ const NUCLEOTIDE_DBS = new Map<string, string>([
 ])
 const PROTEIN_DBS = new Map<string, string>([
   ['nr', 'Non-redundant protein sequences'],
-  ['landmark', 'Model organisms']
+  ['landmark', 'Model organisms'],
+  ['refseq_protein', 'Reference proteins'],
+  ['refseq_select_prot', 'RefSeq Select proteins']
 ])
 
 const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS])
@@ -160,7 +162,7 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
             <div className="control">
               <textarea
                 className={`textarea is-small ${errors.query?.message ? 'is-danger' : ''}`}
-                placeholder="QUERY SEQUENCE/IDENTIFIER"
+                placeholder="QUERY SEQUENCE"
                 {...register('query')} />
             </div>
             {
@@ -216,7 +218,7 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <input className="input is-small" type="text" placeholder="JOBTITLE" {...register('jobTitle')}/>
+              <input disabled className="input is-small" type="text" placeholder="JOBTITLE" {...register('jobTitle')}/>
             </div>
           </div>
         </div>
@@ -229,7 +231,7 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <input className="input is-small" type="text" placeholder="JOHN@DOE.COM" {...register('email')} />
+              <input disabled className="input is-small" type="text" placeholder="JOHN@DOE.COM" {...register('email')} />
             </div>
           </div>
         </div>
@@ -461,7 +463,7 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <input className='input is-small' type='text' {...register('maxMatchesInQueryRange')} />
+                  <input disabled className='input is-small' type='text' {...register('maxMatchesInQueryRange')} />
                 </div>
               </div>
             </div>
@@ -532,7 +534,7 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                 <div className="select is-small">
-                  <select {...register('compositionalAdjustment')}>
+                  <select disabled {...register('compositionalAdjustment')}>
                     {
                       ['No adjustment','Compositon-based statistics',
                       'Conditional compositional score matrix adjustment',
