@@ -36,10 +36,10 @@ export default function jobProcessor(job) {
             '-max_target_seqs', maxTargetSeqs,
             '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`
         ];
+        // Very large max buffer so we capture all BLAST output
         const options = { input: query, maxBuffer: 1000000000000 };
         console.log(`Running '${program} ${args.join(' ')}'`);
         const result = spawnSync(program, args, options);
-        // console.dir({ result }, { depth: null})
         const stderr = result.stderr.toString('utf8');
         if (stderr)
             throw new Error(stderr);

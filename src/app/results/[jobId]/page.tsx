@@ -10,7 +10,6 @@ class DataFetchError extends Error {
   status: number | undefined = undefined
 }
 
-
 async function fetcher(url: string){
   console.log(`Fetching ${url}`)
   const res = await fetch(url, {
@@ -58,7 +57,7 @@ export default function ResultsWrapper({
   const { jobId } = params;
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
 
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, error } = useSWR(
     `${basePath}/api/${jobId}`,
     fetcher,
     {
@@ -183,7 +182,7 @@ export default function ResultsWrapper({
           </div>
         </div>
       </div>
-      <ResultsPage blastResults={results} mutate={mutate} err={err}/>
+      <ResultsPage blastResults={results} err={err}/>
     </>
   )
 } 

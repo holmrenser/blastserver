@@ -28,7 +28,7 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-export default function ResultsPage({ blastResults, err }: { blastResults: any, mutate: Function, err: string }) {
+export default function ResultsPage({ blastResults, err }: { blastResults: any, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   

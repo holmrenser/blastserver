@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
-import { useForm, RegisterOptions, FieldErrors } from 'react-hook-form';
+import { notFound } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import type { FieldErrors, Control } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import { notFound } from 'next/navigation';
 
+import { TaxonomySelect } from './taxonomyselect';
 import './blastFlavour.scss';
 
 const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
@@ -53,7 +54,7 @@ const PROGRAMS = new Map<string, string[]>([
     'Blastn (Somewhat similar sequences)'
   ]]])
 
-type FormData<BlastFlavour> = {
+export type FormData = {
   query: string;
   queryFrom?: number;
   queryTo?: number;
@@ -70,6 +71,8 @@ type FormData<BlastFlavour> = {
   matrix: string;
   gapCosts: string;
   compositionalAdjustment: string;
+  taxids?: string[];
+  excludeTaxids?: boolean;
 }
 
 function numberTransform(_unused: any, val: string){
@@ -148,6 +151,12 @@ const formSchema = Yup.object().shape({
   compositionalAdjustment: Yup.string()
     .required()
     .trim(),
+  taxids: Yup.array()
+    .of(Yup.string())
+    .notRequired()
+    .ensure(),
+  excludeTaxids: Yup.boolean()
+    .notRequired()  
 })
 
 function EnterQuery({ register, errors }: {register: Function, errors: FieldErrors }){
@@ -186,13 +195,14 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
                     <input
                       className={`input is-small ${errors.queryFrom?.message ? 'is-danger' : ''}`}
                       placeholder="FROM"
+                      style={{ maxWidth: 120 }}
                       {...register('queryFrom')} />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className='field is-horizontal'>
+            <div className='field is-horizontal' style={{ paddingTop: '.75em' }}>
               <div className='field-label is-small'>
                 <label className="label">To</label>
               </div>
@@ -202,6 +212,8 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
                     <input
                       className={`input is-small ${errors.queryTo?.message ? 'is-danger' : ''}`}
                       placeholder="TO"
+                      type='text'
+                      style={{ maxWidth: 120 }}
                       {...register('queryTo')} />
                   </div>
                 </div>
@@ -218,7 +230,14 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <input disabled className="input is-small" type="text" placeholder="JOBTITLE" {...register('jobTitle')}/>
+              <input 
+                className="input is-small"
+                type="text"
+                placeholder="JOBTITLE"
+                style={{ maxWidth: 240 }}
+                disabled 
+                {...register('jobTitle')}
+              />
             </div>
           </div>
         </div>
@@ -231,7 +250,14 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <input disabled className="input is-small" type="text" placeholder="JOHN@DOE.COM" {...register('email')} />
+              <input
+                className="input is-small"
+                type="text"
+                placeholder="JOHN@DOE.COM"
+                style={{ maxWidth: 240 }}
+                disabled
+                {...register('email')}
+              />
             </div>
           </div>
         </div>
@@ -240,7 +266,17 @@ function EnterQuery({ register, errors }: {register: Function, errors: FieldErro
   )
 }
 
-function ChooseSearchSet({ register, errors, blastFlavour }: {register: Function, errors: FieldErrors, blastFlavour: BlastFlavour }) {
+function ChooseSearchSet({
+  register,
+  errors,
+  blastFlavour,
+  control
+}: {
+  register: Function,
+  errors: FieldErrors,
+  blastFlavour: BlastFlavour,
+  control: Control<FormData>
+}) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
   return (
     <fieldset className='box'>
@@ -252,18 +288,18 @@ function ChooseSearchSet({ register, errors, blastFlavour }: {register: Function
         </div>
         <div className="field-body">
           <div className="field">
-            <div className="control">
-            <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''}`}>
-              <select {...register('database')}>
-                {
-                  dbOptions && dbOptions.map(db => (
-                    <option key={db} value={db}>
-                      {`${DB_NAMES.get(db)} (${db})`}
-                    </option>
-                  ))
-                }
-              </select>
-            </div>
+            <div className="control" >
+              <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''}`}>
+                <select {...register('database')} style={{ minWidth: 400}}>
+                  {
+                    dbOptions && dbOptions.map(db => (
+                      <option key={db} value={db}>
+                        {`${DB_NAMES.get(db)} (${db})`}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -276,11 +312,7 @@ function ChooseSearchSet({ register, errors, blastFlavour }: {register: Function
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <input
-                className={`input is-small ${errors.organism?.message ? 'is-danger' : ''}`}
-                type="text"
-                placeholder="ORGANISM NAME"
-                {...register('organism')} />
+              <TaxonomySelect control={control} />
             </div>
           </div>
         </div>
@@ -560,14 +592,13 @@ function AlgorithmParameters({
 
 export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
   const { blastFlavour } = params;
-  const pathName = usePathname();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound()
   }
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
   
-  const { register, handleSubmit, getValues, formState: {errors} } = useForm<FormData<typeof blastFlavour>>({
+  const { register, handleSubmit, getValues, formState: {errors}, control } = useForm<FormData>({
     //@ts-ignore
     resolver: yupResolver(formSchema),
     defaultValues: {
@@ -579,11 +610,14 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
       wordSize: 5,
       matrix: 'BLOSUM62',
       gapCosts: '11,1',
-      compositionalAdjustment: 'Conditional compositional score matrix adjustment'
+      compositionalAdjustment: 'Conditional compositional score matrix adjustment',
+      taxids: []
     }
   });
 
-  async function onSubmit(formData: FormData<typeof blastFlavour>){
+  async function onSubmit(formData: FormData){
+    console.log({ formData })
+    /*
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
       headers: {
@@ -597,13 +631,14 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
       const { jobId } = data;
       window.location.replace(`${basePath}/results/${jobId}`) // HACK
     })
+    */
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <h1 className='title'>{blastFlavour}</h1>
       <EnterQuery register={register} errors={errors} />
-      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} />
+      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} />
       <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} />
       <SubmitButton register={register} errors={errors} getValues={getValues} />
       <AlgorithmParameters register={register} errors={errors} getValues={getValues}/>

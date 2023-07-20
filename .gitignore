@@ -39,6 +39,7 @@ next-env.d.ts
 # vscode
 .vscode
 
+# local data
 names.tsv
 
 taxonomy/*
@@ -46,4 +47,7 @@ blastdb/*
 
 data/*
 
+experiments/*
+
+# env files
 .env*
