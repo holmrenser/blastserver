@@ -11,6 +11,7 @@ function truncate(string: string, limit=20){
 
 export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element {
   const pathname = usePathname();
+  console.log(hits[0])
   return (
     <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
       <nav className='navbar has-background-info-light' role='navigation'>
@@ -47,8 +48,12 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element 
         </thead>
         <tbody>
           {hits.map(( { accession, title, taxid, name, queryCover, num, len, hsps, percentIdentity }) => {
-            const { evalue, score } = hsps[0];
-            const formattedEvalue = evalue === '0' ? Number(evalue) : Number(evalue).toExponential(2)
+            const scores = hsps.map(({ bitScore }) => Number(bitScore));
+            const maxScore = Math.round(Math.max(...scores));
+            const totalScore = Math.round(scores.reduce((total, score) => (total + score), 0));
+            const evalues = hsps.map(({ evalue }) => Number(evalue));
+            const evalue = Math.min(...evalues)
+            const formattedEvalue = evalue === 0 ? evalue : evalue.toExponential(2)
             return <tr key={num}>
               <td><input type='checkbox'/></td>
               <td>
@@ -73,8 +78,8 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element 
                   {truncate(name)}
                 </a>
               </td>
-              <td>{score}</td>
-              <td>{score}</td>
+              <td>{maxScore}</td>
+              <td>{totalScore}</td>
               <td>{queryCover}%</td>
               <td>{formattedEvalue}</td>
               <td>{percentIdentity.toFixed(2)}%</td>

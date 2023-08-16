@@ -6,7 +6,10 @@ import { QueueStatus } from './queuestatus';
 
 import './globals.scss'
 
-const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
+//@ts-ignore
+import { ALLOWED_FLAVOURS } from './[blastFlavour]/blastflavour.d.ts';
+
+// const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
 
 const font = Hanken_Grotesk({ subsets: ['latin']})
 

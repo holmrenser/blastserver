@@ -37,7 +37,7 @@ export function QueueStatus(){
     }
   );
 
-  console.log({ isLoading, data, error })
+  // console.log({ isLoading, data, error })
 
   if (error) return <p>Error</p>
   if (isLoading) return <p>Connecting</p>

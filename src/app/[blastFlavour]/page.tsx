@@ -3,15 +3,15 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import type { FieldErrors, Control } from 'react-hook-form'
+import type { FieldErrors, Control, UseFormRegister } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 
 import { TaxonomySelect } from './taxonomyselect';
 import './blastFlavour.scss';
-
-const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
-type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
+import type { BlastFlavour, FormData } from './blastflavour';
+//@ts-ignore
+import { ALLOWED_FLAVOURS } from './blastflavour.d.ts';
 
 const NUCLEOTIDE_DBS = new Map<string, string>([
   ['nt','Nucleotide collection'],
@@ -21,7 +21,8 @@ const PROTEIN_DBS = new Map<string, string>([
   ['nr', 'Non-redundant protein sequences'],
   ['landmark', 'Model organisms'],
   ['refseq_protein', 'Reference proteins'],
-  ['refseq_select_prot', 'RefSeq Select proteins']
+  ['refseq_select_prot', 'RefSeq Select proteins'],
+  ['swissprot', 'UniProtKB/Swiss-Prot']
 ])
 
 const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS])
@@ -34,15 +35,7 @@ const BLAST_DBS = new Map<BlastFlavour, string[]>([
   ['tblastn', Array.from(NUCLEOTIDE_DBS.keys())]
 ])
 
-/*
-const BLAST_DBS = [
-  'Nucleotide collection (nr/nt)',
-  'Refseq representative genomes',
-  'Refseq genome database',
-  '...'
-]
-*/
-const PROGRAMS = new Map<string, string[]>([
+const PROGRAMS = new Map<BlastFlavour, string[]>([
   //[
   //'blastp', [
   //  'Quick BLASTP (Accelerated protein-protein BLAST)',
@@ -54,6 +47,7 @@ const PROGRAMS = new Map<string, string[]>([
     'Blastn (Somewhat similar sequences)'
   ]]])
 
+/*
 export type FormData = {
   query: string;
   queryFrom?: number;
@@ -62,7 +56,7 @@ export type FormData = {
   email?: string;
   database: string;
   organism?: string;
-  program: string;
+  program: BlastFlavour;
   maxTargetSeqs: 10 | 50 | 100 | 250 | 500 | 1000 | 5000;
   shortQueries: boolean;
   expectThreshold: number;
@@ -73,13 +67,19 @@ export type FormData = {
   compositionalAdjustment: string;
   taxids?: string[];
   excludeTaxids?: boolean;
+  filterLowComplexity?: boolean;
+  lcaseMasking?: boolean;
+  softMasking?: boolean;
 }
+*/
 
 function numberTransform(_unused: any, val: string){
   return val !== '' ? Number(val): null
 }
 
 const formSchema = Yup.object().shape({
+  flavour: Yup.string()
+    .required('Must specify flavour'),
   query: Yup.string()
     .required('Query is required')
     .max(10e4)
@@ -156,10 +156,22 @@ const formSchema = Yup.object().shape({
     .notRequired()
     .ensure(),
   excludeTaxids: Yup.boolean()
-    .notRequired()  
+    .notRequired(),
+  softMasking: Yup.boolean()
+    .notRequired(),
+  lcaseMasking: Yup.boolean()
+    .notRequired(),
+  filterLowComplexity: Yup.boolean()
+    .notRequired(),
 })
 
-function EnterQuery({ register, errors }: {register: Function, errors: FieldErrors }){
+function EnterQuery({
+  register,
+  errors
+}: {
+  register: UseFormRegister<FormData<BlastFlavour>>,
+  errors: FieldErrors
+}){
   return (
     <fieldset className='box'>
       <legend className='label has-text-centered'>Enter Query Sequence</legend>
@@ -272,10 +284,10 @@ function ChooseSearchSet({
   blastFlavour,
   control
 }: {
-  register: Function,
+  register: UseFormRegister<FormData<BlastFlavour>>,
   errors: FieldErrors,
   blastFlavour: BlastFlavour,
-  control: Control<FormData>
+  control: Control<FormData<BlastFlavour>>
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
   return (
@@ -312,10 +324,12 @@ function ChooseSearchSet({
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <TaxonomySelect control={control} />
+              <TaxonomySelect control={control} register={register}/>
             </div>
+            <p className='help'>Select one or more taxonomy levels to limit or exclude</p>
           </div>
         </div>
+        
       </div>
     </fieldset>
   )
@@ -328,7 +342,7 @@ function ProgramSelection({
   getValues
 }: {
   blastFlavour: BlastFlavour,
-  register: Function,
+  register: UseFormRegister<FormData<BlastFlavour>>,
   errors: FieldErrors,
   getValues: Function
 }){
@@ -351,7 +365,6 @@ function ProgramSelection({
                   <label className="radio is-small">
                     <input
                       type="radio"
-                      name="program"
                       checked={program === selectedProgram}
                       {...register('program')} />
                     &nbsp;
@@ -375,7 +388,7 @@ function SubmitButton({
   errors,
   getValues
 }: {
-  register: Function,
+  register: UseFormRegister<FormData<BlastFlavour>>,
   errors: FieldErrors,
   getValues: Function
 }) {
@@ -406,7 +419,7 @@ function AlgorithmParameters({
   errors,
   getValues
 }: {
-  register: Function,
+  register: UseFormRegister<FormData<BlastFlavour>>,
   errors: FieldErrors,
   getValues: Function
 }) {
@@ -583,6 +596,56 @@ function AlgorithmParameters({
         </fieldset>
         <fieldset className='box'>
           <legend className='label has-text-centered'>Filters and masking</legend>
+
+          <div className='field is-horizontal'>
+            <div className="field-label is-small">
+              <label className="label">Filter</label>
+            </div>
+            <div className="field-body">
+              <div className="field">
+                <div className="control">
+                  <label className='checkbox'>
+                    <input type='checkbox' {...register('filterLowComplexity')} />
+                    Low complexity regions
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className='field is-horizontal'>
+            <div className="field-label is-small">
+              <label className="label">Mask</label>
+            </div>
+            <div className="field-body">
+              <div className="field">
+                <div className="control">
+                  {/*//@ts-ignore*/}
+                  <label className='checkbox' disabled>
+                    <input type='checkbox' disabled />
+                    Mask for lookup table only
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        
+        <div className='field is-horizontal'>
+          <div className="field-label is-small">
+              <label className="label"></label>
+            </div>
+          <div className="field-body">
+              <div className="field">
+                <div className="control">
+                  <label className='checkbox'>
+                    <input type='checkbox' {...register('lcaseMasking')} />
+                    Mask lower case letters
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </fieldset>
       </div>
     </div>
@@ -598,10 +661,12 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   }
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
   
-  const { register, handleSubmit, getValues, formState: {errors}, control } = useForm<FormData>({
+  const { register, handleSubmit, getValues, formState: {errors}, control } = useForm<FormData<typeof blastFlavour>>({
     //@ts-ignore
     resolver: yupResolver(formSchema),
     defaultValues: {
+      //@ts-ignore
+      flavour: blastFlavour,
       program: defaultProgram,
       database: (BLAST_DBS.get(blastFlavour) as string[])[0],
       maxTargetSeqs: 100,
@@ -611,13 +676,15 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
       matrix: 'BLOSUM62',
       gapCosts: '11,1',
       compositionalAdjustment: 'Conditional compositional score matrix adjustment',
-      taxids: []
+      taxids: [],
+      excludeTaxids: false,
+      filterLowComplexity: false,
+      lcaseMasking: false
     }
   });
 
-  async function onSubmit(formData: FormData){
+  async function onSubmit(formData: FormData<typeof blastFlavour>){
     console.log({ formData })
-    /*
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
       headers: {
@@ -631,7 +698,6 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
       const { jobId } = data;
       window.location.replace(`${basePath}/results/${jobId}`) // HACK
     })
-    */
   }
 
   return (

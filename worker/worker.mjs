@@ -19,23 +19,36 @@ const connection = {
 export default function jobProcessor(job) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Started job ${job.id}`);
-        const { data: { program, query, expectThreshold, matrix, database, gapCosts, wordSize, maxTargetSeqs, queryTo, queryFrom } } = job;
-        // console.dir(job.data, { depth: null });
+        const { data: { flavour, program, query, expectThreshold, database, gapCosts, maxTargetSeqs, queryTo, queryFrom, taxids, excludeTaxids, filterLowComplexity, lcaseMasking } } = job;
+        if (typeof query !== 'string' || query.length === 0) {
+            throw new Error('No query provided');
+        }
         const [gapOpen, gapExtend] = gapCosts.split(',');
         const dbPath = path.join(process.env.BLASTDB_PATH || '', database);
         const numThreads = process.env.NUM_BLAST_THREADS || '4';
         const args = [
             '-db', dbPath,
-            '-evalue', expectThreshold,
-            '-matrix', matrix,
+            '-evalue', String(expectThreshold),
             '-outfmt', '16',
             '-gapopen', gapOpen,
             '-gapextend', gapExtend,
-            '-word_size', wordSize,
             '-num_threads', numThreads,
-            '-max_target_seqs', maxTargetSeqs,
+            '-max_target_seqs', String(maxTargetSeqs),
             '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`
         ];
+        if (flavour === 'blastp') {
+            const { data: { matrix, wordSize } } = job;
+            args.push('-matrix', matrix, '-word_size', String(wordSize));
+        }
+        if (taxids) {
+            const taxidString = taxids.join(',');
+            if (excludeTaxids) {
+                args.push('-negative_taxids', taxidString);
+            }
+            else {
+                args.push('-taxids', taxidString);
+            }
+        }
         // Very large max buffer so we capture all BLAST output
         const options = { input: query, maxBuffer: 1000000000000 };
         console.log(`Running '${program} ${args.join(' ')}'`);

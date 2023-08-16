@@ -19,7 +19,8 @@ export default function Taxonomy({
   hits: BlastHit[],
   taxonomyTrees: TaxonomyNode[]
 }): JSX.Element {
-  const flatTree = flattenDeep(Array.from(depthFirst(taxonomyTrees)));
+  console.log({ taxonomyTrees })
+  const flatTree = taxonomyTrees.length ? flattenDeep(Array.from(depthFirst(taxonomyTrees))) : taxonomyTrees;
   return (
     <div>
       <nav className='navbar has-background-info-light' role='navigation'>

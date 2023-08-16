@@ -2,7 +2,7 @@ import AsyncSelect from 'react-select/async';
 import { Controller } from 'react-hook-form';
 import type { Control, UseFormRegister } from 'react-hook-form'; 
 
-import type { FormData } from './page'
+import type { FormData, BlastFlavour } from './blastflavour'
 
 type SelectElement = {
   value: string
@@ -24,7 +24,6 @@ function promiseOptions(inputValue: string){
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
   return new Promise<SelectElement[]>((resolve, reject) => {
     const url = `${basePath}/api/taxonomy?` + new URLSearchParams({ query: inputValue });
-    console.log({ url })
     fetch(url, {
       headers: {
         'Accept': 'application/json',
@@ -34,7 +33,6 @@ function promiseOptions(inputValue: string){
     })
     .then(res => res.json())
     .then(data => {
-      console.log(data)
       const { taxonomyEntries }: { taxonomyEntries: TaxonomyEntry[] } = data;
       resolve(taxonomyEntries.map(({ id, name }) => (
       { value: id, label: `${name} (taxid: ${id})`} 
@@ -48,8 +46,8 @@ export function TaxonomySelect({
   control,
   register
 }: {
-  control: Control<FormData>,
-  register: UseFormRegister<FormData>
+  control: Control<FormData<BlastFlavour>>,
+  register: UseFormRegister<FormData<BlastFlavour>>
 }){
   return <>
     <div className='select is-small'>
@@ -79,12 +77,10 @@ export function TaxonomySelect({
           }}
           components={{ DropdownIndicator }}
           loadOptions={promiseOptions}
-          placeholder='Enter organism name or taxid'
+          placeholder='Enter taxonomic name or taxid'
           noOptionsMessage={()=>('Start typing to see suggestions')}
           onChange={(options: readonly SelectElement[]) => {
-            console.log({ options })
             const taxids = options?.map(({ value }) => (value))
-            console.log({ taxids })
             onChange(taxids)
           }}
           isClearable
@@ -94,6 +90,13 @@ export function TaxonomySelect({
         }}
       />
     </div>
-    <input type='checkbox' />
+    <label className='checkbox'>
+      <input
+        type='checkbox'
+        style={{ marginLeft: 8, marginRight: 4}}
+        {...register('excludeTaxids')}
+      />
+      Exclude taxids
+    </label>
   </>
 }
