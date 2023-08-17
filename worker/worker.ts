@@ -2,6 +2,10 @@ import { spawnSync } from "child_process";
 import path from "path";
 import { Worker, Job } from "bullmq";
 import { PrismaClient } from '@prisma/client';
+import Crypto from 'crypto';
+import {tmpdir} from 'os';
+import Path from 'path';
+import fs from 'fs';
 
 import type { FormData, BlastFlavour } from '../src/app/[blastFlavour]/blastflavour';
 
@@ -47,11 +51,21 @@ export default async function jobProcessor(job: Job) {
   }
 
   if (taxids) {
-    const taxidString = taxids.join(',')
+    const allTaxids = (await prisma.taxonomy.findMany({
+      where: { ancestors: { hasSome: taxids }},
+      select: { id: true }
+    })).map(({ id }) => id)
+    const tmpFile = Path.join(tmpdir(), `blastserver.${Crypto.randomBytes(16).toString('hex')}.tmp`)
+    const taxidString = allTaxids.join('\n')
+    try {
+      await fs.promises.writeFile(tmpFile, taxidString);
+    } catch (err) {
+      throw new Error(`Writing tmp file failed: ${err}`)
+    }
     if (excludeTaxids) {
-      args.push('-negative_taxids', taxidString)
+      args.push('-negative_taxidlist', tmpFile)
     } else {
-      args.push('-taxids', taxidString)
+      args.push('-taxidlist', tmpFile)
     }
   }
 

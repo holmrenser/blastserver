@@ -11,6 +11,10 @@ import { spawnSync } from "child_process";
 import path from "path";
 import { Worker } from "bullmq";
 import { PrismaClient } from '@prisma/client';
+import Crypto from 'crypto';
+import { tmpdir } from 'os';
+import Path from 'path';
+import fs from 'fs';
 const prisma = new PrismaClient();
 const connection = {
     host: process.env.JOBQUEUE_HOST,
@@ -41,12 +45,23 @@ export default function jobProcessor(job) {
             args.push('-matrix', matrix, '-word_size', String(wordSize));
         }
         if (taxids) {
-            const taxidString = taxids.join(',');
+            const allTaxids = (yield prisma.taxonomy.findMany({
+                where: { ancestors: { hasSome: taxids } },
+                select: { id: true }
+            })).map(({ id }) => id);
+            const tmpFile = Path.join(tmpdir(), `blastserver.${Crypto.randomBytes(16).toString('hex')}.tmp`);
+            const taxidString = allTaxids.join('\n');
+            try {
+                yield fs.promises.writeFile(tmpFile, taxidString);
+            }
+            catch (err) {
+                throw new Error(`Writing tmp file failed: ${err}`);
+            }
             if (excludeTaxids) {
-                args.push('-negative_taxids', taxidString);
+                args.push('-negative_taxidlist', tmpFile);
             }
             else {
-                args.push('-taxids', taxidString);
+                args.push('-taxidlist', tmpFile);
             }
         }
         // Very large max buffer so we capture all BLAST output

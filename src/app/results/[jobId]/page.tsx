@@ -11,7 +11,7 @@ class DataFetchError extends Error {
 }
 
 async function fetcher(url: string){
-  console.log(`Fetching ${url}`)
+  // console.log(`Fetching ${url}`)
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/json',

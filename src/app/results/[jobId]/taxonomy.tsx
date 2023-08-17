@@ -19,7 +19,7 @@ export default function Taxonomy({
   hits: BlastHit[],
   taxonomyTrees: TaxonomyNode[]
 }): JSX.Element {
-  console.log({ taxonomyTrees })
+  // console.log({ taxonomyTrees })
   const flatTree = taxonomyTrees.length ? flattenDeep(Array.from(depthFirst(taxonomyTrees))) : taxonomyTrees;
   return (
     <div>

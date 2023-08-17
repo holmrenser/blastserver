@@ -23,7 +23,7 @@ model blastjob {
 }
 
 model taxonomy {
-  id        String @id @unique
+  id        String   @id @unique
   name      String
-  ancestors String
+  ancestors String[]
 }

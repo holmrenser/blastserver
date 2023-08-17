@@ -98,7 +98,7 @@ type BlastResult = {
 export type TaxonomyNode = {
   id: string,
   name: string,
-  ancestors: string,
+  ancestors: string[],
   children?: TaxonomyNode[],
   depth?: number,
   count?: number
@@ -137,12 +137,12 @@ async function buildTaxTrees(hits: {
   queryCover: number;
   percentIdentity: number;
   taxid: string;
-  name: any;
-  ancestors: any;
+  name: string;
+  ancestors: string[];
 }[]){
   // find taxonomy info for ancestors of all hits
   const ancestorIds: Set<string> = new Set(hits
-    .map(({ ancestors } : { ancestors: string }) => ancestors.split('.'))
+    .map(({ ancestors }) => ancestors)
     .flat())
   
   const allTaxIds = [...ancestorIds, ...hits.map(({ taxid }: { taxid: string }) => taxid)]
@@ -158,7 +158,7 @@ async function buildTaxTrees(hits: {
 
   // count all taxids and their ancestors, we only keep taxids that are not present in all hits
   const ancestorIdCounts: Record<string, number> = hits
-    .map(({ ancestors } : { ancestors: string }) => ancestors.split('.'))
+    .map(({ ancestors }) => ancestors)
     .reduce((allTaxidCounts: Record<string, number>, taxids: Array<string>) => {
       return taxids.reduce((taxidCounts: Record<string, number>, taxid: string) => {
         const currCount = taxidCounts[taxid] ?? 0;
@@ -177,12 +177,12 @@ async function buildTaxTrees(hits: {
         [key]: value
       }
     }, {});
-  console.log({ filteredancestorIdCounts, ancestorIdCounts })
+  // console.log({ filteredancestorIdCounts, ancestorIdCounts })
   const filteredAncestors: TaxonomyNode[] = Object.entries(filteredancestorIdCounts)
     .map(([ancestorId, count]) => ({...taxidMap[ancestorId], count}))
     .sort((a,b) => a.ancestors.length - b.ancestors.length)
   
-  console.log({ filteredAncestors })
+  // console.log({ filteredAncestors })
 
   const baseLen = filteredAncestors[0].ancestors.length;
   const [taxonomyTrees, childElements] = partition(filteredAncestors, el => el.ancestors.length === baseLen);
@@ -193,7 +193,7 @@ async function buildTaxTrees(hits: {
       root.children = [];
     }
     childOptions.forEach(childOption => {
-      const childParentId = childOption.ancestors.split('.').slice(-2, -1)[0];
+      const childParentId = childOption.ancestors.slice(-2, -1)[0];
       if (childParentId === root.id){
         if (typeof root.children === 'undefined') {
           root.children = [];
@@ -278,13 +278,13 @@ async function formatResults(blastResults: any) {
   const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
   const hitTaxInfo = await prisma.taxonomy.findMany({ where: { id: {in: hitTaxids }}})
   const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(
-    ({id, name, ancestors}: {id: string, name: string, ancestors: string}) => {
+    ({id, name, ancestors}: {id: string, name: string, ancestors: string[]}) => {
       return [id, {id, name, ancestors}]
     }
   ))
   const hits = intermediateHits.map(({ taxid, ...rest}) => {
     const taxonomyInfo = hitTaxidMap[taxid];
-    const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: 'NotFound' };
+    const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: ['NotFound'] };
     return { taxid, name, ancestors, ...rest}
   })
 
@@ -292,7 +292,7 @@ async function formatResults(blastResults: any) {
     ? [hitTaxidMap[hitTaxInfo[0].id]]
     : await buildTaxTrees(hits)
   
-  console.log({ taxonomyTrees, hitTaxInfo, hitTaxidMap })
+  // console.log({ taxonomyTrees, hitTaxInfo, hitTaxidMap })
 
   return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees }
 }
