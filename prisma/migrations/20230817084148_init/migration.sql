@@ -15,7 +15,7 @@ CREATE TABLE "blastjob" (
 CREATE TABLE "taxonomy" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "ancestors" TEXT NOT NULL,
+    "ancestors" TEXT[],
 
     CONSTRAINT "taxonomy_pkey" PRIMARY KEY ("id")
 );
