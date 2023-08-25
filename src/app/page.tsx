@@ -3,7 +3,6 @@ import Link from 'next/link';
 import './page.scss';
 
 export default function HomePage() {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   return (
     <section className='hero is-full-height'>
       <div className='hero-body'>
@@ -30,14 +29,14 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={`${basePath}/blastn`}
+                  href='/blastn'
                   title='Search a nucleotide database with a nucleotide query'
                 >
                   blastn
                 </Link>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={`${basePath}/tblastx`}
+                  href='/tblastx'
                   title='Search a translated nucleotide database with a translated nucleotide query'
                 >
                   tblastx
@@ -46,7 +45,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={`${basePath}/blastx`}
+                  href='/blastx'
                   title='Search a protein database with a translated nucleotide query'
                 >
                   blastx
@@ -58,7 +57,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={`${basePath}/tblastn`}
+                  href='tblastn'
                   title='Search a translated nucleotide database with a protein query'
                 >
                   tblastn
@@ -67,7 +66,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={`${basePath}/blastp`}
+                  href='blastp'
                   title='Search a protein database with a protein query'
                 >
                   blastp
