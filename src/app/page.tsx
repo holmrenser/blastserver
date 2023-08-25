@@ -58,7 +58,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'tblastn'}
+                  href={'/tblastn'}
                   title='Search a translated nucleotide database with a protein query'
                 >
                   tblastn
@@ -67,7 +67,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'blastp'}
+                  href='/blastp'
                   title='Search a protein database with a protein query'
                 >
                   blastp
