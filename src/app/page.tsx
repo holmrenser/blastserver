@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import './page.scss';
 
 export default function HomePage() {
@@ -25,50 +27,50 @@ export default function HomePage() {
               <th rowSpan={2} id='querylabel'>Query</th>
               <th className='moltype'>nucleotide</th>
               <td>
-                <a
+                <Link
                   className='button is-large is-fullwidth'
                   href='/blastn'
                   title='Search a nucleotide database with a nucleotide query'
                 >
                   blastn
-                </a>
-                <a
+                </Link>
+                <Link
                   className='button is-large is-fullwidth'
                   href='/tblastx'
                   title='Search a translated nucleotide database with a translated nucleotide query'
                 >
                   tblastx
-                </a>
+                </Link>
               </td>
               <td>
-                <a
+                <Link
                   className='button is-large is-fullwidth'
                   href='/blastx'
                   title='Search a protein database with a translated nucleotide query'
                 >
                   blastx
-                </a>
+                </Link>
               </td>
             </tr>
             <tr>
               <th className='moltype'>protein</th>
               <td>
-                <a
+                <Link
                   className='button is-large is-fullwidth'
                   href='tblastn'
                   title='Search a translated nucleotide database with a protein query'
                 >
                   tblastn
-                </a>
+                </Link>
               </td>
               <td>
-                <a
+                <Link
                   className='button is-large is-fullwidth'
                   href='blastp'
                   title='Search a protein database with a protein query'
                 >
                   blastp
-                </a>
+                </Link>
               </td>
             </tr>
           </tbody>
