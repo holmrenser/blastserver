@@ -52,7 +52,7 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
               return <li key={panel} className={panel === activePanel ? 'is-active' : ''}>
                 <Link 
                   href={{ 
-                    pathname: linkPath, 
+                    pathname, 
                     query: { panel } 
                   }}>
                     { formatPanelName(panel) }

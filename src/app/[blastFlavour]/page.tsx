@@ -360,13 +360,15 @@ function ProgramSelection({
 function SubmitButton({
   register,
   errors,
-  getValues
+  getValues,
+  watch
 }: {
   register: UseFormRegister<FormData<BlastFlavour>>,
   errors: FieldErrors,
-  getValues: Function
+  getValues: Function,
+  watch: Function,
 }) {
-  const db = getValues('database');
+  const db = watch('database');
   const program = getValues('program');
   return (
     <div className='container box'>
@@ -635,7 +637,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   }
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
   
-  const { register, handleSubmit, getValues, formState: {errors}, control } = useForm<FormData<typeof blastFlavour>>({
+  const { register, handleSubmit, getValues, formState: {errors}, control, watch } = useForm<FormData<typeof blastFlavour>>({
     //@ts-ignore
     resolver: yupResolver(formSchema),
     defaultValues: {
@@ -680,7 +682,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
       <EnterQuery register={register} errors={errors} />
       <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} />
       <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} />
-      <SubmitButton register={register} errors={errors} getValues={getValues} />
+      <SubmitButton register={register} errors={errors} getValues={getValues} watch={watch} />
       <AlgorithmParameters register={register} errors={errors} getValues={getValues}/>
     </form>
   )

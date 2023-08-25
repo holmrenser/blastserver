@@ -16,7 +16,10 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element 
     <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
       <nav className='navbar has-background-info-light' role='navigation'>
         <div className='navbar-brand'>
-          <b className='navbar-item'>Sequences producing significant alignments</b>
+          <b className='navbar-item'>
+            <span className='tag is-small is-success'>{hits.length}</span>
+            &nbsp;Sequences producing significant alignments
+          </b>
         </div>
 
         <div className='navbar-menu'>
