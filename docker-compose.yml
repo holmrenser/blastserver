@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: app.Dockerfile
+      network: host
     image: blastserver_app:latest
     depends_on:
       redis:
@@ -17,6 +18,7 @@ services:
     build:
       context: .
       dockerfile: worker.Dockerfile
+      network: host
     image: blastserver_worker:latest
     depends_on:
       redis:
@@ -24,13 +26,13 @@ services:
       postgres:
         condition: service_healthy
     deploy:
-      replicas: 2
+      replicas: 6
     env_file: .env.production
     volumes:
-      - ./blastdb:/app/blastdb
+      - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
 
   redis:
-    image: redis:latest
+    image: redis:7.2.0
     deploy:
       replicas: 1
     expose:
@@ -43,7 +45,7 @@ services:
       retries: 10
 
   postgres:
-    image: postgres:latest
+    image: postgres:15.4
     deploy:
       replicas: 1
     expose:
