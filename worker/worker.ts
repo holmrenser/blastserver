@@ -29,7 +29,7 @@ export default async function jobProcessor(job: Job) {
   }
 
   const [gapOpen,gapExtend] = gapCosts.split(',');
-  const dbPath = path.join(process.env.BLASTDB_PATH || '', database);
+  const dbPath = path.join(process.env.APP_BLAST_DB_PATH || '', database);
   const numThreads = process.env.NUM_BLAST_THREADS || '4';
   const args: string[] = [
     '-db', dbPath,
