@@ -3,6 +3,7 @@ import Link from 'next/link';
 import './page.scss';
 
 export default function HomePage() {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   return (
     <section className='hero is-full-height'>
       <div className='hero-body'>
