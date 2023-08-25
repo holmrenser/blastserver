@@ -1,0 +1,23 @@
+table.flavour-table {
+  border: 4px solid hsl(0, 0%, 96%) !important;
+  background-color: hsl(0, 0%, 96%);
+  tr,th {
+    border: none;
+    &.moltype {
+      background-color: hsl(0, 0%, 98%);
+    }
+  }
+  thead {
+    border: none;
+  }
+  tbody {
+    background-color: hsl(0, 0%, 98%);
+    th {
+      background-color: hsl(0, 0%, 96%);
+    }
+    td {
+      border: none;
+      background-color: hsl(0, 0%, 100%);
+    }
+  }
+}

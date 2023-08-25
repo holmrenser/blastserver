@@ -288,6 +288,8 @@ async function formatResults(blastResults: any) {
     return { taxid, name, ancestors, ...rest}
   })
 
+  // console.log({ hits })
+
   const taxonomyTrees = hitTaxInfo.length === 1
     ? [hitTaxidMap[hitTaxInfo[0].id]]
     : await buildTaxTrees(hits)

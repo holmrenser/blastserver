@@ -1,14 +1,6 @@
 export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
 export type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
-export enum Test {
-  BLASTP = 'blastp',
-  BLASTN = 'blastn',
-  BLASTX = 'blastx',
-  
-}
-
-
 type BaseForm = {
   program: string;
   query: string;

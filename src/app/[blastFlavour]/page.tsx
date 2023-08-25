@@ -47,32 +47,6 @@ const PROGRAMS = new Map<BlastFlavour, string[]>([
     'Blastn (Somewhat similar sequences)'
   ]]])
 
-/*
-export type FormData = {
-  query: string;
-  queryFrom?: number;
-  queryTo?: number;
-  jobTitle?: string;
-  email?: string;
-  database: string;
-  organism?: string;
-  program: BlastFlavour;
-  maxTargetSeqs: 10 | 50 | 100 | 250 | 500 | 1000 | 5000;
-  shortQueries: boolean;
-  expectThreshold: number;
-  wordSize: 2 | 3 | 5 | 6;
-  maxMatchesInQueryRange?: number;
-  matrix: string;
-  gapCosts: string;
-  compositionalAdjustment: string;
-  taxids?: string[];
-  excludeTaxids?: boolean;
-  filterLowComplexity?: boolean;
-  lcaseMasking?: boolean;
-  softMasking?: boolean;
-}
-*/
-
 function numberTransform(_unused: any, val: string){
   return val !== '' ? Number(val): null
 }

@@ -11,7 +11,7 @@ function truncate(string: string, limit=20){
 
 export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element {
   const pathname = usePathname();
-  console.log(hits[0])
+  // console.log(hits[0])
   return (
     <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
       <nav className='navbar has-background-info-light' role='navigation'>

@@ -5,6 +5,8 @@ import useSWR from 'swr';
 import ErrorComponent  from '../error';
 import ResultsPage from './resultspage';
 
+import type { FormData, BlastFlavour } from '@/app/[blastFlavour]/blastflavour';
+
 class DataFetchError extends Error {
   info: string | undefined = undefined
   status: number | undefined = undefined
@@ -47,6 +49,62 @@ function ResultsTable({ results }: {results: any}){
   </>
 }
 
+function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) {
+  console.log({ parameters })
+  const { flavour, queryTo, queryFrom, taxids, gapCosts, excludeTaxids,
+  maxTargetSeqs, expectThreshold } = parameters;
+  
+  let additionalParams: {[key: string]: string} = {};
+  if (flavour === 'blastp') {
+    Object.assign(additionalParams, { matrix: parameters.matrix, wordSize: parameters.wordSize })
+  }
+
+  if (queryFrom) { Object.assign(additionalParams, { queryFrom }) }
+  if (queryTo) { Object.assign(additionalParams, { queryTo }) }
+
+  return (
+    <div className='card'>
+      <header className='card-header'>
+        <p className='card-header-title'>
+          Used parameters
+        </p>
+      </header>
+      <div className='card-content'>
+        <table className='table is-small is-size-7'>
+          <tbody>
+            <tr>
+              <td>Gap costs</td>
+              <td>{gapCosts}</td>
+            </tr>
+            <tr>
+              <td>Max. target seqs</td>
+              <td>{maxTargetSeqs}</td>
+            </tr>
+            <tr>
+              <td>E-value threshold</td>
+              <td>{expectThreshold}</td>
+            </tr>
+            { taxids && (
+              <tr>
+                <td>{excludeTaxids ? 'Excluded tax. IDs' : 'Tax. IDs'}</td>
+                <td><ul>{taxids.map(taxid => (<li key={taxid}>{taxid}</li>))}</ul></td>
+              </tr>
+            )}
+            {
+              Object.entries(additionalParams).map(([name, value]) => (
+                <tr key={name}>
+                  <td>{name}</td>
+                  <td>{value}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function ResultsWrapper({
   params
 }:{
@@ -75,6 +133,8 @@ export default function ResultsWrapper({
 
   const { submitted, results, finished, parameters, err } = data;
   const { jobTitle, program, database } = parameters;
+
+  console.log({ parameters })
 
   return (
     <>
@@ -117,69 +177,7 @@ export default function ResultsWrapper({
           </div>
         </div>
         <div className='column'>
-          <div className='card'>
-            <header className='card-header'>
-              <p className='card-header-title'>
-                Filter results
-              </p>
-            </header>
-            <div className='card-content has-background-light'>
-              <form>
-                <div className='field'>
-                  <label className='label'>Organism</label>
-                  <div className='control'>
-                    <input className='input is-small' type='text' placeholder='Organism name or taxid' />
-                  </div>
-                  <p className='help'>+ Add organism</p>
-                </div>
-                <hr/>
-                <div className='columns'>
-                  <div className='field column'>
-                    <label className='label'>Percent identity</label>
-                    <div className='columns'>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                      <b className='column'>To</b>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='field column'>
-                    <label className='label'>E-value</label>
-                    <div className='columns'>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                      <b className='column'>To</b>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='field column'>
-                    <label className='label'>Query coverage</label>
-                    <div className='columns'>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                      <b className='column'>To</b>
-                      <div className='control column'>
-                        <input className='input is-small' type='text' />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-            <footer className='card-footer'>
-              <a href='#' className='card-footer-item'>Filter</a>
-              <a href='#' className='card-footer-item'>Reset</a>
-            </footer>
-          </div>
+          <UsedParameters parameters={parameters} />
         </div>
       </div>
       <ResultsPage blastResults={results} err={err}/>
