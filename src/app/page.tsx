@@ -30,14 +30,14 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'/blastn'}
+                  href='/blastn'
                   title='Search a nucleotide database with a nucleotide query'
                 >
                   blastn
                 </Link>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'/tblastx'}
+                  href='/tblastx'
                   title='Search a translated nucleotide database with a translated nucleotide query'
                 >
                   tblastx
@@ -46,7 +46,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'/blastx'}
+                  href='/blastx'
                   title='Search a protein database with a translated nucleotide query'
                 >
                   blastx
@@ -58,7 +58,7 @@ export default function HomePage() {
               <td>
                 <Link
                   className='button is-large is-fullwidth'
-                  href={'/tblastn'}
+                  href='/tblastn'
                   title='Search a translated nucleotide database with a protein query'
                 >
                   tblastn
