@@ -11,7 +11,11 @@ function truncate(string: string, limit=20){
 
 export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element {
   const pathname = usePathname();
-  // console.log(hits[0])
+
+  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const linkPath = pathname.slice(basePath.length)
+
   return (
     <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
       <nav className='navbar has-background-info-light' role='navigation'>
@@ -62,7 +66,7 @@ export default function Descriptions({ hits }: {hits: BlastHit[]}): JSX.Element 
               <td>
                 <Link
                   href={{
-                    pathname,
+                    pathname: linkPath,
                     query: {
                       panel: 'alignments'
                     },

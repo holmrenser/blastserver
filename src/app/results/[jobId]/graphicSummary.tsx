@@ -79,6 +79,10 @@ function HitPlotLine({
 }) {
   const pathname = usePathname();
 
+  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const linkPath = pathname.slice(basePath.length)
+
   const { hsps, accession, title } = hit;
   
   const colorMap = scaleThreshold<number, string>()
@@ -104,7 +108,7 @@ function HitPlotLine({
           <Link
             key={`${queryFrom}_${queryTo}_${bitScore}`}
             href={{
-              pathname,
+              pathname: linkPath,
               query: { panel: 'alignments' },
               hash: accession
             }}
