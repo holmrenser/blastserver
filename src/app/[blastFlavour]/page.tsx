@@ -15,7 +15,7 @@ import { ALLOWED_FLAVOURS } from './blastflavour.d.ts';
 
 const NUCLEOTIDE_DBS = new Map<string, string>([
   ['nt','Nucleotide collection'],
-  ['refseq_select', 'RefSeq Select RNA sequences'],
+  ['refseq_select_rna', 'RefSeq Select RNA sequences'],
   ['refseq_rna', 'Reference RNA sequences'],
   ['Representative_Genomes', 'RefSeq representative genomes'],
   ['16S_ribosomal_RNA', '16S Ribosomal RNA'],
