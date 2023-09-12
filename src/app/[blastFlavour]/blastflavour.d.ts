@@ -1,7 +1,8 @@
-export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
+// export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
+export const ALLOWED_FLAVOURS = ['blastp', 'tblastn'];
 export type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
-type BaseForm = {
+interface BaseForm {
   program: string;
   query: string;
   queryFrom?: number;
@@ -10,15 +11,11 @@ type BaseForm = {
   email?: string;
   database: string;
   organism?: string;
-  // program: BlastFlavour;
   maxTargetSeqs: 10 | 50 | 100 | 250 | 500 | 1000 | 5000;
   shortQueries: boolean;
   expectThreshold: number;
-  // wordSize: 2 | 3 | 5 | 6;
   maxMatchesInQueryRange?: number;
-  // matrix: string;
   gapCosts: string;
-  // compositionalAdjustment: string;
   taxids?: string[];
   excludeTaxids?: boolean;
   filterLowComplexity?: boolean;
@@ -26,28 +23,28 @@ type BaseForm = {
   softMasking?: boolean;
 }
 
-type BlastpForm = BaseForm & {
+interface BlastpForm extends BaseForm {
   flavour: 'blastp';
   wordSize: 2 | 3 | 5 | 6;
   matrix: string;
   compositionalAdjustment: string;
 }
 
-type BlastnForm = BaseForm & {
+interface BlastnForm extends BaseForm {
   flavour: 'blastn';
   wordSize: 16 | 20 | 24 | 28 | 32 | 48 | 64 | 128 | 256;
   matchMismatchScore: string;
 }
 
-type BlastxForm = BaseForm & {
+interface BlastxForm extends BaseForm {
   flavour: 'blastx';
 }
 
-type TblastnForm = BaseForm & {
+interface TblastnForm extends BaseForm {
   flavour: 'tblastn';
 }
 
-type TblastxForm = BaseForm & {
+interface TblastxForm extends BaseForm  {
   flavour: 'tblastx';
 }
 

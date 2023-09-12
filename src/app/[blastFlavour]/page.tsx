@@ -15,14 +15,17 @@ import { ALLOWED_FLAVOURS } from './blastflavour.d.ts';
 
 const NUCLEOTIDE_DBS = new Map<string, string>([
   ['nt','Nucleotide collection'],
-  ['refseq_select', 'RefSeq Select RNA sequences']
+  ['refseq_select', 'RefSeq Select RNA sequences'],
+  ['refseq_rna', 'Reference RNA sequences'],
+  ['Representative_Genomes', 'RefSeq representative genomes'],
+  ['16S_ribosomal_RNA', '16S Ribosomal RNA'],
 ])
 const PROTEIN_DBS = new Map<string, string>([
+  ['refseq_protein', 'Reference proteins'],
   ['nr', 'Non-redundant protein sequences'],
   ['landmark', 'Model organisms'],
-  ['refseq_protein', 'Reference proteins'],
   ['refseq_select_prot', 'RefSeq Select proteins'],
-  ['swissprot', 'UniProtKB/Swiss-Prot']
+  ['swissprot', 'UniProtKB/Swiss-Prot'],
 ])
 
 const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS])
@@ -51,9 +54,9 @@ function numberTransform(_unused: any, val: string){
   return val !== '' ? Number(val): null
 }
 
-const formSchema = Yup.object().shape({
-  flavour: Yup.string()
-    .required('Must specify flavour'),
+const baseForm = Yup.object().shape({
+  jobTitle: Yup.string().notRequired(),
+  email: Yup.string().notRequired(),
   query: Yup.string()
     .required('Query is required')
     .max(10e4)
@@ -81,70 +84,154 @@ const formSchema = Yup.object().shape({
     .notRequired()
     .moreThan(0, 'Query TO cannot be negative')
     .transform(numberTransform),
-  jobTitle: Yup.string()
-    .notRequired()
-    .trim(),
-  email: Yup.string()
-    .notRequired()
-    .email()
-    .trim(),
-  database: Yup.string()
-    .oneOf(Array.from(BLAST_DBS.values()).flat())
-    .required('Must choose a database')
-    .trim(),
-  organism: Yup.string()
-    .notRequired()
-    .trim(),
-  program: Yup.string()
-    .required('Must choose BLAST program')
-    .trim(),
   maxTargetSeqs: Yup.number()
     .required('Must specify maximum number of target sequences')
-    .moreThan(0, 'Max. target sequences cannot be negative')
-    .transform(numberTransform),
-  shortQueries: Yup.boolean()
-    .required('Must specify whether to adjust for short input sequences'),
-  wordSize: Yup.number()
-    .required('Must specify a word size')
-    .moreThan(0, 'Word size cannot be negative')
+    .oneOf([10, 50, 100, 250, 500, 1000, 5000])
+    .required()
+    .default(100)
     .transform(numberTransform),
   expectThreshold: Yup.number()
     .required('Must specify an expect threshold')
     .moreThan(0, 'Expect threshold cannot be negative')
+    .default(0.05)
+    .required()
     .transform(numberTransform),
   maxMatchesInQueryRange: Yup.number()
     .notRequired()
-    .moreThan(0, 'Max. matches in query range cannot be negative')
+    .moreThan(-1, 'Max. matches in query range cannot be negative')
+    .default(0)
+    .required()
     .transform(numberTransform),
-  matrix: Yup.string()
-    .required()
-    .trim(),
-  gapCosts: Yup.string()
-    .required()
-    .trim(),
-  compositionalAdjustment: Yup.string()
-    .required()
-    .trim(),
   taxids: Yup.array()
     .of(Yup.string())
-    .notRequired()
-    .ensure(),
+    .default([])
+    .required(),
   excludeTaxids: Yup.boolean()
-    .notRequired(),
+    .default(false)
+    .required(),
   softMasking: Yup.boolean()
-    .notRequired(),
+    .default(false)
+    .required(),
   lcaseMasking: Yup.boolean()
-    .notRequired(),
+    .default(false)
+    .required(),
   filterLowComplexity: Yup.boolean()
-    .notRequired(),
+    .default(false)
+    .required(),
+  shortQueries: Yup.boolean()
+    .default(true)
+    .required(),
+  compositionalAdjustment: Yup.string()
+    .oneOf( ['No adjustment','Compositon-based statistics',
+    'Conditional compositional score matrix adjustment',
+  'Universal compositional score matrix adjustment'])
+    .default('Conditional compositional score matrix adjustment')
+    .notRequired()
 })
+
+const blastpForm = Yup.object().shape({
+  flavour: Yup.string()
+    .oneOf(['blastp'])
+    .default('blastp')
+    .required(),
+  database: Yup.string()
+    .oneOf(BLAST_DBS.get('blastp')!)
+    .default(BLAST_DBS.get('blastp')![0])
+    .required(),
+  matrix: Yup.string()
+    .oneOf(['PAM30', 'PAM70', 'PAM250', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62', 'BLOSUM80', 'BLOSUM90'])
+    .default('BLOSUM62')
+    .required(),
+  wordSize: Yup.number()
+    .oneOf([2, 3, 5, 6])
+    .default(5)
+    .required()
+    .transform(numberTransform),
+  program: Yup.string()
+    .oneOf(['blastp'])
+    .default('blastp')
+    .required(),
+  gapCosts: Yup.string()
+    .oneOf(['11,2','10,2','9,2','8,2','7,2','6,2','13,1','12,1','11,1','10,1','9,1'])
+    .default('11,1')
+    .required()
+}).concat(baseForm)
+
+interface BlastpParameters extends Yup.InferType<typeof blastpForm>{}
+
+const blastnForm = Yup.object().shape({
+  flavour: Yup.string()
+    .oneOf(['blastn'])
+    .default('blastn')
+    .required(),
+  database: Yup.string()
+    .oneOf(BLAST_DBS.get('blastn')!)
+    .default(BLAST_DBS.get('blastn')![0])
+    .required(),
+  wordSize: Yup.number()
+    .oneOf([16, 20, 24, 28, 32, 48, 64, 128, 256])
+    .default(28)
+    .defined(),
+  matchMismatch: Yup.string()
+    .oneOf(['1,-2','1,-3','1,-4','2,-3','4,-5','1,-1'])
+    .default('1,-2')
+    .defined(),
+  gapCosts: Yup.string()
+    .oneOf(['linear', '5,2','2,2','1,2','0,2','3,1','2,1','1,1'])
+    .default('linear')
+    .required()
+}).concat(baseForm);
+
+interface BlastnParameters extends Yup.InferType<typeof blastnForm>{};
+
+const tblastnForm = Yup.object().shape({
+  flavour: Yup.string()
+    .oneOf(['tblastn'])
+    .default('tblastn')
+    .required(),
+  database: Yup.string()
+    .oneOf(BLAST_DBS.get('tblastn')!)
+    .default(BLAST_DBS.get('tblastn')![0])
+    .required(),
+    matrix: Yup.string()
+    .oneOf(['PAM30', 'PAM70', 'PAM250', 'BLOSUM45', 'BLOSUM50', 'BLOSUM62', 'BLOSUM80', 'BLOSUM90'])
+    .default('BLOSUM62')
+    .required(),
+  wordSize: Yup.number()
+    .oneOf([2, 3, 5, 6])
+    .default(5)
+    .required()
+    .transform(numberTransform),
+  program: Yup.string()
+    .oneOf(['tblastn'])
+    .default('tblastn')
+    .required(),
+  gapCosts: Yup.string()
+    .oneOf(['11,2','10,2','9,2','8,2','7,2','6,2','13,1','12,1','11,1','10,1','9,1'])
+    .default('11,1')
+    .required()
+}).concat(baseForm);
+
+interface TblastnParameters extends Yup.InferType<typeof tblastnForm>{};
+
+export type BlastParameters = BlastpParameters | BlastnParameters | TblastnParameters;
+
+type BlastForm = typeof blastpForm | typeof blastnForm | typeof tblastnForm;
+
+const BLASTFLAVOUR_FORMS = new Map<BlastFlavour, BlastForm>([
+  ['blastp', blastpForm],
+  ['blastn', blastnForm],
+  ['tblastn', tblastnForm]
+])
 
 function EnterQuery({
   register,
-  errors
+  errors,
+  formDescription,
 }: {
-  register: UseFormRegister<FormData<BlastFlavour>>,
-  errors: FieldErrors
+  register: UseFormRegister<BlastParameters>,
+  errors: FieldErrors,
+  formDescription: Yup.SchemaObjectDescription,
 }){
   return (
     <fieldset className='box'>
@@ -256,12 +343,14 @@ function ChooseSearchSet({
   register,
   errors,
   blastFlavour,
-  control
+  control,
+  formDescription,
 }: {
-  register: UseFormRegister<FormData<BlastFlavour>>,
+  register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   blastFlavour: BlastFlavour,
-  control: Control<FormData<BlastFlavour>>
+  control: Control<BlastParameters>,
+  formDescription: Yup.SchemaObjectDescription,
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
   return (
@@ -313,15 +402,17 @@ function ProgramSelection({
   blastFlavour,
   register,
   errors,
-  getValues
+  getValues,
+  formDescription,
 }: {
   blastFlavour: BlastFlavour,
-  register: UseFormRegister<FormData<BlastFlavour>>,
+  register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
-  getValues: Function
+  getValues: Function,
+  formDescription: Yup.SchemaObjectDescription,
 }){
   if (!PROGRAMS.has(blastFlavour)) return null
-  const selectedProgram = getValues('program');
+  const selectedProgram = 'Blastn (Somewhat similar sequences)' //getValues('program');
   return (
     <fieldset className='box'>
       <legend className='label has-text-centered'>Program Selection</legend>
@@ -336,8 +427,10 @@ function ProgramSelection({
               {
                 PROGRAMS.get(blastFlavour)?.map((program:string) => (
                   <React.Fragment key={program}>
-                  <label className="radio is-small">
+                  {/*@ts-ignore*/}
+                  <label disabled className="radio is-small">
                     <input
+                      disabled
                       type="radio"
                       checked={program === selectedProgram}
                       {...register('program')} />
@@ -361,12 +454,14 @@ function SubmitButton({
   register,
   errors,
   getValues,
-  watch
+  watch,
+  formDescription,
 }: {
-  register: UseFormRegister<FormData<BlastFlavour>>,
+  register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   getValues: Function,
   watch: Function,
+  formDescription: Yup.SchemaObjectDescription,
 }) {
   const db = watch('database');
   const program = getValues('program');
@@ -393,12 +488,18 @@ function SubmitButton({
 function AlgorithmParameters({
   register,
   errors,
-  getValues
+  getValues,
+  formDescription,
+  blastFlavour
 }: {
-  register: UseFormRegister<FormData<BlastFlavour>>,
+  register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
-  getValues: Function
+  getValues: Function,
+  formDescription: Yup.SchemaObjectDescription,
+  blastFlavour: BlastFlavour
 }) {
+  const { fields } = formDescription;
+
   return (
     <div className='panel is-info'>
       <p className='panel-heading'>Algorithm parameters</p>
@@ -414,9 +515,10 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                 <div className="select is-small">
-                  <select {...register('maxTargetSeqs')}>
-                    {
-                      [10, 50, 100, 250, 500, 1000, 5000].map(n_targets => (
+                  <select style={{ width: 80 }} {...register('maxTargetSeqs')}>
+                    { 
+                      //@ts-ignore
+                      fields.maxTargetSeqs.oneOf.map(n_targets => (
                         <option key={n_targets}>{n_targets}</option>
                       ))
                     }
@@ -450,7 +552,12 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <input className='input is-small' type='text' {...register('expectThreshold')} />
+                  <input
+                    className='input is-small'
+                    type='text'
+                    style={{ width: 80 }}
+                    {...register('expectThreshold')}
+                  />
                 </div>
               </div>
             </div>
@@ -464,9 +571,10 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                 <div className="select is-small">
-                  <select {...register('wordSize')}>
+                  <select {...register('wordSize')} style={{ width: 80 }}>
                     {
-                      [2, 3, 5, 6].map(wordSize => (
+                      //@ts-ignore
+                      fields.wordSize.oneOf.map(wordSize => (
                         <option key={wordSize}>{wordSize}</option>
                       ))
                     }
@@ -484,7 +592,14 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <input disabled className='input is-small' type='text' {...register('maxMatchesInQueryRange')} />
+                  <input
+                    className='input is-small'
+                    type='text'
+                    style={{ width: 80 }}
+                    {...register('maxMatchesInQueryRange')}
+                    disabled
+                    defaultValue={0}
+                  />
                 </div>
               </div>
             </div>
@@ -495,29 +610,55 @@ function AlgorithmParameters({
       
         <fieldset className='box'>
           <legend className='label has-text-centered'>Scoring Parameters</legend>
-
-          <div className='field is-horizontal'>
-            <div className="field-label is-small">
-              <label className="label">Matrix</label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                <div className="select is-small">
-                  <select {...register('matrix')}>
-                    {
-                      ['PAM30','PAM70','PAM250','BLOSUM80',
-                      'BLOSUM62','BLOSUM45','BLOSUM50','BLOSUM90'].map(wordSize => (
-                        <option key={wordSize}>{wordSize}</option>
-                      ))
-                    }
-                  </select>
+          
+          {
+            ['blastp','tblastn'].indexOf(blastFlavour) >= 0 &&
+              <div className='field is-horizontal'>
+                <div className="field-label is-small">
+                  <label className="label">Matrix</label>
                 </div>
+                <div className="field-body">
+                  <div className="field">
+                    <div className="control">
+                    <div className="select is-small">
+                      <select style={{ width: 140 }} {...register('matrix')}>
+                        {
+                          //@ts-ignore
+                          fields.matrix.oneOf.map(wordSize => (
+                            <option key={wordSize}>{wordSize}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
+          }
+          {
+            ['blastn'].indexOf(blastFlavour) >= 0 &&
+            <div className='field is-horizontal'>
+                <div className="field-label is-small">
+                  <label className="label">Match/Mismatch Scores</label>
+                </div>
+                <div className="field-body">
+                  <div className="field">
+                    <div className="control">
+                    <div className="select is-small">
+                      <select style={{ width: 140 }} {...register('matchMismatch')}>
+                        {
+                          //@ts-ignore
+                          fields.matchMismatch.oneOf.map(match => (
+                            <option key={match}>{match}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          }
           <div className='field is-horizontal'>
             <div className="field-label is-small">
               <label className="label">Gap costs</label>
@@ -526,12 +667,10 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                 <div className="select is-small">
-                  <select {...register('gapCosts')}>
-                    {
-                      [
-                        '11,2','10,2','9,2','8,2','7,2','6,2',
-                        '13,1','12,1','11,1','10,1','9,1'
-                      ].map(gapCost => {
+                  <select style={{ width: 140 }} {...register('gapCosts')}>
+                    { 
+                      //@ts-ignore
+                      fields['gapCosts'].oneOf.map(gapCost => {
                         const [gapOpen,gapExtend] = gapCost.split(',');
                         return (
                           <option key={gapCost}>
@@ -546,29 +685,34 @@ function AlgorithmParameters({
               </div>
             </div>
           </div>
-
-          <div className='field is-horizontal'>
-            <div className="field-label is-small">
-              <label className="label">Compositional adjustment</label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                <div className="select is-small">
-                  <select disabled {...register('compositionalAdjustment')}>
-                    {
-                      ['No adjustment','Compositon-based statistics',
-                      'Conditional compositional score matrix adjustment',
-                    'Universal compositional score matrix adjustment'].map(adjustment => (
-                        <option key={adjustment}>{adjustment}</option>
-                      ))
-                    }
-                  </select>
-                </div>
+          
+          { 
+            ['blastp','tblastn'].indexOf(blastFlavour) >= 0 &&
+            <div className='field is-horizontal'>
+              <div className="field-label is-small">
+                <label className="label">Compositional adjustment</label>
+              </div>
+              <div className="field-body">
+                <div className="field">
+                  <div className="control">
+                  <div className="select is-small">
+                    <select
+                      disabled
+                      {...register('compositionalAdjustment')}
+                    >
+                      {
+                        //@ts-ignore
+                        fields['compositionalAdjustment'].oneOf.map(adjustment => (
+                          <option key={adjustment}>{adjustment}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          }
         </fieldset>
         <fieldset className='box'>
           <legend className='label has-text-centered'>Filters and masking</legend>
@@ -580,8 +724,13 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <label className='checkbox'>
-                    <input type='checkbox' {...register('filterLowComplexity')} />
+                  {/*@ts-ignore*/}
+                  <label disabled className='checkbox'>
+                    <input
+                      disabled
+                      type='checkbox'
+                      {...register('filterLowComplexity')}
+                    />
                     Low complexity regions
                   </label>
                 </div>
@@ -628,7 +777,6 @@ function AlgorithmParameters({
   )
 }
 
-
 export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
   const { blastFlavour } = params;
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
@@ -636,30 +784,22 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     notFound()
   }
   const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
+
+  const blastForm = BLASTFLAVOUR_FORMS.get(blastFlavour)!
+
+  const formDescription = blastForm.describe();
+
   
-  const { register, handleSubmit, getValues, formState: {errors}, control, watch } = useForm<FormData<typeof blastFlavour>>({
+  const { register, handleSubmit, getValues, formState: {errors}, control, watch } = useForm<BlastParameters>({
     //@ts-ignore
-    resolver: yupResolver(formSchema),
-    defaultValues: {
-      //@ts-ignore
-      flavour: blastFlavour,
-      program: defaultProgram,
-      database: (BLAST_DBS.get(blastFlavour) as string[])[0],
-      maxTargetSeqs: 100,
-      shortQueries: true,
-      expectThreshold: 0.05,
-      wordSize: 5,
-      matrix: 'BLOSUM62',
-      gapCosts: '11,1',
-      compositionalAdjustment: 'Conditional compositional score matrix adjustment',
-      taxids: [],
-      excludeTaxids: false,
-      filterLowComplexity: false,
-      lcaseMasking: false
-    }
+    resolver: yupResolver(blastForm),
+    //@ts-ignore
+    defaultValues: blastForm.default()
   });
 
-  async function onSubmit(formData: FormData<typeof blastFlavour>){
+  console.log({ errors })
+
+  async function onSubmit(formData: BlastParameters){
     console.log({ formData })
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
@@ -679,11 +819,11 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <h1 className='title'>{blastFlavour}</h1>
-      <EnterQuery register={register} errors={errors} />
-      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} />
-      <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} />
-      <SubmitButton register={register} errors={errors} getValues={getValues} watch={watch} />
-      <AlgorithmParameters register={register} errors={errors} getValues={getValues}/>
+      <EnterQuery register={register} errors={errors} formDescription={formDescription} />
+      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} formDescription={formDescription} />
+      <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} formDescription={formDescription} />
+      <SubmitButton register={register} errors={errors} getValues={getValues} watch={watch} formDescription={formDescription} />
+      <AlgorithmParameters register={register} errors={errors} getValues={getValues} formDescription={formDescription} blastFlavour={blastFlavour}/>
     </form>
   )
 }

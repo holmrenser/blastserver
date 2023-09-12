@@ -11,7 +11,8 @@ import styles from './resultspage.module.scss';
 type PANEL_COMPONENT = (arg0: {
   hits: any[],
   queryLength: number,
-  taxonomyTrees: any
+  taxonomyTrees: any,
+  database: string
 }) => JSX.Element;
 
 const PANEL_COMPONENTS: Record<string, PANEL_COMPONENT> = {
@@ -28,7 +29,7 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-export default function ResultsPage({ blastResults, err }: { blastResults: any, err: string }) {
+export default function ResultsPage({ blastResults, database, err }: { blastResults: any, database: string, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
@@ -41,28 +42,33 @@ export default function ResultsPage({ blastResults, err }: { blastResults: any, 
 
   const activePanel = searchParams.get('panel') || 'descriptions';
   const PanelComponent = PANEL_COMPONENTS[activePanel];
-  const { queryLen, hits, taxonomyTrees } = blastResults;
+  const { queryLen, hits, taxonomyTrees, message } = blastResults;
   
   return (
     <>
-      <div className={`tabs is-boxed panel-nav has-background-light ${styles.navPanel}`}>
-        <ul>
-          {
-            Object.keys(PANEL_COMPONENTS).map(panel => {
-              return <li key={panel} className={panel === activePanel ? 'is-active' : ''}>
-                <Link 
-                  href={{ 
-                    pathname: linkPath, 
-                    query: { panel } 
-                  }}>
-                    { formatPanelName(panel) }
-                </Link>
-              </li>
-            })
-          }
-        </ul>
-      </div>
-      <PanelComponent hits={hits} queryLength={queryLen} taxonomyTrees={taxonomyTrees} />
+      { message }
+      { !message && 
+      <>
+        <div className={`tabs is-boxed panel-nav has-background-light ${styles.navPanel}`}>
+          <ul>
+            {
+              Object.keys(PANEL_COMPONENTS).map(panel => {
+                return <li key={panel} className={panel === activePanel ? 'is-active' : ''}>
+                  <Link 
+                    href={{ 
+                      pathname: linkPath, 
+                      query: { panel } 
+                    }}>
+                      { formatPanelName(panel) }
+                  </Link>
+                </li>
+              })
+            }
+          </ul>
+        </div>
+        <PanelComponent hits={hits} queryLength={queryLen} taxonomyTrees={taxonomyTrees} database={database} />
+      </>
+      }
     </>
   )
 }

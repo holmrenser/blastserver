@@ -29,6 +29,8 @@ export default function HomePage() {
               <th className='moltype'>nucleotide</th>
               <td>
                 <Link
+                  //@ts-ignore
+                  disabled
                   className='button is-large is-fullwidth'
                   href='/blastn'
                   title='Search a nucleotide database with a nucleotide query'
@@ -36,6 +38,8 @@ export default function HomePage() {
                   blastn
                 </Link>
                 <Link
+                  //@ts-ignore
+                  disabled
                   className='button is-large is-fullwidth'
                   href='/tblastx'
                   title='Search a translated nucleotide database with a translated nucleotide query'
@@ -45,6 +49,8 @@ export default function HomePage() {
               </td>
               <td>
                 <Link
+                  //@ts-ignore
+                  disabled
                   className='button is-large is-fullwidth'
                   href='/blastx'
                   title='Search a protein database with a translated nucleotide query'

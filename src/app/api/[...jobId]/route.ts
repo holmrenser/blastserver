@@ -79,7 +79,8 @@ type BlastResult = {
                   hits: {
                     Hit: RawBlastHit[]
                   },
-                  stat: string
+                  stat: string,
+                  message: string
                 }
               }
             }
@@ -210,7 +211,6 @@ async function buildTaxTrees(hits: {
 
 async function formatResults(blastResults: any) {
   const results = xml2js(blastResults, { compact: true, trim: true, textFn: replaceJsonTextAttribute })
-  // console.log({ results });
   const {   
     BlastXML2: { 
       BlastOutput2: {
@@ -226,9 +226,10 @@ async function formatResults(blastResults: any) {
                   'query-len': queryLen,
                   'query-title': queryTitle,
                    hits: {
-                    Hit: _hits
-                   },
-                   stat
+                    Hit: _hits = []
+                   } = { Hit: []},
+                   stat,
+                   message
                 }
               }
             }
@@ -272,36 +273,39 @@ async function formatResults(blastResults: any) {
     return { accession, title, taxid, percentIdentity, queryCover, num, len, hsps: formattedHsps }
   }
 
-  const intermediateHits: BlastHitNoTaxInfo[] = await Promise.all(_hits.map(processHit))
+  let hits;
+  let taxonomyTrees;
+
+  if (!message) {
+    const intermediateHits: BlastHitNoTaxInfo[] = await Promise.all(_hits.map(processHit))
   
-  // add taxonomy info for all hits
-  const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
-  const hitTaxInfo = await prisma.taxonomy.findMany({ where: { id: {in: hitTaxids }}})
-  const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(
-    ({id, name, ancestors}: {id: string, name: string, ancestors: string[]}) => {
-      return [id, {id, name, ancestors}]
-    }
-  ))
-  const hits = intermediateHits.map(({ taxid, ...rest}) => {
-    const taxonomyInfo = hitTaxidMap[taxid];
-    const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: ['NotFound'] };
-    return { taxid, name, ancestors, ...rest}
-  })
+    // add taxonomy info for all hits
+    const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
+    const hitTaxInfo = await prisma.taxonomy.findMany({ where: { id: {in: hitTaxids }}})
+    const hitTaxidMap = Object.fromEntries(hitTaxInfo.map(
+      ({id, name, ancestors}: {id: string, name: string, ancestors: string[]}) => {
+        return [id, {id, name, ancestors}]
+      }
+    ))
 
-  // console.log({ hits })
+    hits = intermediateHits.map(({ taxid, ...rest}) => {
+      const taxonomyInfo = hitTaxidMap[taxid];
+      const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: ['NotFound'] };
+      return { taxid, name, ancestors, ...rest}
+    })
 
-  const taxonomyTrees = hitTaxInfo.length === 1
-    ? [hitTaxidMap[hitTaxInfo[0].id]]
-    : await buildTaxTrees(hits)
+    taxonomyTrees = hitTaxInfo.length === 1
+      ? [hitTaxidMap[hitTaxInfo[0].id]]
+      : await buildTaxTrees(hits)
+    
+  }
   
-  // console.log({ taxonomyTrees, hitTaxInfo, hitTaxidMap })
-
-  return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees }
+  return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees, message }
 }
 
 export async function GET(_: NextRequest, context: { params: { jobId: string[]}}) {
   const { params: { jobId }} = context;
-  console.log(`Requested job ${jobId}`);
+  console.log(`Requested BLAST job ${jobId}`);
 
   let job;
   try {
@@ -311,5 +315,5 @@ export async function GET(_: NextRequest, context: { params: { jobId: string[]}}
   }
   const formattedResults = job?.results ? await formatResults(job.results) : null;
 
-  return NextResponse.json({...job, results: formattedResults }) // res
+  return NextResponse.json({...job, results: formattedResults })
 }

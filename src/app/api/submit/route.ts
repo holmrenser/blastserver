@@ -1,7 +1,7 @@
 import hash from 'object-hash';
 import { NextResponse, NextRequest } from 'next/server';
 
-import { queue } from '../queue';
+import { blastQueue } from '../queue';
 import prisma from '../database';
 
 export const dynamic = 'force-dynamic';
@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
         parameters,
         submitted: new Date(),
       }
-    }).then(() => queue.add('blast', parameters, { jobId }))
+    }).then(() => blastQueue.add('blast', parameters, { jobId }))
   } else {
-    console.log(`Found existing job: ${existingJob.id}`)
+    console.log(`Found existing BLAST job: ${existingJob.id}`)
   }
   return NextResponse.json({ jobId })
 }

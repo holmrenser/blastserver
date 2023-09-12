@@ -50,9 +50,9 @@ function ResultsTable({ results }: {results: any}){
 }
 
 function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) {
-  console.log({ parameters })
+  // console.log({ parameters })
   const { flavour, queryTo, queryFrom, taxids, gapCosts, excludeTaxids,
-  maxTargetSeqs, expectThreshold } = parameters;
+  maxTargetSeqs, expectThreshold, lcaseMasking } = parameters;
   
   let additionalParams: {[key: string]: string} = {};
   if (flavour === 'blastp') {
@@ -61,6 +61,7 @@ function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) 
 
   if (queryFrom) { Object.assign(additionalParams, { queryFrom }) }
   if (queryTo) { Object.assign(additionalParams, { queryTo }) }
+  if (lcaseMasking) { Object.assign(additionalParams, { lcaseMasking: 'true' })}
 
   return (
     <div className='card'>
@@ -134,7 +135,7 @@ export default function ResultsWrapper({
   const { submitted, results, finished, parameters, err } = data;
   const { jobTitle, program, database } = parameters;
 
-  console.log({ parameters })
+  // console.log({ parameters })
 
   return (
     <>
@@ -180,7 +181,7 @@ export default function ResultsWrapper({
           <UsedParameters parameters={parameters} />
         </div>
       </div>
-      <ResultsPage blastResults={results} err={err}/>
+      <ResultsPage blastResults={results} database={database} err={err} />
     </>
   )
 } 

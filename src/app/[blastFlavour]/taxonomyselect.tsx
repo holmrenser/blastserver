@@ -2,7 +2,8 @@ import AsyncSelect from 'react-select/async';
 import { Controller } from 'react-hook-form';
 import type { Control, UseFormRegister } from 'react-hook-form'; 
 
-import type { FormData, BlastFlavour } from './blastflavour'
+import type { BlastParameters } from './page'
+//import type { FormData, BlastFlavour } from './blastflavour'
 
 type SelectElement = {
   value: string
@@ -46,8 +47,8 @@ export function TaxonomySelect({
   control,
   register
 }: {
-  control: Control<FormData<BlastFlavour>>,
-  register: UseFormRegister<FormData<BlastFlavour>>
+  control: Control<BlastParameters>,
+  register: UseFormRegister<BlastParameters>
 }){
   return <>
     <div className='select is-small'>

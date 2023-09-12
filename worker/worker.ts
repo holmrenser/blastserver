@@ -6,6 +6,7 @@ import Crypto from 'crypto';
 import {tmpdir} from 'os';
 import Path from 'path';
 import fs from 'fs';
+import { gzipSync } from 'zlib';
 
 import type { FormData, BlastFlavour } from '../src/app/[blastFlavour]/blastflavour';
 
@@ -16,8 +17,12 @@ const connection = {
   port: Number(process.env.JOBQUEUE_PORT),
 };
 
-export default async function jobProcessor(job: Job) {
-  console.log(`Started job ${job.id}`);
+/**
+ * BLASTWORKER SECTION
+ */
+
+async function blastJobProcessor(job: Job) {
+  console.log(`Started BLAST job ${job.id}`);
   const { data: { 
     flavour, program, query, expectThreshold, database,
     gapCosts, maxTargetSeqs, queryTo, queryFrom,
@@ -39,8 +44,12 @@ export default async function jobProcessor(job: Job) {
     '-gapextend', gapExtend,
     '-num_threads', numThreads,
     '-max_target_seqs', String(maxTargetSeqs),
-    '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`
+    '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`,
   ];
+
+  if (lcaseMasking) {
+    args.push('-lcase_masking')
+  }
 
   if (flavour === 'blastp') {
     const { data: { matrix, wordSize }} = job;
@@ -89,20 +98,20 @@ export default async function jobProcessor(job: Job) {
 }
 
 // HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job 
-const worker = new Worker("jobqueue", jobProcessor, { connection, lockDuration: 7_200_000 });
+const blastWorker = new Worker("blastQueue", blastJobProcessor, { connection, lockDuration: 7_200_000 });
 
-console.log("worker started");
+console.log("BLAST worker started");
 
-worker.on("progress", (job, progress) => {
-  console.log(`Progress job ${job.id}: ${progress}`);
+blastWorker.on("progress", (job, progress) => {
+  console.log(`Progress BLAST job ${job.id}: ${progress}`);
 });
 
-worker.on("completed", (job, returnValue) => {
-  console.log(`Completed job ${job.id}: ${returnValue}`);
+blastWorker.on("completed", (job, returnValue) => {
+  console.log(`Completed BLAST job ${job.id}: ${returnValue}`);
 });
 
-worker.on("failed", async (job, err) => {
-  console.warn(`Failed job ${job?.id}: ${err}`);
+blastWorker.on("failed", async (job, err) => {
+  console.warn(`Failed BLAST job ${job?.id}: ${err}`);
   await prisma.blastjob.update({
     where: {id: job?.id},
     data: { 
@@ -112,6 +121,79 @@ worker.on("failed", async (job, err) => {
   })
 });
 
-worker.on("error", (err) => {
-  console.warn(`Error: ${ err }`);
+blastWorker.on("error", (err) => {
+  console.warn(`BLAST job error: ${ err }`);
+});
+
+/**
+ * DOWNLOADWORKER SECTION
+ */
+
+async function downloadJobProcessor(job: Job) {
+  console.log(`Started download job ${job.id}`);
+  const { data: { sequenceIds, database }}: { data: { sequenceIds: string[], database: string }} = job;
+
+  const tmpFile = Path.join(tmpdir(), `blastserver.${Crypto.randomBytes(16).toString('hex')}.tmp`)
+  const seqidString = sequenceIds.join('\n')
+  try {
+    await fs.promises.writeFile(tmpFile, seqidString);
+  } catch (err) {
+    throw new Error(`Writing tmp file failed: ${err}`)
+  }
+
+  const dbPath = path.join(process.env.APP_BLAST_DB_PATH || '', database);
+
+  const args = [
+    '-db', dbPath,
+    '-entry_batch', tmpFile
+  ]
+
+  // Very large max buffer so we capture all BLAST output
+  const options = { maxBuffer: 1_000_000_000_000 };
+
+  console.log(`Running 'blastdmcmd ${args.join(' ')}'`)
+
+  const result = spawnSync('blastdbcmd', args, options);
+  const stderr = result.stderr.toString('utf8');
+  if (stderr) throw new Error(stderr);
+  const stdout = result.stdout.toString('utf8');
+
+  const compressedOutput = gzipSync(stdout);
+
+  await prisma.download.update({
+    where: {id: job.id},
+    data: { 
+      results: compressedOutput,
+      finished: new Date()
+     }
+  });
+  return 'finished'
+}
+
+// HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job 
+const downloadWorker = new Worker("downloadQueue", downloadJobProcessor, { connection, lockDuration: 7_200_000 });
+
+console.log("Download worker started");
+
+downloadWorker.on("progress", (job, progress) => {
+  console.log(`Progress download job ${job.id}: ${progress}`);
+});
+
+downloadWorker.on("completed", (job, returnValue) => {
+  console.log(`Completed download job ${job.id}: ${returnValue}`);
+});
+
+downloadWorker.on("failed", async (job, err) => {
+  console.warn(`Failed download job ${job?.id}: ${err}`);
+  await prisma.download.update({
+    where: {id: job?.id},
+    data: { 
+      err: err.message,
+      finished: new Date()
+    }
+  })
+});
+
+downloadWorker.on("error", (err) => {
+  console.warn(`Download job error: ${ err }`);
 });

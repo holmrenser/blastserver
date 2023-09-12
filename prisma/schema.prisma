@@ -27,3 +27,13 @@ model taxonomy {
   name      String
   ancestors String[]
 }
+
+model download {
+  id          String    @id @unique
+  sequenceIds String[]
+  submitted   DateTime
+  finished    DateTime?
+  results     Bytes?
+  log         String?
+  err         String?
+}

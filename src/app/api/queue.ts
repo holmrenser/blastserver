@@ -5,4 +5,5 @@ export const connection = {
   port: Number(process.env.JOBQUEUE_PORT),
 };
 
-export const queue = new Queue("jobqueue", { connection });
+export const blastQueue = new Queue('blastQueue', { connection });
+export const downloadQueue = new Queue('downloadQueue', { connection });
