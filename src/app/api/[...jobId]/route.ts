@@ -294,10 +294,15 @@ async function formatResults(blastResults: any) {
       return { taxid, name, ancestors, ...rest}
     })
 
-    taxonomyTrees = hitTaxInfo.length === 1
-      ? [hitTaxidMap[hitTaxInfo[0].id]]
-      : await buildTaxTrees(hits)
-    
+    let taxonomyTrees: TaxonomyNode[];
+    try {
+      taxonomyTrees = hitTaxInfo.length === 1
+        ? [hitTaxidMap[hitTaxInfo[0].id]]
+        : await buildTaxTrees(hits)
+    } catch {
+      console.warn('Building taxTrees failed')
+      taxonomyTrees = [];
+    }
   }
   
   return { params, program, queryId, queryLen, queryTitle, hits, stat, version, db, taxonomyTrees, message }
