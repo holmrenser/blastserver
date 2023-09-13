@@ -140,7 +140,7 @@ async function buildTaxTrees(hits: {
   taxid: string;
   name: string;
   ancestors: string[];
-}[]){
+}[]) {
   // find taxonomy info for ancestors of all hits
   const ancestorIds: Set<string> = new Set(hits
     .map(({ ancestors }) => ancestors)
@@ -181,7 +181,7 @@ async function buildTaxTrees(hits: {
   // console.log({ filteredancestorIdCounts, ancestorIdCounts })
   const filteredAncestors: TaxonomyNode[] = Object.entries(filteredancestorIdCounts)
     .map(([ancestorId, count]) => ({...taxidMap[ancestorId], count}))
-    .sort((a,b) => a.ancestors.length - b.ancestors.length)
+    .sort((a,b) => (a.ancestors?.length || 0) - (b.ancestors?.length || 0))
   
   // console.log({ filteredAncestors })
 

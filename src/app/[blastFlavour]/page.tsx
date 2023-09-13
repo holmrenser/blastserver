@@ -143,7 +143,7 @@ const blastpForm = Yup.object().shape({
     .default('BLOSUM62')
     .required(),
   wordSize: Yup.number()
-    .oneOf([2, 3, 5, 6])
+    .oneOf([3, 5, 6])
     .default(5)
     .required()
     .transform(numberTransform),
