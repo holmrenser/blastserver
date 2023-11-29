@@ -274,7 +274,7 @@ export default async function formatResults(blastResults: string) {
                   'query-len': queryLen,
                   'query-title': queryTitle,
                    hits: {
-                    Hit: rawHits = []
+                    Hit: _rawHits = []
                    } = { Hit: []},
                    stat,
                    message
@@ -294,7 +294,7 @@ export default async function formatResults(blastResults: string) {
 
   let hits: BlastHit[] | undefined;
   let taxonomyTrees: TaxonomyNode[] | undefined;
-
+  const rawHits = Array.isArray(_rawHits) ? _rawHits : [_rawHits];
   if (!message) {
     // initial result parsing to summarize useful information per hit
     const intermediateHits: BlastHitNoTaxInfo[] = rawHits.map(rawHit => (

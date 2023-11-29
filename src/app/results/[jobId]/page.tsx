@@ -2,10 +2,12 @@
 
 import useSWR from 'swr';
 
-import ErrorComponent  from '../error';
+import ErrorComponent  from '@/app/results/error';
 import ResultsPage from './resultspage';
 
 import type { FormData, BlastFlavour } from '@/app/[blastFlavour]/blastflavour';
+import { useContext } from 'react';
+import { ThemeContext } from '@/app/themecontext';
 
 class DataFetchError extends Error {
   info: string | undefined = undefined
@@ -127,6 +129,8 @@ export default function ResultsWrapper({
       revalidateOnMount: true
     }
   );
+
+  const { theme } = useContext(ThemeContext);
   
   if (error) return <ErrorComponent statusCode={500} />
   if (isLoading) return <p>Connecting</p>
@@ -135,53 +139,53 @@ export default function ResultsWrapper({
   const { submitted, results, finished, parameters, err } = data;
   const { jobTitle, program, database } = parameters;
 
-  // console.log({ parameters })
-
   return (
-    <>
-      <h2 className='subtitle'>Results</h2>
-      <div className='columns'>
-        <div className='column'>
-          <div className='card'>
-            <header className='card-header'>
-              <p className='card-header-title'>
-                Job ID&nbsp; <span className='tag is-info is-light'>{jobId}</span>
-              </p>
-            </header>
-            <div className='card-content'>
-              <table className='table is-small is-size-7'>
-                <tbody>
-                  <tr>
-                    <td>Job Title</td>
-                    <td>{jobTitle || 'Protein Sequence'}</td>
-                  </tr>
-                  <tr>
-                    <td>Program</td>
-                    <td>{program.toUpperCase()}</td>
-                  </tr>
-                  <tr>
-                    <td>Database</td>
-                    <td>{database}</td>
-                  </tr>
-                  <tr>
-                    <td>Submitted</td>
-                    <td>{new Date(submitted)?.toLocaleString('en-GB')}</td>
-                  </tr>
-                  <tr>
-                    <td>Status</td>
-                    <td>{results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</td>
-                  </tr>
-                  { results && <ResultsTable results={results} />}
-                </tbody>
-              </table>
+    <section className={`section ${theme === 'dark' ? 'has-background-dark has-text-light' : ''}`}>
+      <div className='container is-fullhd'>
+        <h2 className={`subtitle ${theme === 'dark' ? 'has-text-light' : ''}`}>Results</h2>
+        <div className='columns'>
+          <div className='column'>
+            <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+              <header className='card-header'>
+                <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
+                  Job ID&nbsp; <span className='tag is-info is-light'>{jobId}</span>
+                </p>
+              </header>
+              <div className='card-content'>
+                <table className={`table is-small is-size-7 ${theme === 'dark' ? 'has-background-grey-dark has-text-light' : ''}`}>
+                  <tbody>
+                    <tr>
+                      <td>Job Title</td>
+                      <td>{jobTitle || 'Protein Sequence'}</td>
+                    </tr>
+                    <tr>
+                      <td>Program</td>
+                      <td>{program.toUpperCase()}</td>
+                    </tr>
+                    <tr>
+                      <td>Database</td>
+                      <td>{database}</td>
+                    </tr>
+                    <tr>
+                      <td>Submitted</td>
+                      <td>{new Date(submitted)?.toLocaleString('en-GB')}</td>
+                    </tr>
+                    <tr>
+                      <td>Status</td>
+                      <td>{results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</td>
+                    </tr>
+                    { results && <ResultsTable results={results} />}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+          <div className='column'>
+            <UsedParameters parameters={parameters} />
+          </div>
         </div>
-        <div className='column'>
-          <UsedParameters parameters={parameters} />
-        </div>
+        <ResultsPage blastResults={results} database={database} err={err} />
       </div>
-      <ResultsPage blastResults={results} database={database} err={err} />
-    </>
+    </section>
   )
 } 

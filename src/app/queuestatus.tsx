@@ -37,10 +37,8 @@ export function QueueStatus(){
     }
   );
 
-  // console.log({ isLoading, data, error })
-
   if (error) return <p>Error</p>
-  if (isLoading) return <p>Connecting</p>
+  if (isLoading) return <i className='is-size-7' style={{ minWidth: '234px', textAlign: 'center'}}>...Connecting...</i>
   if (!data) return <p>Fetching</p>
   
   const { waiting, completed, active } = data;
