@@ -1,1 +1,6 @@
 @import '~bulma/bulma.sass';
+@import '~bulma-switch/src/sass/index.sass';
+
+html, body {
+  min-height: 100%;
+}

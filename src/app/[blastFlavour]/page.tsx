@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import type { FieldErrors, Control, UseFormRegister } from 'react-hook-form'
@@ -12,6 +12,8 @@ import './blastFlavour.scss';
 import type { BlastFlavour, FormData } from './blastflavour';
 //@ts-ignore
 import { ALLOWED_FLAVOURS } from './blastflavour.d.ts';
+import { ThemeContext } from '../themecontext';
+import type { Theme } from '../themecontext';
 
 const NUCLEOTIDE_DBS = new Map<string, string>([
   ['nt','Nucleotide collection'],
@@ -21,6 +23,7 @@ const NUCLEOTIDE_DBS = new Map<string, string>([
   ['16S_ribosomal_RNA', '16S Ribosomal RNA'],
 ])
 const PROTEIN_DBS = new Map<string, string>([
+  ['xmasprot','Festive proteins only'],
   ['refseq_protein', 'Reference proteins'],
   ['nr', 'Non-redundant protein sequences'],
   ['landmark', 'Model organisms'],
@@ -58,6 +61,11 @@ const baseForm = Yup.object().shape({
   jobTitle: Yup.string().notRequired(),
   email: Yup.string().notRequired(),
   query: Yup.string()
+    .default('>QUERY\n\
+TVDHYFLFSQGVTLILPCGIVTPGCKSVQNLNLRNGHQNMLAMLRRQLLFGDRCEPQVSI\
+IKPVNALEKRFCYRVTLDDANEAYIAPAYDWWCDARSIWQVPHSGEYGSDYRPKFRSGGG\
+ILRADWQAPTQSPAAEMESYIGSWNAVLKYPKDNDAIVNKPGKRHVAFSKIEIIHSENQR\
+YLRKSAPIRHLKEYNRAIQL')
     .required('Query is required')
     .max(10e4)
     .trim()
@@ -93,7 +101,7 @@ const baseForm = Yup.object().shape({
   expectThreshold: Yup.number()
     .required('Must specify an expect threshold')
     .moreThan(0, 'Expect threshold cannot be negative')
-    .default(0.05)
+    .default(0.5)
     .required()
     .transform(numberTransform),
   maxMatchesInQueryRange: Yup.number()
@@ -228,24 +236,27 @@ function EnterQuery({
   register,
   errors,
   formDescription,
+  theme,
 }: {
   register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   formDescription: Yup.SchemaObjectDescription,
+  theme: Theme,
 }){
   return (
-    <fieldset className='box'>
-      <legend className='label has-text-centered'>Enter Query Sequence</legend>
+    <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+      <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>Enter Query Sequence</legend>
       
       <div className="field">
         <div className='field-body'>
           <div className='field'>
-            <label className="label">Enter (single) FASTA sequence</label>
+            <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Enter (single) FASTA sequence</label>
             <div className="control">
               <textarea
-                className={`textarea is-small ${errors.query?.message ? 'is-danger' : ''}`}
+                className={`textarea is-small ${errors.query?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                 placeholder="QUERY SEQUENCE"
-                {...register('query')} />
+                {...register('query')}
+                disabled />
             </div>
             {
               errors.query && (
@@ -257,16 +268,17 @@ function EnterQuery({
           </div>
 
           <div className='field'>
-            <label className='label'>Query subrange</label>
+            <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Query subrange</label>
             <div className='field is-horizontal'>
               <div className='field-label is-small'>
-                <label className="label">From</label>
+                <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>From</label>
               </div>
               <div className='field-body'>
                 <div className='field'>
                   <div className="control">
                     <input
-                      className={`input is-small ${errors.queryFrom?.message ? 'is-danger' : ''}`}
+                      disabled
+                      className={`input is-small ${errors.queryFrom?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                       placeholder="FROM"
                       style={{ maxWidth: 120 }}
                       {...register('queryFrom')} />
@@ -277,13 +289,14 @@ function EnterQuery({
 
             <div className='field is-horizontal' style={{ paddingTop: '.75em' }}>
               <div className='field-label is-small'>
-                <label className="label">To</label>
+                <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>To</label>
               </div>
               <div className='field-body'>
                 <div className='field'>
                   <div className="control">
                     <input
-                      className={`input is-small ${errors.queryTo?.message ? 'is-danger' : ''}`}
+                      disabled
+                      className={`input is-small ${errors.queryTo?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                       placeholder="TO"
                       type='text'
                       style={{ maxWidth: 120 }}
@@ -298,13 +311,13 @@ function EnterQuery({
 
       <div className='field is-horizontal'>
         <div className="field-label is-small">
-          <label className="label">Job Title</label>
+          <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Job Title</label>
         </div>
         <div className="field-body">
           <div className="field">
             <div className="control">
               <input 
-                className="input is-small"
+                className={`input is-small ${errors.jobtitle?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                 type="text"
                 placeholder="JOBTITLE"
                 style={{ maxWidth: 240 }}
@@ -318,13 +331,13 @@ function EnterQuery({
 
       <div className='field is-horizontal'>
         <div className="field-label is-small">
-          <label className="label">E-mail address</label>
+          <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>E-mail address</label>
         </div>
         <div className="field-body">
           <div className="field">
             <div className="control">
               <input
-                className="input is-small"
+                className={`input is-small ${errors.email?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                 type="text"
                 placeholder="JOHN@DOE.COM"
                 style={{ maxWidth: 240 }}
@@ -345,27 +358,29 @@ function ChooseSearchSet({
   blastFlavour,
   control,
   formDescription,
+  theme,
 }: {
   register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   blastFlavour: BlastFlavour,
   control: Control<BlastParameters>,
   formDescription: Yup.SchemaObjectDescription,
+  theme: Theme,
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
   return (
-    <fieldset className='box'>
-      <legend className='label has-text-centered'>Choose Search Set</legend>
+    <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+      <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>Choose Search Set</legend>
       
       <div className='field is-horizontal'>
         <div className="field-label is-small">
-          <label className="label">Database</label>
+          <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Database</label>
         </div>
         <div className="field-body">
           <div className="field">
             <div className="control" >
-              <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''}`}>
-                <select {...register('database')} style={{ minWidth: 400}}>
+              <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'is-dark' : ''}`}>
+                <select disabled {...register('database')} style={{ minWidth: 400}} className={`${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}>
                   {
                     dbOptions && dbOptions.map(db => (
                       <option key={db} value={db}>
@@ -382,14 +397,14 @@ function ChooseSearchSet({
 
       <div className='field is-horizontal'>
         <div className="field-label is-small">
-          <label className="label">Organism</label>
+          <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Organism</label>
         </div>
         <div className="field-body">
           <div className="field">
             <div className="control">
-              <TaxonomySelect control={control} register={register}/>
+              <TaxonomySelect control={control} register={register} theme={theme}/>
             </div>
-            <p className='help'>Select one or more taxonomy levels to limit or exclude</p>
+            <p className={`help ${theme === 'dark' ? 'has-text-light' : ''}`}>Select one or more taxonomy levels to limit or exclude</p>
           </div>
         </div>
         
@@ -404,22 +419,24 @@ function ProgramSelection({
   errors,
   getValues,
   formDescription,
+  theme,
 }: {
   blastFlavour: BlastFlavour,
   register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   getValues: Function,
   formDescription: Yup.SchemaObjectDescription,
+  theme: Theme,
 }){
   if (!PROGRAMS.has(blastFlavour)) return null
   const selectedProgram = 'Blastn (Somewhat similar sequences)' //getValues('program');
   return (
-    <fieldset className='box'>
-      <legend className='label has-text-centered'>Program Selection</legend>
+    <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+      <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>Program Selection</legend>
 
       <div className='field is-horizontal'>
         <div className="field-label is-small">
-          <label className="label">Optimize for</label>
+          <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Optimize for</label>
         </div>
         <div className="field-body">
           <div className="field">
@@ -456,17 +473,19 @@ function SubmitButton({
   getValues,
   watch,
   formDescription,
+  theme,
 }: {
   register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   getValues: Function,
   watch: Function,
   formDescription: Yup.SchemaObjectDescription,
+  theme: Theme,
 }) {
   const db = watch('database');
   const program = getValues('program');
   return (
-    <div className='container box'>
+    <div className={`container box ${theme === 'dark' ? 'has-background-grey has-text-light ' : ''}`}>
       <div className='tile is-ancestor'>
         <div className='tile is-parent'>
           <div className='tile is-child is-2'>
@@ -490,13 +509,15 @@ function AlgorithmParameters({
   errors,
   getValues,
   formDescription,
-  blastFlavour
+  blastFlavour,
+  theme,
 }: {
   register: UseFormRegister<BlastParameters>,
   errors: FieldErrors,
   getValues: Function,
   formDescription: Yup.SchemaObjectDescription,
-  blastFlavour: BlastFlavour
+  blastFlavour: BlastFlavour,
+  theme: Theme,
 }) {
   const { fields } = formDescription;
 
@@ -504,18 +525,22 @@ function AlgorithmParameters({
     <div className='panel is-info'>
       <p className='panel-heading'>Algorithm parameters</p>
       <div className='panel-block algorithm-parameters'>
-        <fieldset className='box'>
-          <legend className='label has-text-centered'>General Parameters</legend>
+        <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+          <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>General Parameters</legend>
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Max target sequences</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Max target sequences</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                <div className="select is-small">
-                  <select style={{ width: 80 }} {...register('maxTargetSeqs')}>
+                <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
+                  <select
+                    disabled
+                    className={theme === 'dark' ? 'has-background-grey has-text-light':''}
+                    style={{ width: 80 }} {...register('maxTargetSeqs')}
+                  >
                     { 
                       //@ts-ignore
                       fields.maxTargetSeqs.oneOf.map(n_targets => (
@@ -531,13 +556,14 @@ function AlgorithmParameters({
           
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Short queries</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Short queries</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <label className='checkbox'>
-                    <input type='checkbox' {...register('shortQueries')} />
+                  { /* @ts-ignore */ }
+                  <label disabled className={`checkbox ${theme ==='dark' ? 'has-text-light':''}`}>
+                    <input disabled type='checkbox' {...register('shortQueries')} />
                     Automatically adjust parameters for short input sequences
                   </label>
                 </div>
@@ -547,13 +573,14 @@ function AlgorithmParameters({
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Expect threshold</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Expect threshold</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
                   <input
-                    className='input is-small'
+                    disabled
+                    className={`input is-small ${theme === 'dark' ? 'has-background-grey is-dark has-text-light' : ''}`}
                     type='text'
                     style={{ width: 80 }}
                     {...register('expectThreshold')}
@@ -565,13 +592,18 @@ function AlgorithmParameters({
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Word size</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Word size</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                <div className="select is-small">
-                  <select {...register('wordSize')} style={{ width: 80 }}>
+                <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
+                  <select
+                    disabled
+                    {...register('wordSize')}
+                    style={{ width: 80 }}
+                    className={theme === 'dark' ? 'has-background-grey has-text-light':''}
+                  >
                     {
                       //@ts-ignore
                       fields.wordSize.oneOf.map(wordSize => (
@@ -587,13 +619,13 @@ function AlgorithmParameters({
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Max. matches in a query range</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Max. matches in a query range</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
                   <input
-                    className='input is-small'
+                    className={`input is-small ${theme === 'dark' ? 'has-background-grey is-dark has-text-light' : ''}`}
                     type='text'
                     style={{ width: 80 }}
                     {...register('maxMatchesInQueryRange')}
@@ -608,20 +640,25 @@ function AlgorithmParameters({
 
         </fieldset>
       
-        <fieldset className='box'>
-          <legend className='label has-text-centered'>Scoring Parameters</legend>
+        <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+          <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>Scoring Parameters</legend>
           
           {
             ['blastp','tblastn'].indexOf(blastFlavour) >= 0 &&
               <div className='field is-horizontal'>
                 <div className="field-label is-small">
-                  <label className="label">Matrix</label>
+                  <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Matrix</label>
                 </div>
                 <div className="field-body">
                   <div className="field">
                     <div className="control">
-                    <div className="select is-small">
-                      <select style={{ width: 140 }} {...register('matrix')}>
+                    <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
+                      <select
+                        disabled
+                        className={theme === 'dark' ? 'has-background-grey has-text-light':''}
+                        style={{ width: 140 }}
+                        {...register('matrix')}
+                      >
                         {
                           //@ts-ignore
                           fields.matrix.oneOf.map(wordSize => (
@@ -639,13 +676,18 @@ function AlgorithmParameters({
             ['blastn'].indexOf(blastFlavour) >= 0 &&
             <div className='field is-horizontal'>
                 <div className="field-label is-small">
-                  <label className="label">Match/Mismatch Scores</label>
+                  <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Match/Mismatch Scores</label>
                 </div>
                 <div className="field-body">
                   <div className="field">
                     <div className="control">
-                    <div className="select is-small">
-                      <select style={{ width: 140 }} {...register('matchMismatch')}>
+                    <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
+                      <select
+                        disabled
+                        className={theme === 'dark' ? 'has-background-grey has-text-light':''}
+                        style={{ width: 140 }}
+                        {...register('matchMismatch')}
+                      >
                         {
                           //@ts-ignore
                           fields.matchMismatch.oneOf.map(match => (
@@ -661,13 +703,18 @@ function AlgorithmParameters({
           }
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Gap costs</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Gap costs</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                <div className="select is-small">
-                  <select style={{ width: 140 }} {...register('gapCosts')}>
+                <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
+                  <select
+                    disabled
+                    className={theme === 'dark' ? 'has-background-grey has-text-light':''}
+                    style={{ width: 140 }}
+                    {...register('gapCosts')}
+                  >
                     { 
                       //@ts-ignore
                       fields['gapCosts'].oneOf.map(gapCost => {
@@ -690,14 +737,15 @@ function AlgorithmParameters({
             ['blastp','tblastn'].indexOf(blastFlavour) >= 0 &&
             <div className='field is-horizontal'>
               <div className="field-label is-small">
-                <label className="label">Compositional adjustment</label>
+                <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Compositional adjustment</label>
               </div>
               <div className="field-body">
                 <div className="field">
                   <div className="control">
-                  <div className="select is-small">
+                  <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
                     <select
                       disabled
+                      className={theme === 'dark' ? 'has-background-grey has-text-light':''}
                       {...register('compositionalAdjustment')}
                     >
                       {
@@ -714,12 +762,13 @@ function AlgorithmParameters({
             </div>
           }
         </fieldset>
-        <fieldset className='box'>
-          <legend className='label has-text-centered'>Filters and masking</legend>
+
+        <fieldset className={`box ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+          <legend className={`label has-text-centered ${theme === 'dark' ? 'has-text-light' : ''}`}>Filters and masking</legend>
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Filter</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Filter</label>
             </div>
             <div className="field-body">
               <div className="field">
@@ -740,7 +789,7 @@ function AlgorithmParameters({
 
           <div className='field is-horizontal'>
             <div className="field-label is-small">
-              <label className="label">Mask</label>
+              <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}>Mask</label>
             </div>
             <div className="field-body">
               <div className="field">
@@ -757,13 +806,14 @@ function AlgorithmParameters({
         
         <div className='field is-horizontal'>
           <div className="field-label is-small">
-              <label className="label"></label>
-            </div>
+            <label className={`label ${theme === 'dark' ? 'has-text-light' : ''}`}></label>
+          </div>
           <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <label className='checkbox'>
-                    <input type='checkbox' {...register('lcaseMasking')} />
+                  {/*//@ts-ignore*/}
+                  <label className='checkbox' disabled>
+                    <input disabled type='checkbox' {...register('lcaseMasking')} />
                     Mask lower case letters
                   </label>
                 </div>
@@ -778,6 +828,7 @@ function AlgorithmParameters({
 }
 
 export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: BlastFlavour }}) {
+  const { theme } = useContext(ThemeContext);
   const { blastFlavour } = params;
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
@@ -794,7 +845,9 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
     //@ts-ignore
     resolver: yupResolver(blastForm),
     //@ts-ignore
-    defaultValues: blastForm.default()
+    defaultValues: blastForm.default(),
+    //@ts-ignore
+    values: blastForm.default()
   });
 
   console.log({ errors })
@@ -817,13 +870,17 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <h1 className='title'>{blastFlavour}</h1>
-      <EnterQuery register={register} errors={errors} formDescription={formDescription} />
-      <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} formDescription={formDescription} />
-      <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} formDescription={formDescription} />
-      <SubmitButton register={register} errors={errors} getValues={getValues} watch={watch} formDescription={formDescription} />
-      <AlgorithmParameters register={register} errors={errors} getValues={getValues} formDescription={formDescription} blastFlavour={blastFlavour}/>
-    </form>
+    <section className={`section ${theme === 'dark' ? 'has-background-dark has-text-light' : ''}`}>
+      <div className='container is-fullhd'>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <h1 className={`title ${theme === 'dark' ? 'has-text-light' : ''}`}>{blastFlavour}</h1>
+          <EnterQuery register={register} errors={errors} formDescription={formDescription} theme={theme}/>
+          <ChooseSearchSet register={register} errors={errors} blastFlavour={blastFlavour} control={control} formDescription={formDescription} theme={theme} />
+          <ProgramSelection register={register} errors={errors} getValues={getValues} blastFlavour={blastFlavour} formDescription={formDescription} theme={theme} />
+          <SubmitButton register={register} errors={errors} getValues={getValues} watch={watch} formDescription={formDescription} theme={theme} />
+          <AlgorithmParameters register={register} errors={errors} getValues={getValues} formDescription={formDescription} blastFlavour={blastFlavour} theme={theme}/>
+        </form>
+      </div>
+    </section>
   )
 }

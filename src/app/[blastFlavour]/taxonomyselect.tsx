@@ -2,7 +2,8 @@ import AsyncSelect from 'react-select/async';
 import { Controller } from 'react-hook-form';
 import type { Control, UseFormRegister } from 'react-hook-form'; 
 
-import type { BlastParameters } from './page'
+import type { BlastParameters } from './page';
+import type { Theme } from '../themecontext';
 //import type { FormData, BlastFlavour } from './blastflavour'
 
 type SelectElement = {
@@ -16,7 +17,7 @@ type TaxonomyEntry = {
 }
 
 function DropdownIndicator(){
-  return <div style={{width:30, height:30}}>
+  return <div style={{ width:30, height:30 }}>
     &nbsp;
   </div>
 }
@@ -45,13 +46,15 @@ function promiseOptions(inputValue: string){
 
 export function TaxonomySelect({
   control,
-  register
+  register,
+  theme
 }: {
   control: Control<BlastParameters>,
-  register: UseFormRegister<BlastParameters>
+  register: UseFormRegister<BlastParameters>,
+  theme: Theme
 }){
   return <>
-    <div className='select is-small'>
+    <div className={`select is-small ${theme === 'dark' ? 'is-dark' : ''}`}>
       <Controller
         control={control}
         name='taxids'
@@ -60,8 +63,20 @@ export function TaxonomySelect({
           styles={{
             control: (baseStyles) => {
               const height = 30;
-              return { ...baseStyles, height, minHeight: height, minWidth: 400 }
+              return { 
+                ...baseStyles,
+                height,
+                minHeight: height,
+                minWidth: 400,
+                backgroundColor: theme === 'dark' ? 'hsl(0, 0%, 48%)' : '',
+                borderColor: theme === 'dark' ? '#292929' : 'lightgrey',
+              }
             },
+            input: (baseStyles) => ({ 
+              ...baseStyles,
+              color: theme === 'dark' ? 'hsl(0, 0%, 96%)' : '',
+            }),
+            placeholder: (baseStyles) => ({ ...baseStyles, color: theme === 'dark' ? 'hsl(0, 0%, 96%)' : '', }),
             indicatorsContainer: (baseStyles) => ({
               ...baseStyles, flexShrink: 2
             }),
@@ -73,11 +88,11 @@ export function TaxonomySelect({
             valueContainer: (baseStyles, { hasValue }) => {
               const marginTop = hasValue ? -8 : 0
               return {
-              ...baseStyles, paddingTop: 0, paddingBottom: 0, marginTop
+              ...baseStyles, paddingTop: 0, paddingBottom: 0, marginTop,
             }}
           }}
           components={{ DropdownIndicator }}
-          loadOptions={promiseOptions}
+          loadOptions={ promiseOptions }
           placeholder='Enter taxonomic name or taxid'
           noOptionsMessage={()=>('Start typing to see suggestions')}
           onChange={(options: readonly SelectElement[]) => {
@@ -86,13 +101,15 @@ export function TaxonomySelect({
           }}
           isClearable
           isMulti
+          isDisabled
           {...{ ref, onBlur }}
         />
         }}
       />
     </div>
-    <label className='checkbox'>
+    <label className={`checkbox ${theme === 'dark' ? 'has-text-light' : ''}`}>
       <input
+        disabled
         type='checkbox'
         style={{ marginLeft: 8, marginRight: 4}}
         {...register('excludeTaxids')}
