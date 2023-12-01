@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const parameters = await request.json();
-  const jobId = hash(parameters);
+  const jobId = hash(parameters).slice(0,10);
   const existingJob = await prisma.blastjob.findFirst({ where: { id: jobId }});
   if (!existingJob) {
     prisma.blastjob.create({

@@ -101,7 +101,7 @@ YLRKSAPIRHLKEYNRAIQL')
   expectThreshold: Yup.number()
     .required('Must specify an expect threshold')
     .moreThan(0, 'Expect threshold cannot be negative')
-    .default(0.5)
+    .default(10.0)
     .required()
     .transform(numberTransform),
   maxMatchesInQueryRange: Yup.number()
@@ -255,6 +255,7 @@ function EnterQuery({
               <textarea
                 className={`textarea is-small ${errors.query?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}
                 placeholder="QUERY SEQUENCE"
+                style={{ fontFamily: 'monospace' }}
                 {...register('query')}
                 disabled />
             </div>
@@ -834,7 +835,7 @@ export default function BlastFlavourPage({ params }:{ params:{ blastFlavour: Bla
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound()
   }
-  const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
+  // const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
 
   const blastForm = BLASTFLAVOUR_FORMS.get(blastFlavour)!
 
