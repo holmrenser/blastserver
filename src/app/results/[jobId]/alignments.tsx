@@ -1,4 +1,4 @@
-import { BlastHit } from "../../api/[...jobId]/route";
+import { BlastHit } from "../../api/[...jobId]/formatResults";
 
 function padAligmentStrings(
   qseq: string, midline: string, hseq: string,
