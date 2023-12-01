@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { scaleLinear, ScaleLinear, scaleThreshold } from 'd3';
 
-import { BlastHit } from '../../api/[...jobId]/route';
+import { BlastHit } from '../../api/[...jobId]/formatResults';
 import styles from './graphicSummary.module.scss';
 
 function ColorScale(){

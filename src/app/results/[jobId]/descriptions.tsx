@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { BlastHit } from "../../api/[...jobId]/route";
+import { BlastHit } from "../../api/[...jobId]/formatResults";
 import styles from './descriptions.module.scss';
 
 function truncate(string: string, limit=20){
