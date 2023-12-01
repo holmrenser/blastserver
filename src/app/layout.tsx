@@ -9,8 +9,8 @@ const font = Hanken_Grotesk({ subsets: ['latin']})
 
 
 export const metadata = {
-  title: 'BLAST',
-  description: 'Web form to submit BLAST jobs',
+  title: 'JingleBLAST',
+  description: 'Happy holidays from the bioinformatics group',
 }
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
         <ThemeProvider>
           <main className={font.className}>
             <Nav />
-              {children}
+            { children }
           </main>
         </ThemeProvider>
       </body>

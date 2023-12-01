@@ -148,7 +148,7 @@ export default function ResultsWrapper({
             <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
               <header className='card-header'>
                 <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
-                  Job ID&nbsp; <span className='tag is-info is-light'>{jobId}</span>
+                  Job&nbsp;ID <span style={{marginLeft: '8px'}} className='tag is-info is-light'>{jobId}</span>
                 </p>
               </header>
               <div className='card-content'>
