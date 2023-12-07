@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body >
         <ThemeProvider>
           <main className={font.className}>
             <Nav />

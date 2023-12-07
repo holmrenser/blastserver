@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
 import styles from './descriptions.module.scss';
+import { ThemeContext } from '@/app/themecontext';
 
 function truncate(string: string, limit=20){
   if (string.length <= limit) return string;
@@ -41,6 +42,7 @@ function useSelectionSet<T>(): [Set<T>, Function, Function, Function]{
 
 export default function Descriptions({ hits, database }: {hits: BlastHit[], database: string}): JSX.Element {
   const pathname = usePathname();
+  const { theme } = useContext(ThemeContext);
 
   // Next doesn't properly handle basepath in usePathname, so we have to trim manually
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -91,10 +93,10 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
   }
 
   return (
-    <div className={`has-background-light description-container ${styles.descriptionContainer}`}>
-      <nav className='navbar has-background-info-light' role='navigation'>
+    <div className={`description-container ${styles.descriptionContainer}`}>
+      <nav className={`navbar ${theme === 'dark' ? 'has-background-info' : 'has-background-info-light'}`} role='navigation'>
         <div className='navbar-brand'>
-          <b className='navbar-item'>
+          <b className={`navbar-item ${theme === 'dark' ? 'has-text-light' : ''}`}>
             <span className='tag is-small is-success'>{hits.length}</span>
             &nbsp;Sequences producing significant alignments
           </b>
@@ -122,19 +124,16 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
         />
         Select all
       </label>
-      <table className='table is-size-7 is-narrow is-hoverable is-fullwidth'>
+      <table className={`table is-size-7 is-narrow is-hoverable is-fullwidth ${theme === 'dark' ? 'has-background-grey has-text-light' : ''}`}>
         <thead>
           <tr>
             <th></th>
-            <th>Description</th>
-            <th>Scientific Name</th>
-            <th>Max Score</th>
-            <th>Total Score</th>
-            <th>Query Cover</th>
-            <th>E value</th>
-            <th>Per. Ident.</th>
-            <th>Acc. Len.</th>
-            <th>Accession</th>
+            {
+            ['Description', 'Scientific Name', 'Max Score', 'Total Score',
+            'Query Cover', 'E value','Per. Ident.', 'Acc. Len.', 'Accession'].map(header => (
+              <th key={header} className={`${theme === 'dark' ? 'has-text-light' : ''}`}>{header}</th>
+            ))
+            }
           </tr>
         </thead>
         <tbody>

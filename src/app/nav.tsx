@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link';
-import { useContext, useRef, useEffect, useMemo } from 'react';
+import { useContext, useRef, useEffect, useState } from 'react';
 
 import { ThemeProvider, ThemeContext } from './themecontext';
 
@@ -12,38 +12,86 @@ import { ALLOWED_FLAVOURS } from './[blastFlavour]/blastflavour.d.ts';
 import Snowfall from 'react-snowfall';
 
 function SantaCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const img = useMemo(() => {
-    const img = new Image();
-    img.src = "santa-sled.png"
-    img.id  = "santa_img";
-    return img
-  },[])
-  
-  const flip = false
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  const [flip, setFlip] = useState(false);
 
   useEffect(() => {
-    function draw (ctx: CanvasRenderingContext2D, flip: boolean) {
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-      ctx.save();
-      ctx.scale(flip ? -1 : 1, 1);
-      ctx.drawImage(img, flip ? img.width * -1 : 0, Math.random()*(ctx.canvas.height-100), img.width, img.height);
-      ctx.restore();
+    const img = new Image();
+    img.src = '/santa-sled.png';
+    img.id = 'santa_img';
+    img.onload = () => {
+      imgRef.current = img;
+      draw({ flip })
     }
-    const canvas = canvasRef.current;
-    if (canvas === null) return;
-    const context = canvas.getContext('2d');
-    if (context === null) return;
-    img.onload = () => draw(context, false);
+  }, [flip]);
 
-    function render(){
-      if (context === null) return;
-      draw(context, flip)
-    }
-  },[flip, img])
+  function draw({ flip }: { flip: boolean }) {
+    const ctx = canvasRef?.current?.getContext("2d");
+    const img = imgRef?.current;
+    console.log({ img })
 
-  return <canvas ref={canvasRef} />
+    if (!ctx || !img) { return };
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.save();
+    ctx.scale(flip ? -1 : 1, 1);
+    ctx.drawImage(img, flip ? 200 * -1 : 0, Math.random() * (ctx.canvas.height - 100), 200, 93);
+    ctx.restore()
+  }
+
+  function animationIteration() {
+    setFlip(!flip);
+    draw({ flip });
+  }
+  return <>
+    <style type='text/css'>
+      {`
+      @keyframes slidein {
+        0% {
+          left: 100%;
+        }
+        15% {
+          left: 100%;
+        } 
+        90% {
+          left: -200px;
+        }
+        100% {
+          left: -200px;
+        }
+      }
+      `}
+    </style>
+    <div
+      className='slidein'
+      id="santa_animation"
+      onAnimationIteration={animationIteration}
+      style={{
+        position: 'fixed',
+        animationDuration: '3s',
+        animationName: 'slidein',
+        animationIterationCount: 'infinite',
+        animationDirection: 'alternate',
+        zIndex: 79
+      }}
+    >
+      <canvas
+      className='santa'
+      id='santa_canvas'
+      ref={canvasRef} 
+      width='1000'
+      height='800'
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
+      }}
+    />
+    </div>
+  </>
 }
 
 export default function Nav(){
@@ -51,6 +99,7 @@ export default function Nav(){
   return (
     <>
     <Snowfall />
+    <SantaCanvas />
     <nav className={`navbar ${theme === 'dark' ? 'is-dark' : 'is-light'}`} role="navigation" aria-label="main navigation">
       <div className="navbar-brand">
         <Link className="navbar-item" href="/">
