@@ -24,5 +24,6 @@ COPY --from=builder /app/app.js ./
 COPY --from=builder /app/.next/standalone ./.next/standalone
 COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/prisma ./
+COPY --from=builder /app/public ./
 
 CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config app.js
