@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -7,6 +9,8 @@ import Alignments from './alignments';
 import Taxonomy from './taxonomy';
 
 import styles from './resultspage.module.scss';
+import { ThemeContext } from '@/app/themecontext';
+import { useContext } from 'react';
 
 type PANEL_COMPONENT = (arg0: {
   hits: any[],
@@ -19,7 +23,7 @@ const PANEL_COMPONENTS: Record<string, PANEL_COMPONENT> = {
   descriptions: Descriptions,
   graphic_summary: GraphicSummary,
   alignments: Alignments,
-  taxonomy: Taxonomy
+  // taxonomy: Taxonomy
 }
 
 function formatPanelName(panelName: string): string {
@@ -32,6 +36,7 @@ function formatPanelName(panelName: string): string {
 export default function ResultsPage({ blastResults, database, err }: { blastResults: any, database: string, err: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { theme } = useContext(ThemeContext);
   
   // Next doesn't properly handle basepath in usePathname, so we have to trim manually
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -48,26 +53,48 @@ export default function ResultsPage({ blastResults, database, err }: { blastResu
     <>
       { message }
       { !message && 
-      <>
-        <div className={`tabs is-boxed panel-nav has-background-light ${styles.navPanel}`}>
+      <div className={`${theme === 'dark' ? 'has-background-grey-dark' : 'has-background-light'}`}>
+        <div className={`tabs is-boxed panel-nav ${styles.navPanel}`}>
           <ul>
             {
               Object.keys(PANEL_COMPONENTS).map(panel => {
-                return <li key={panel} className={panel === activePanel ? 'is-active' : ''}>
-                  <Link 
-                    href={{ 
-                      pathname: linkPath, 
-                      query: { panel } 
-                    }}>
-                      { formatPanelName(panel) }
-                  </Link>
-                </li>
+                let backgroundColor = '';
+                let textColor = ''
+                if (panel === activePanel) {
+                  if (theme === 'dark') {
+                    backgroundColor = 'has-background-grey-light'
+                    textColor = 'has-text-info-light'
+                  }
+                } else {
+                  if (theme === 'dark'){
+                    backgroundColor = 'has-background-grey-dark'
+                    textColor = 'has-text-light'
+                  }
+                }
+                /*
+                `${panel === activePanel ? 'is-active' : ''} ${theme === 'dark' ? 'has-background-grey-dark' : ''}`
+                */
+                return (
+                  <li
+                    key={panel}
+                    className={`${panel === activePanel ? 'is-active' : ''} ${backgroundColor}`}
+                  >
+                    <Link
+                      className={`${textColor}`}
+                      href={{ 
+                        pathname: linkPath, 
+                        query: { panel } 
+                      }}>
+                        { formatPanelName(panel) }
+                    </Link>
+                  </li>
+                )
               })
             }
           </ul>
         </div>
         <PanelComponent hits={hits} queryLength={queryLen} taxonomyTrees={taxonomyTrees} database={database} />
-      </>
+      </div>
       }
     </>
   )

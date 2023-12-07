@@ -56,6 +56,8 @@ function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) 
   const { flavour, queryTo, queryFrom, taxids, gapCosts, excludeTaxids,
   maxTargetSeqs, expectThreshold, lcaseMasking } = parameters;
   
+  const { theme } = useContext(ThemeContext);
+
   let additionalParams: {[key: string]: string} = {};
   if (flavour === 'blastp') {
     Object.assign(additionalParams, { matrix: parameters.matrix, wordSize: parameters.wordSize })
@@ -66,14 +68,14 @@ function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) 
   if (lcaseMasking) { Object.assign(additionalParams, { lcaseMasking: 'true' })}
 
   return (
-    <div className='card'>
+    <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
       <header className='card-header'>
-        <p className='card-header-title'>
+        <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
           Used parameters
         </p>
       </header>
       <div className='card-content'>
-        <table className='table is-small is-size-7'>
+        <table className={`table is-small is-size-7 ${theme === 'dark' ? 'has-background-grey-dark has-text-light' : ''}`}>
           <tbody>
             <tr>
               <td>Gap costs</td>
@@ -108,6 +110,15 @@ function UsedParameters({ parameters }: { parameters: FormData<BlastFlavour> }) 
   )
 }
 
+function Status({ message }: { message: string }) {
+  const { theme } = useContext(ThemeContext);
+  return <section className='hero is-fullheight'>
+    <h1 className={`title ${theme === 'dark' ? 'has-text-light':''}`}>
+     { message }
+    </h1>
+  </section>
+}
+
 export default function ResultsWrapper({
   params
 }:{
@@ -133,59 +144,57 @@ export default function ResultsWrapper({
   const { theme } = useContext(ThemeContext);
   
   if (error) return <ErrorComponent statusCode={500} />
-  if (isLoading) return <p>Connecting</p>
-  if (!data) return <p>Fetching</p>
+  if (isLoading) return <Status message='loading' />
+  if (!data) return <Status message='fetching' />
 
   const { submitted, results, finished, parameters, err } = data;
   const { jobTitle, program, database } = parameters;
 
   return (
-    <section className={`section ${theme === 'dark' ? 'has-background-dark has-text-light' : ''}`}>
-      <div className='container is-fullhd'>
-        <h2 className={`subtitle ${theme === 'dark' ? 'has-text-light' : ''}`}>Results</h2>
-        <div className='columns'>
-          <div className='column'>
-            <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
-              <header className='card-header'>
-                <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
-                  Job&nbsp;ID <span style={{marginLeft: '8px'}} className='tag is-info is-light'>{jobId}</span>
-                </p>
-              </header>
-              <div className='card-content'>
-                <table className={`table is-small is-size-7 ${theme === 'dark' ? 'has-background-grey-dark has-text-light' : ''}`}>
-                  <tbody>
-                    <tr>
-                      <td>Job Title</td>
-                      <td>{jobTitle || 'Protein Sequence'}</td>
-                    </tr>
-                    <tr>
-                      <td>Program</td>
-                      <td>{program.toUpperCase()}</td>
-                    </tr>
-                    <tr>
-                      <td>Database</td>
-                      <td>{database}</td>
-                    </tr>
-                    <tr>
-                      <td>Submitted</td>
-                      <td>{new Date(submitted)?.toLocaleString('en-GB')}</td>
-                    </tr>
-                    <tr>
-                      <td>Status</td>
-                      <td>{results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</td>
-                    </tr>
-                    { results && <ResultsTable results={results} />}
-                  </tbody>
-                </table>
-              </div>
+    <div className='container is-fullhd'>
+      <h2 className={`subtitle ${theme === 'dark' ? 'has-text-light' : ''}`}>Results</h2>
+      <div className='columns'>
+        <div className='column'>
+          <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
+            <header className='card-header'>
+              <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
+                Job&nbsp;ID <span style={{marginLeft: '8px'}} className='tag is-info is-light'>{jobId}</span>
+              </p>
+            </header>
+            <div className='card-content'>
+              <table className={`table is-small is-size-7 ${theme === 'dark' ? 'has-background-grey-dark has-text-light' : ''}`}>
+                <tbody>
+                  <tr>
+                    <td>Job Title</td>
+                    <td>{jobTitle || 'Protein Sequence'}</td>
+                  </tr>
+                  <tr>
+                    <td>Program</td>
+                    <td>{program.toUpperCase()}</td>
+                  </tr>
+                  <tr>
+                    <td>Database</td>
+                    <td>{database}</td>
+                  </tr>
+                  <tr>
+                    <td>Submitted</td>
+                    <td>{new Date(submitted)?.toLocaleString('en-GB')}</td>
+                  </tr>
+                  <tr>
+                    <td>Status</td>
+                    <td>{results || err ? `Finished at ${new Date(finished)?.toLocaleString('en-GB')}` : 'In progress'}</td>
+                  </tr>
+                  { results && <ResultsTable results={results} />}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div className='column'>
-            <UsedParameters parameters={parameters} />
-          </div>
         </div>
-        <ResultsPage blastResults={results} database={database} err={err} />
+        <div className='column'>
+          <UsedParameters parameters={parameters} />
+        </div>
       </div>
-    </section>
+      <ResultsPage blastResults={results} database={database} err={err} />
+    </div>
   )
 } 
