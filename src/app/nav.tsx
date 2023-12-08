@@ -19,7 +19,7 @@ function SantaCanvas() {
 
   useEffect(() => {
     const img = new Image();
-    img.src = '/santa-sled.png';
+    img.src = 'https://www.bioinformatics.nl/~holme003/santa-sled.png';
     img.id = 'santa_img';
     img.onload = () => {
       imgRef.current = img;

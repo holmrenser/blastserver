@@ -1,3 +1,4 @@
+name: jingleblast
 services:
   app:
     build:
@@ -26,7 +27,7 @@ services:
       postgres:
         condition: service_healthy
     deploy:
-      replicas: 6
+      replicas: 1
     env_file: .env.production
     volumes:
       - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
