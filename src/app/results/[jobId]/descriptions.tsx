@@ -98,7 +98,7 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
         <div className='navbar-brand'>
           <b className={`navbar-item ${theme === 'dark' ? 'has-text-light' : ''}`}>
             <span className='tag is-small is-success'>{hits.length}</span>
-            &nbsp;Sequences producing significant alignments
+            &nbsp;Significant alignments
           </b>
         </div>
 
@@ -124,7 +124,7 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
         />
         Select all
       </label>
-      <table className={`table is-size-7 is-narrow is-hoverable is-fullwidth ${theme === 'dark' ? 'has-background-grey has-text-light' : ''}`}>
+      <table className={`table is-size-7 is-narrow is-hoverable is-fullwidth ${theme === 'dark' ? 'is-dark has-background-grey-dark has-text-light' : ''}`}>
         <thead>
           <tr>
             <th></th>
@@ -145,7 +145,7 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
             const evalue = Math.min(...evalues)
             const formattedEvalue = evalue === 0 ? evalue : evalue.toExponential(2)
             return <tr key={num}>
-              <td>
+              <td data-label='Select'>
                 <input
                   type='checkbox'
                   checked={selectionSet.has(accession)}
@@ -155,7 +155,7 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
                   }}
                 />
               </td>
-              <td>
+              <td data-label='Description'>
                 <Link
                   href={{
                     pathname: linkPath,
@@ -165,10 +165,10 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
                     hash: accession
                   }}
                 >
-                  {title}
+                  {title.slice(0,100)}
                 </Link>
               </td>
-              <td>
+              <td data-label='Scientific Name'>
                 <a 
                   href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${taxid}`}
                   target='_blank'
@@ -177,13 +177,13 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
                   {truncate(name)}
                 </a>
               </td>
-              <td>{maxScore}</td>
-              <td>{totalScore}</td>
-              <td>{queryCover}%</td>
-              <td>{formattedEvalue}</td>
-              <td>{percentIdentity.toFixed(2)}%</td>
-              <td>{len}</td>
-              <td>
+              <td data-label='Max Score'>{maxScore}</td>
+              <td data-label='Total Score'>{totalScore}</td>
+              <td data-label='Query Cover'>{queryCover}%</td>
+              <td data-label='E value'>{formattedEvalue}</td>
+              <td data-label='Perc. Ident.'>{percentIdentity.toFixed(2)}%</td>
+              <td data-label='Acc. Len.'>{len}</td>
+              <td data-label='Accession'>
                 <a href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`} target='_blank'>
                   {accession}
                 </a>

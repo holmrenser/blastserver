@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { scaleLinear, ScaleLinear, scaleThreshold } from 'd3';
+import { useWindowSize } from '@react-hook/window-size';
 
 import { BlastHit } from '../../api/[...jobId]/formatResults';
 import styles from './graphicSummary.module.scss';
@@ -136,15 +137,18 @@ function HitPlotLine({
 
 export default function GraphicSummary({ 
   hits, 
-  width=600,
+  _width=300,
   queryLength,
   lineHeight=6
 }: {
   hits: Array<any>,
-  width?: number,
+  _width?: number,
   queryLength: number,
   lineHeight?: number
 }): JSX.Element {
+  const [ windowWidth ] = useWindowSize();
+  console.log({ windowWidth });
+  const width = windowWidth > 1344 ? 600 : .8 * windowWidth;
   const padding = {
     top: 20,
     bottom: 10,

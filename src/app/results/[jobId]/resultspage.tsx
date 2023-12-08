@@ -53,8 +53,11 @@ export default function ResultsPage({ blastResults, database, err }: { blastResu
     <>
       { message }
       { !message && 
-      <div className={`${theme === 'dark' ? 'has-background-grey-dark' : 'has-background-light'}`}>
-        <div className={`tabs is-boxed panel-nav ${styles.navPanel}`}>
+      <div
+        className={`${theme === 'dark' ? 'has-background-grey' : 'has-background-light'}`}
+        style={{ marginLeft: -12, marginRight: -12 }}
+      >
+        <div className={`tabs is-boxed panel-nav is-small has-background-grey-dark ${styles.navPanel}`}>
           <ul>
             {
               Object.keys(PANEL_COMPONENTS).map(panel => {
@@ -71,9 +74,7 @@ export default function ResultsPage({ blastResults, database, err }: { blastResu
                     textColor = 'has-text-light'
                   }
                 }
-                /*
-                `${panel === activePanel ? 'is-active' : ''} ${theme === 'dark' ? 'has-background-grey-dark' : ''}`
-                */
+
                 return (
                   <li
                     key={panel}

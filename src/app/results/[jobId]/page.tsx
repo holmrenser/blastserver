@@ -153,8 +153,8 @@ export default function ResultsWrapper({
   return (
     <div className='container is-fullhd'>
       <h2 className={`subtitle ${theme === 'dark' ? 'has-text-light' : ''}`}>Results</h2>
-      <div className='columns'>
-        <div className='column'>
+      <div className='tile is-ancestor'>
+        <div className='tile'>
           <div className={`card ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
             <header className='card-header'>
               <p className={`card-header-title ${theme === 'dark' ? 'has-text-light' : ''}`}>
@@ -190,7 +190,7 @@ export default function ResultsWrapper({
             </div>
           </div>
         </div>
-        <div className='column'>
+        <div className='tile'>
           <UsedParameters parameters={parameters} />
         </div>
       </div>
