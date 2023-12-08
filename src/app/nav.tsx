@@ -30,7 +30,7 @@ function SantaCanvas() {
   function draw({ flip }: { flip: boolean }) {
     const ctx = canvasRef?.current?.getContext("2d");
     const img = imgRef?.current;
-    console.log({ img })
+    // console.log({ img })
 
     if (!ctx || !img) { return };
 

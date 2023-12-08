@@ -1,5 +1,48 @@
 .descriptionContainer {
   padding: 4px 4px;
+  table.is-dark {
+    a {
+      color: hsl(229, 53%, 70%) !important;
+    }
+  }
+  @media screen and (max-width: 1024px) {
+    table {
+      thead {
+        border: none;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+      }
+
+      tr {
+        border-bottom: 3px solid #ddd;
+        display: block;
+        margin-bottom: .625em;
+      }
+
+      td {
+        border-bottom: 1px solid #ddd;
+        display: block;
+        font-size: .8em;
+        text-align: right;
+      }
+      
+      td::before {
+        /*
+        * aria-label has no advantage, it won't be read inside a table
+        content: attr(aria-label);
+        */
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+    }
+  }
 }
 
 .selectAll {
@@ -9,3 +52,5 @@
     margin-right: 4px;
   }
 }
+
+
