@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { scaleLinear, ScaleLinear, scaleThreshold } from 'd3';
@@ -6,6 +6,7 @@ import { useWindowSize } from '@react-hook/window-size';
 
 import { BlastHit } from '../../api/[...jobId]/formatResults';
 import styles from './graphicSummary.module.scss';
+import { ThemeContext } from '@/app/themecontext';
 
 function ColorScale(){
 
@@ -32,7 +33,6 @@ function XAxis({
   for (let i = 1; i < numTicks - 1; i += 1) {
     ticks.push(i * stepSize);
   }
-  console.log({ ticks, queryLength, numTicks, stepSize })
   return (
     <g className="x-axis" transform="translate(0,0)">
       {/* backbone line */}
@@ -146,9 +146,9 @@ export default function GraphicSummary({
   queryLength: number,
   lineHeight?: number
 }): JSX.Element {
+  const { theme } = useContext(ThemeContext);
   const [ windowWidth ] = useWindowSize();
-  console.log({ windowWidth });
-  const width = windowWidth > 1344 ? 600 : .8 * windowWidth;
+  const width = windowWidth > 1344 ? 600 : .85 * windowWidth;
   const padding = {
     top: 20,
     bottom: 10,
@@ -168,18 +168,16 @@ export default function GraphicSummary({
     .range([0, paddedWidth]);
 
   return (
-    <div>
-      <nav className='navbar has-background-info-light' role='navigation'>
-        <div className='navbar-menu'>
-          <div className='navbar-start'>
-            <em className='navbar-item'>Hover to show title</em>
-            <em className='navbar-item'>Click to show alignments</em>
+    <div className={`${theme === 'dark' ? 'has-background-grey': 'has-background-light'} ${styles.graphicSummaryContainer}`}>
+      <nav className={`navbar ${theme === 'dark' ? 'has-background-info' : 'has-background-info-light'}`} role='navigation'>
+          <div className='navbar-brand'>
+            <em className={`is-size-7 ${theme === 'dark' ? 'has-text-light' : ''} navbar-item`}>Hover to show title</em>
+            <em className={`is-size-7 ${theme === 'dark' ? 'has-text-light' : ''} navbar-item`}>Click to show alignments</em>
           </div>
-        </div>
       </nav>
-      <div className='has-background-light'>
+      <div>
         <div className={`columns is-centered ${styles.figureBox}`}>
-          <svg width={width} height={paddedHeight} style={{backgroundColor: 'white'}}>
+          <svg width={width} height={paddedHeight} style={{backgroundColor: theme === 'dark' ? 'lightgrey' : 'white'}}>
             <g className="blast-hit-plot" transform={`translate(${padding.left},${padding.top})`}>
               <text x={0} y={4} fontSize='14' fontWeight='bold'>
                 Distribution of BLAST hits on subject sequences

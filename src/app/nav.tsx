@@ -96,6 +96,7 @@ function SantaCanvas() {
 
 export default function Nav(){
   const { theme, toggleTheme } = useContext(ThemeContext);
+  const [showNav, setShowNav] = useState(false);
   return (
     <>
     <Snowfall />
@@ -106,24 +107,24 @@ export default function Nav(){
           BLAST
         </Link>
 
-        <a role="button" className="navbar-burger" aria-label="menu" aria-expanded="false" data-target="blast-navbar">
+        <a role="button" className="navbar-burger" aria-label="menu" aria-expanded="false" data-target="blast-navbar" onClick={()=>{setShowNav(!showNav)}}>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
         </a>
       </div>
 
-      <div id="blast-navbar" className="navbar-menu">
+      <div id="blast-navbar" className={`navbar-menu ${showNav ? 'is-active' : ''} ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
         <div className="navbar-start">
           <div className="navbar-item has-dropdown is-hoverable">
-            <a className="navbar-link">
+            <a className={`${theme === 'dark' ? 'has-text-light' : ''} navbar-link`}>
               Flavours
             </a>
 
-            <div className={`navbar-dropdown ${theme === 'dark' ? 'has-background-grey' : ''}`}>
+            <div className={`navbar-dropdown ${theme === 'dark' ? 'has-background-grey-dark' : ''}`}>
               {
                 ALLOWED_FLAVOURS.map(flavour => (
-                  <Link className={`navbar-item ${theme === 'dark' ? 'has-background-grey has-text-white' : ''}`} href={`/${flavour}`} key={flavour}>
+                  <Link className={`navbar-item ${theme === 'dark' ? 'has-background-grey-dark has-text-light' : ''}`} href={`/${flavour}`} key={flavour}>
                     {flavour}
                   </Link>
                 ))
@@ -141,10 +142,16 @@ export default function Nav(){
                 checked={theme === 'light'}
                 onChange={toggleTheme}
               />
-              <label htmlFor='theme-switch' style={{fontSize:'1rem'}}>Toggle theme</label>
+              <label
+                className={theme === 'dark' ? 'has-text-light' : ''}
+                htmlFor='theme-switch'
+                style={{fontSize:'1rem'}}
+              >
+                Toggle theme
+              </label>
             </div>
           </div>
-          <p className='navbar-item'>Queue</p>
+          <p className={`navbar-item ${theme === 'dark' ? 'has-text-light' : ''}`}>Queue</p>
           <div className='navbar-item'>
             <QueueStatus />
           </div>

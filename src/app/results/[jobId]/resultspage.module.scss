@@ -1,3 +1,19 @@
 .navPanel {
   margin-bottom: 0px !important;
 }
+
+.darkTabLink {
+  background-color: hsl(0, 0%, 21%);
+  color: hsl(0, 0%, 96%) !important;
+  border-color: hsl(0, 0%, 21%) !important;
+  &:hover, &.isActive {
+    border-color: hsl(0, 0%, 48%) !important;
+    background-color: hsl(0, 0%, 48%) !important;
+  } 
+}
+
+.lightTabLink {
+  &.isActive {
+    background-color: hsl(0, 0%, 96%) !important;
+  }
+}

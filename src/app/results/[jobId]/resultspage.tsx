@@ -11,9 +11,12 @@ import Taxonomy from './taxonomy';
 import styles from './resultspage.module.scss';
 import { ThemeContext } from '@/app/themecontext';
 import { useContext } from 'react';
+import type { BlastJobResults } from '@/app/api/[...jobId]/route';
+import type { BlastHit } from '@/app/api/[...jobId]/formatResults';
+import type { BlastFlavour, FormData } from '@/app/[blastFlavour]/blastflavour';
 
 type PANEL_COMPONENT = (arg0: {
-  hits: any[],
+  hits: BlastHit[],
   queryLength: number,
   taxonomyTrees: any,
   database: string
@@ -33,21 +36,24 @@ function formatPanelName(panelName: string): string {
     .join(' ')
 }
 
-export default function ResultsPage({ blastResults, database, err }: { blastResults: any, database: string, err: string }) {
+export default function ResultsPage({ data }: { data: BlastJobResults }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { theme } = useContext(ThemeContext);
+
+  const { results, err, parameters } = data;
+  const { database } = parameters as any as FormData<BlastFlavour>;
   
   // Next doesn't properly handle basepath in usePathname, so we have to trim manually
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const linkPath = pathname.slice(basePath.length)
 
   if (err) return <p>{err}</p>
-  if (!blastResults) return <p>This page will automatically update once your job is ready</p>
+  if (!results) return <p>This page will automatically update once your job is ready</p>
 
   const activePanel = searchParams.get('panel') || 'descriptions';
   const PanelComponent = PANEL_COMPONENTS[activePanel];
-  const { queryLen, hits, taxonomyTrees, message } = blastResults;
+  const { queryLen, hits, taxonomyTrees, message } = results;
   
   return (
     <>
@@ -57,31 +63,17 @@ export default function ResultsPage({ blastResults, database, err }: { blastResu
         className={`${theme === 'dark' ? 'has-background-grey' : 'has-background-light'}`}
         style={{ marginLeft: -12, marginRight: -12 }}
       >
-        <div className={`tabs is-boxed panel-nav is-small has-background-grey-dark ${styles.navPanel}`}>
+        <div className={`tabs is-boxed panel-nav is-small ${theme === 'dark' ? 'has-background-dark' : 'has-background-white'} ${styles.navPanel}`}>
           <ul>
             {
               Object.keys(PANEL_COMPONENTS).map(panel => {
-                let backgroundColor = '';
-                let textColor = ''
-                if (panel === activePanel) {
-                  if (theme === 'dark') {
-                    backgroundColor = 'has-background-grey-light'
-                    textColor = 'has-text-info-light'
-                  }
-                } else {
-                  if (theme === 'dark'){
-                    backgroundColor = 'has-background-grey-dark'
-                    textColor = 'has-text-light'
-                  }
-                }
-
                 return (
                   <li
                     key={panel}
-                    className={`${panel === activePanel ? 'is-active' : ''} ${backgroundColor}`}
+                    className={`${panel === activePanel ? 'is-active' : ''}`}
                   >
                     <Link
-                      className={`${textColor}`}
+                      className={`${theme === 'dark' ? styles.darkTabLink : styles.lightTabLink} ${panel === activePanel ? styles.isActive : ''}`}
                       href={{ 
                         pathname: linkPath, 
                         query: { panel } 
@@ -94,7 +86,7 @@ export default function ResultsPage({ blastResults, database, err }: { blastResu
             }
           </ul>
         </div>
-        <PanelComponent hits={hits} queryLength={queryLen} taxonomyTrees={taxonomyTrees} database={database} />
+        <PanelComponent hits={hits || []} queryLength={Number(queryLen)} taxonomyTrees={taxonomyTrees} database={database} />
       </div>
       }
     </>
