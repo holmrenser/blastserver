@@ -256,7 +256,21 @@ async function buildTaxTrees(hits: BlastHit[]) {
   return taxonomyTrees
 }
 
-export default async function formatResults(blastResults: string) {
+export type FormattedBlastResults = {
+  params: any,
+  program: string,
+  queryId: string,
+  queryLen: string,
+  queryTitle: string,
+  hits: BlastHit[] | undefined,
+  stat: string,
+  version: string,
+  db: string,
+  taxonomyTrees: TaxonomyNode[] | undefined,
+  message: string,
+}
+
+export default async function formatResults(blastResults: string): Promise<FormattedBlastResults> {
   // parse blast XML and use destructuring assignment to extract all useful parts
   const results = xml2js(blastResults, { compact: true, trim: true, textFn: replaceJsonTextAttribute })
   const {   

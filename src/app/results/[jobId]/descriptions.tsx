@@ -93,7 +93,7 @@ export default function Descriptions({ hits, database }: {hits: BlastHit[], data
   }
 
   return (
-    <div className={`description-container ${styles.descriptionContainer}`}>
+    <div className={styles.descriptionContainer}>
       <nav className={`navbar ${theme === 'dark' ? 'has-background-info' : 'has-background-info-light'}`} role='navigation'>
         <div className='navbar-brand'>
           <b className={`navbar-item ${theme === 'dark' ? 'has-text-light' : ''}`}>

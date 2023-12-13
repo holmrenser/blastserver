@@ -61,7 +61,7 @@ const baseForm = Yup.object().shape({
   jobTitle: Yup.string().notRequired(),
   email: Yup.string().notRequired(),
   query: Yup.string()
-    .default('>QUERY\n\
+    .default('>SANTAS_QUERY\n\
 TVDHYFLFSQGVTLILPCGIVTPGCKSVQNLNLRNGHQNMLAMLRRQLLFGDRCEPQVSI\
 IKPVNALEKRFCYRVTLDDANEAYIAPAYDWWCDARSIWQVPHSGEYGSDYRPKFRSGGG\
 ILRADWQAPTQSPAAEMESYIGSWNAVLKYPKDNDAIVNKPGKRHVAFSKIEIIHSENQR\
@@ -381,7 +381,7 @@ function ChooseSearchSet({
           <div className="field">
             <div className="control" >
               <div className={`select is-small ${errors.database?.message ? 'is-danger' : ''} ${theme === 'dark' ? 'is-dark' : ''}`}>
-                <select disabled {...register('database')} style={{ minWidth: 400}} className={`${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}>
+                <select disabled {...register('database')} style={{ minWidth: 290}} className={`${theme === 'dark' ? 'dark has-background-grey is-dark has-text-light' : ''}`}>
                   {
                     dbOptions && dbOptions.map(db => (
                       <option key={db} value={db}>

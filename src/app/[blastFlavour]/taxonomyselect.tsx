@@ -67,7 +67,7 @@ export function TaxonomySelect({
                 ...baseStyles,
                 height,
                 minHeight: height,
-                minWidth: 400,
+                minWidth: 290,
                 backgroundColor: theme === 'dark' ? 'hsl(0, 0%, 48%)' : '',
                 borderColor: theme === 'dark' ? '#292929' : 'lightgrey',
               }
