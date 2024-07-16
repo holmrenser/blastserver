@@ -1,33 +1,32 @@
-import { Inter, Hanken_Grotesk, Open_Sans } from 'next/font/google'
+import { Inter, Hanken_Grotesk, Open_Sans } from "next/font/google";
 
-import { ThemeProvider } from './themecontext';
-import Nav from './nav';
+import { ThemeProvider } from "./themecontext";
+import Nav from "./nav";
 
-import './globals.scss'
+import "./globals.scss";
 
-const font = Hanken_Grotesk({ subsets: ['latin']})
-
+const font = Hanken_Grotesk({ subsets: ["latin"], weight: "300" });
 
 export const metadata = {
-  title: 'JingleBLAST',
-  description: 'Happy holidays from the bioinformatics group',
-}
+  title: "WUR BLAST",
+  description: "WUR BLAST service, hosted by the bioinformatics group",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body >
+      <body>
         <ThemeProvider>
           <main className={font.className}>
             <Nav />
-            { children }
+            {children}
           </main>
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

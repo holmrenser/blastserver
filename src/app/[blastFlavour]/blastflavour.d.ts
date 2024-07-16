@@ -1,5 +1,5 @@
 // export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
-export const ALLOWED_FLAVOURS = ['blastp']; //, 'tblastn'];
+export const ALLOWED_FLAVOURS = ['blastp', 'tblastn', 'blastn'] as const;
 export type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
 interface BaseForm {

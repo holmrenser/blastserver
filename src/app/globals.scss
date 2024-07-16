@@ -1,7 +1,11 @@
-$blue: hsl(208, 100%, 51%);
-$turquoise: hsl(166, 88%, 55%);
-$green: hsl(155, 67%, 45%);;
+$blue: #058aff;
+$turquoise: #27f1c2;
+$green: #26c080;
+$cyan: #6cafce;
 
-@import '~bulma/bulma.sass';
-@import '~bulma-switch/src/sass/index.sass';
+$radius-small: 3px;
+$radius: 3px;
+$radius-large: 4px;
 
+@import "~bulma/sass/_index.scss";
+@import "./bulma-switch.scss";
