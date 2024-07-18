@@ -6,6 +6,11 @@ import prisma from '../database';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * API endpoint to submit BLAST jobs
+ * @param request 
+ * @returns 
+ */
 export async function POST(request: NextRequest) {
   const parameters = await request.json();
   const jobId = hash(parameters).slice(0,10);

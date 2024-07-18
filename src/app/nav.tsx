@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useRef, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 
 import { ThemeContext } from "./themecontext";
 
@@ -9,8 +9,8 @@ import { QueueStatus } from "./queuestatus";
 
 //@ts-ignore
 import { ALLOWED_FLAVOURS } from "./[blastFlavour]/blastflavour.d.ts";
-import Snowfall from "react-snowfall";
-
+// import Snowfall from "react-snowfall";
+/*
 function SantaCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -103,7 +103,7 @@ function SantaCanvas() {
     </>
   );
 }
-
+*/
 export default function Nav() {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const [showNav, setShowNav] = useState(false);

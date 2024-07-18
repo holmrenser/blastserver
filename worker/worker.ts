@@ -26,6 +26,7 @@ async function blastJobProcessor(job: Job) {
   const { data: { 
     flavour, program, query, expectThreshold, database,
     gapCosts, maxTargetSeqs, queryTo, queryFrom,
+    // eslint-disable-next-line no-unused-vars
     taxids, excludeTaxids, filterLowComplexity, lcaseMasking
   }}: { data: FormData<BlastFlavour> } = job;
 
@@ -58,8 +59,8 @@ async function blastJobProcessor(job: Job) {
       '-word_size', String(wordSize)
     )
   }
-
-  if (taxids) {
+  
+  if (taxids && taxids.length) {
     const allTaxids = (await prisma.taxonomy.findMany({
       where: { ancestors: { hasSome: taxids }},
       select: { id: true }

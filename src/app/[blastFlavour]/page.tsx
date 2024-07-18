@@ -9,7 +9,7 @@ import * as Yup from "yup";
 
 import { TaxonomySelect } from "./taxonomyselect";
 import "./blastFlavour.scss";
-import type { BlastFlavour, FormData } from "./blastflavour";
+import type { BlastFlavour } from "./blastflavour";
 //@ts-ignore
 import { ALLOWED_FLAVOURS } from "./blastflavour.d.ts";
 import { ThemeContext } from "../themecontext";
@@ -23,7 +23,6 @@ const NUCLEOTIDE_DBS = new Map<string, string>([
   ["16S_ribosomal_RNA", "16S Ribosomal RNA"],
 ]);
 const PROTEIN_DBS = new Map<string, string>([
-  ["xmasprot", "Festive proteins only"],
   ["refseq_protein", "Reference proteins"],
   ["nr", "Non-redundant protein sequences"],
   ["landmark", "Model organisms"],
@@ -65,30 +64,23 @@ const baseForm = Yup.object().shape({
   jobTitle: Yup.string().notRequired(),
   email: Yup.string().notRequired(),
   query: Yup.string()
-    .default(
-      ">SANTAS_QUERY\n\
-TVDHYFLFSQGVTLILPCGIVTPGCKSVQNLNLRNGHQNMLAMLRRQLLFGDRCEPQVSI\
-IKPVNALEKRFCYRVTDMIMLANEAYAPAYDWWCDARSIWQVPHSGEYGSDYRPKFRSGG\
-GILRADWQAPTQSPAAEMESYIGSWNAVLKYPKDNDAIVNKPGKRHVAFSKIEIIHSENQ\
-RYLRKSAPIRHLKEYNRAIQL"
-    )
     .required("Query is required")
     .max(10e4)
     .trim()
     .test(
       "is-not-multifasta",
       "Query contains multiple FASTA sequences",
-      (value, context) => (value.match(/>/g) || []).length < 2
+      (value) => (value.match(/>/g) || []).length < 2
     )
     .test(
       "is-not-short",
       "Query is shorter than 25 characters",
-      (value, context) => value.length >= 25
+      (value) => value.length >= 25
     )
     .test(
       "is-not-long",
       "Query is longer than 10,000 characters",
-      (value, context) => value.length <= 10_000
+      (value) => value.length <= 10_000
     ),
   queryFrom: Yup.number()
     .notRequired()
@@ -267,7 +259,7 @@ const BLASTFLAVOUR_FORMS = new Map<BlastFlavour, BlastForm>([
 function EnterQuery({
   register,
   errors,
-  formDescription,
+  //  formDescription,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
@@ -279,22 +271,11 @@ function EnterQuery({
     <fieldset
       className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
     >
-      <legend
-        className={`label has-text-centered ${
-          theme === "dark" ? "has-text-light" : ""
-        }`}
-      >
-        Enter Query Sequence
-      </legend>
-
+      <legend className="label has-text-centered">Enter Query Sequence</legend>
       <div className="field">
         <div className="field-body">
           <div className="field">
-            <label
-              className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-            >
-              Enter (single) FASTA sequence
-            </label>
+            <label className="label">Enter (single) FASTA sequence</label>
             <div className="control">
               <textarea
                 className={`textarea is-small ${
@@ -307,7 +288,6 @@ function EnterQuery({
                 placeholder="QUERY SEQUENCE"
                 style={{ fontFamily: "monospace" }}
                 {...register("query")}
-                disabled
               />
             </div>
             {errors.query && (
@@ -316,26 +296,15 @@ function EnterQuery({
           </div>
 
           <div className="field">
-            <label
-              className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-            >
-              Query subrange
-            </label>
+            <label className="label">Query subrange</label>
             <div className="field is-horizontal">
               <div className="field-label is-small">
-                <label
-                  className={`label ${
-                    theme === "dark" ? "has-text-light" : ""
-                  }`}
-                >
-                  From
-                </label>
+                <label className="label">From</label>
               </div>
               <div className="field-body">
                 <div className="field">
                   <div className="control">
                     <input
-                      disabled
                       className={`input is-small ${
                         errors.queryFrom?.message ? "is-danger" : ""
                       } ${
@@ -357,19 +326,12 @@ function EnterQuery({
               style={{ paddingTop: ".75em" }}
             >
               <div className="field-label is-small">
-                <label
-                  className={`label ${
-                    theme === "dark" ? "has-text-light" : ""
-                  }`}
-                >
-                  To
-                </label>
+                <label className="label">To</label>
               </div>
               <div className="field-body">
                 <div className="field">
                   <div className="control">
                     <input
-                      disabled
                       className={`input is-small ${
                         errors.queryTo?.message ? "is-danger" : ""
                       } ${
@@ -392,11 +354,7 @@ function EnterQuery({
 
       <div className="field is-horizontal">
         <div className="field-label is-small">
-          <label
-            className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-          >
-            Job Title
-          </label>
+          <label className="label">Job Title</label>
         </div>
         <div className="field-body">
           <div className="field">
@@ -422,11 +380,7 @@ function EnterQuery({
 
       <div className="field is-horizontal">
         <div className="field-label is-small">
-          <label
-            className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-          >
-            E-mail address
-          </label>
+          <label className="label">E-mail address</label>
         </div>
         <div className="field-body">
           <div className="field">
@@ -458,7 +412,7 @@ function ChooseSearchSet({
   errors,
   blastFlavour,
   control,
-  formDescription,
+  //  formDescription,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
@@ -473,21 +427,11 @@ function ChooseSearchSet({
     <fieldset
       className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
     >
-      <legend
-        className={`label has-text-centered ${
-          theme === "dark" ? "has-text-light" : ""
-        }`}
-      >
-        Choose Search Set
-      </legend>
+      <legend className="label has-text-centered">Choose Search Set</legend>
 
       <div className="field is-horizontal">
         <div className="field-label is-small">
-          <label
-            className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-          >
-            Database
-          </label>
+          <label className="label">Database</label>
         </div>
         <div className="field-body">
           <div className="field">
@@ -498,7 +442,6 @@ function ChooseSearchSet({
                 } ${theme === "dark" ? "is-dark" : ""}`}
               >
                 <select
-                  disabled
                   {...register("database")}
                   style={{ minWidth: 290 }}
                   className={`${
@@ -522,11 +465,7 @@ function ChooseSearchSet({
 
       <div className="field is-horizontal">
         <div className="field-label is-small">
-          <label
-            className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-          >
-            Organism
-          </label>
+          <label className="label">Organism</label>
         </div>
         <div className="field-body">
           <div className="field">
@@ -537,7 +476,7 @@ function ChooseSearchSet({
                 theme={theme}
               />
             </div>
-            <p className={`help ${theme === "dark" ? "has-text-light" : ""}`}>
+            <p className="help">
               Select one or more taxonomy levels to limit or exclude
             </p>
           </div>
@@ -550,9 +489,9 @@ function ChooseSearchSet({
 function ProgramSelection({
   blastFlavour,
   register,
-  errors,
-  getValues,
-  formDescription,
+  //  errors,
+  //  getValues,
+  //  formDescription,
   theme,
 }: {
   blastFlavour: BlastFlavour;
@@ -568,31 +507,18 @@ function ProgramSelection({
     <fieldset
       className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
     >
-      <legend
-        className={`label has-text-centered ${
-          theme === "dark" ? "has-text-light" : ""
-        }`}
-      >
-        Program Selection
-      </legend>
-
+      <legend className="label has-text-centered">Program Selection</legend>
       <div className="field is-horizontal">
         <div className="field-label is-small">
-          <label
-            className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-          >
-            Optimize for
-          </label>
+          <label className="label">Optimize for</label>
         </div>
         <div className="field-body">
           <div className="field">
             <div className="control">
               {PROGRAMS.get(blastFlavour)?.map((program: string) => (
                 <React.Fragment key={program}>
-                  {/*@ts-ignore*/}
-                  <label disabled className="radio is-small">
+                  <label className="radio is-small">
                     <input
-                      disabled
                       type="radio"
                       checked={program === selectedProgram}
                       {...register("program")}
@@ -612,11 +538,11 @@ function ProgramSelection({
 }
 
 function SubmitButton({
-  register,
-  errors,
+  //  register,
+  //  errors,
   getValues,
   watch,
-  formDescription,
+  //  formDescription,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
@@ -630,26 +556,31 @@ function SubmitButton({
   const program = getValues("program");
   return (
     <div
-      className={`container box ${
+      className={`box ${
         theme === "dark" ? "has-background-grey has-text-light " : ""
       }`}
     >
-      <div className="tile is-ancestor">
-        <div className="tile is-parent">
-          <div className="tile is-child is-2">
-            <div className="field">
-              <div className="control">
-                <button type="submit" className="button is-info">
-                  BLAST
-                </button>
-              </div>
+      <div className="columns is-vcentered">
+        <div className="column is-2">
+          <div className="field">
+            <div className="control">
+              <button type="submit" className="button is-info is-pulled-right">
+                BLAST
+              </button>
             </div>
           </div>
-          <div className="tile is-child">
-            <p>
-              Search database <em>{db}</em> using <em>{program}</em>
-            </p>
-          </div>
+        </div>
+        <div className="column">
+          <p>
+            Search database{" "}
+            <em>
+              <u>{db}</u>
+            </em>{" "}
+            using{" "}
+            <em>
+              <u>{program}</u>
+            </em>
+          </p>
         </div>
       </div>
     </div>
@@ -658,8 +589,8 @@ function SubmitButton({
 
 function AlgorithmParameters({
   register,
-  errors,
-  getValues,
+  //  errors,
+  //  getValues,
   formDescription,
   blastFlavour,
   theme,
@@ -682,32 +613,19 @@ function AlgorithmParameters({
             theme === "dark" ? "has-background-grey-dark" : ""
           }`}
         >
-          <legend
-            className={`label has-text-centered ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
+          <legend className="label has-text-centered">
             General Parameters
           </legend>
 
           <div className="field is-horizontal">
             <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Max target sequences
-              </label>
+              <label className="label">Max target sequences</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <div
-                    className={`select is-small ${
-                      theme === "dark" ? "is-dark" : ""
-                    }`}
-                  >
+                  <div className="select is-small">
                     <select
-                      disabled
                       className={
                         theme === "dark"
                           ? "has-background-grey has-text-light"
@@ -731,26 +649,13 @@ function AlgorithmParameters({
 
           <div className="field is-horizontal">
             <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Short queries
-              </label>
+              <label className="label">Short queries</label>
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  <label
-                    // disabled
-                    className={`checkbox ${
-                      theme === "dark" ? "has-text-light" : ""
-                    }`}
-                  >
-                    <input
-                      disabled
-                      type="checkbox"
-                      {...register("shortQueries")}
-                    />
+                  <label className="checkbox">
+                    <input type="checkbox" {...register("shortQueries")} />
                     Automatically adjust parameters for short input sequences
                   </label>
                 </div>
@@ -770,7 +675,6 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                   <input
-                    disabled
                     className={`input is-small ${
                       theme === "dark"
                         ? "has-background-grey is-dark has-text-light"
@@ -802,7 +706,6 @@ function AlgorithmParameters({
                     }`}
                   >
                     <select
-                      disabled
                       {...register("wordSize")}
                       style={{ width: 80 }}
                       className={
@@ -844,7 +747,6 @@ function AlgorithmParameters({
                     type="text"
                     style={{ width: 80 }}
                     {...register("maxMatchesInQueryRange")}
-                    disabled
                     defaultValue={0}
                   />
                 </div>
@@ -886,7 +788,6 @@ function AlgorithmParameters({
                       }`}
                     >
                       <select
-                        disabled
                         className={
                           theme === "dark"
                             ? "has-background-grey has-text-light"
@@ -928,7 +829,6 @@ function AlgorithmParameters({
                       }`}
                     >
                       <select
-                        disabled
                         className={
                           theme === "dark"
                             ? "has-background-grey has-text-light"
@@ -967,7 +867,6 @@ function AlgorithmParameters({
                     }`}
                   >
                     <select
-                      disabled
                       className={
                         theme === "dark"
                           ? "has-background-grey has-text-light"
@@ -979,7 +878,7 @@ function AlgorithmParameters({
                       {
                         //@ts-ignore
                         fields["gapCosts"].oneOf.map((gapCost) => {
-                          const [gapOpen, gapExtend] = gapCost.split(",");
+                          //const [gapOpen, gapExtend] = gapCost.split(",");
                           return <option key={gapCost}>{gapCost}</option>;
                         })
                       }
@@ -1010,7 +909,6 @@ function AlgorithmParameters({
                       }`}
                     >
                       <select
-                        disabled
                         className={
                           theme === "dark"
                             ? "has-background-grey has-text-light"
@@ -1061,10 +959,8 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  {/*@ts-ignore*/}
-                  <label disabled className="checkbox">
+                  <label className="checkbox">
                     <input
-                      disabled
                       type="checkbox"
                       {...register("filterLowComplexity")}
                     />
@@ -1086,9 +982,8 @@ function AlgorithmParameters({
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  {/*//@ts-ignore*/}
-                  <label className="checkbox" disabled>
-                    <input type="checkbox" disabled />
+                  <label className="checkbox">
+                    <input type="checkbox" />
                     Mask for lookup table only
                   </label>
                 </div>
@@ -1098,20 +993,13 @@ function AlgorithmParameters({
 
           <div className="field is-horizontal">
             <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              ></label>
+              <label className="label" />
             </div>
             <div className="field-body">
               <div className="field">
                 <div className="control">
-                  {/*//@ts-ignore*/}
-                  <label className="checkbox" disabled>
-                    <input
-                      disabled
-                      type="checkbox"
-                      {...register("lcaseMasking")}
-                    />
+                  <label className="checkbox">
+                    <input type="checkbox" {...register("lcaseMasking")} />
                     Mask lower case letters
                   </label>
                 </div>
@@ -1131,7 +1019,7 @@ export default function BlastFlavourPage({
 }) {
   const { theme } = useContext(ThemeContext);
   const { blastFlavour } = params;
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound();
   }

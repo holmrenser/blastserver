@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+// import dynamic from "next/dynamic";
 import AsyncSelect from "react-select/async";
 /*
 const AsyncSelect = dynamic(
@@ -26,7 +26,7 @@ function DropdownIndicator() {
   return <div style={{ width: 30, height: 30 }}>&nbsp;</div>;
 }
 
-function promiseOptions(inputValue: string) {
+function loadOptions(inputValue: string) {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
   return new Promise<SelectElement[]>((resolve, reject) => {
     const url =
@@ -79,7 +79,7 @@ export function TaxonomySelect({
                       minHeight: height,
                       minWidth: 290,
                       backgroundColor:
-                        theme === "dark" ? "hsl(0, 0%, 48%)" : "",
+                        theme === "dark" ? "hsl(221, 14%, 48%)" : "",
                       borderColor: theme === "dark" ? "#292929" : "lightgrey",
                     };
                   },
@@ -114,16 +114,19 @@ export function TaxonomySelect({
                   },
                 }}
                 components={{ DropdownIndicator }}
-                loadOptions={promiseOptions}
+                loadOptions={loadOptions}
                 placeholder="Enter taxonomic name or taxid"
-                noOptionsMessage={() => "Start typing to see suggestions"}
+                noOptionsMessage={({ inputValue }) =>
+                  !inputValue
+                    ? "Start typing to see suggestions"
+                    : "No results found"
+                }
                 onChange={(options: readonly SelectElement[]) => {
                   const taxids = options?.map(({ value }) => value);
                   onChange(taxids);
                 }}
                 isClearable
                 isMulti
-                isDisabled
                 {...{ ref, onBlur }}
               />
             );
@@ -132,7 +135,6 @@ export function TaxonomySelect({
       </div>
       <label className={`checkbox ${theme === "dark" ? "has-text-light" : ""}`}>
         <input
-          disabled
           type="checkbox"
           style={{ marginLeft: 8, marginRight: 4 }}
           {...register("excludeTaxids")}

@@ -1,14 +1,12 @@
-import { Inter, Hanken_Grotesk, Open_Sans } from "next/font/google";
+import React from "react";
 
 import { ThemeProvider } from "./themecontext";
-import Nav from "./nav";
 
+import App from "./app";
 import "./globals.scss";
 
-const font = Hanken_Grotesk({ subsets: ["latin"], weight: "300" });
-
 export const metadata = {
-  title: "WUR BLAST",
+  title: "BLAST@WUR",
   description: "WUR BLAST service, hosted by the bioinformatics group",
 };
 
@@ -18,15 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <ThemeProvider>
-          <main className={font.className}>
-            <Nav />
-            {children}
-          </main>
-        </ThemeProvider>
-      </body>
-    </html>
+    <ThemeProvider>
+      <App>{children}</App>
+    </ThemeProvider>
   );
 }
