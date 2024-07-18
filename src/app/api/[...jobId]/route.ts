@@ -12,6 +12,12 @@ export type BlastJobResults = Omit<blastjob, 'results'> & {
   results: FormattedBlastResults | null
 }
 
+/**
+ * API endpoint to get results from a finished BLAST job
+ * @param _ 
+ * @param context 
+ * @returns 
+ */
 export async function GET(_: NextRequest, context: { params: { jobId: string[]}}): Promise<NextResponse<BlastJobResults>> {
   const { params: { jobId }} = context;
   console.log(`Requested BLAST job ${jobId}`);

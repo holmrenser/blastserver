@@ -6,7 +6,8 @@
   }
 }
 
-input, textarea {
+input,
+textarea {
   &.dark::placeholder {
     color: black !important;
   }

@@ -6,14 +6,16 @@
   background-color: hsl(0, 0%, 21%);
   color: hsl(0, 0%, 96%) !important;
   border-color: hsl(0, 0%, 21%) !important;
-  &:hover, &.isActive {
+  &:hover,
+  &.isActive {
     border-color: hsl(0, 0%, 48%) !important;
     background-color: hsl(0, 0%, 48%) !important;
-  } 
+  }
 }
 
 .lightTabLink {
   &.isActive {
+    border-color: hsl(0, 0%, 96%) !important;
     background-color: hsl(0, 0%, 96%) !important;
   }
 }

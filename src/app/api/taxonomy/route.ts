@@ -4,6 +4,11 @@ import prisma from '../database';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * API endpoint that is used in the submission form to suggest taxonomy entries
+ * @param request 
+ * @returns 
+ */
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('query');
   const taxonomyEntries = query
