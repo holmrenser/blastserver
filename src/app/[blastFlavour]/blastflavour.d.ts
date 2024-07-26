@@ -48,4 +48,5 @@ interface TblastxForm extends BaseForm  {
   flavour: 'tblastx';
 }
 
+// eslint-disable-next-line no-unused-vars
 export type FormData<flavour extends BlastFlavour> = BlastpForm | BlastnForm | BlastxForm | TblastnForm | TblastxForm;

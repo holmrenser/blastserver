@@ -1,7 +1,3 @@
-export default function NotFound({ params }: {params: any}){
-  return (
-    <>
-      NOTFOUND
-    </>
-  )
+export default function NotFound() {
+  return <>NOTFOUND</>;
 }
