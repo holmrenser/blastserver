@@ -152,8 +152,6 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
-                  // @ts-ignore
-                  disabled
                   className="button is-large is-fullwidth"
                   href="/tblastn"
                   title="Search a translated nucleotide database with a protein query"
