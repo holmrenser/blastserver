@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { blastjob } from '@prisma/client';
 
-import prisma from '../database';
+import prisma from '@/app/api/database';
 import formatResults from './formatResults';
 import type { FormattedBlastResults } from './formatResults';
 

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import prisma from '@/app/api/database';
+
 export async function GET(_: NextRequest, context: { params: { downloadId: string[]}}) {
   const { params: { downloadId }} = context;
   console.log(`Requested download job ${downloadId}`);
