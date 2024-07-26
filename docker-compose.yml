@@ -1,10 +1,10 @@
-name: jingleblast
+name: "${NAME}" 
 services:
   app:
     build:
       context: .
       dockerfile: app.Dockerfile
-      # network: host
+      network: host
     image: blastserver_app:latest
     depends_on:
       redis:
@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: worker.Dockerfile
-      # network: host
+      network: host
     image: blastserver_worker:latest
     depends_on:
       redis:
@@ -53,7 +53,7 @@ services:
       - "5432"
     env_file: .env.production
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost"]
       interval: 10s
       timeout: 60s
       retries: 10
