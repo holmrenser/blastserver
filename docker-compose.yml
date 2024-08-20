@@ -1,3 +1,4 @@
+name: "${NAME}" 
 services:
   app:
     build:
@@ -52,7 +53,7 @@ services:
       - "5432"
     env_file: .env.production
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost"]
       interval: 10s
       timeout: 60s
       retries: 10

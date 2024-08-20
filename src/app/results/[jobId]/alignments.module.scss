@@ -1,0 +1,20 @@
+.alignmentContainer {
+  padding: 4px 4px;
+}
+.alignmentCard {
+  margin: 2px;
+  max-width: 95vw;
+}
+
+.alignmentCardContent {
+  padding: 4px;
+}
+
+.alignmentBlock {
+  pre {
+    padding: 10px;
+  }
+  @media screen and (max-width: 1024px) {
+    max-width: 90vw;
+  }
+}

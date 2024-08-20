@@ -1,5 +1,5 @@
-// export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
-export const ALLOWED_FLAVOURS = ['blastp', 'tblastn'];
+export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn'] as const;
+// export const ALLOWED_FLAVOURS = ['blastp', 'tblastn', 'blastn'] as const;
 export type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
 interface BaseForm {
@@ -48,4 +48,5 @@ interface TblastxForm extends BaseForm  {
   flavour: 'tblastx';
 }
 
+// eslint-disable-next-line no-unused-vars
 export type FormData<flavour extends BlastFlavour> = BlastpForm | BlastnForm | BlastxForm | TblastnForm | TblastxForm;

@@ -1,4 +1,4 @@
-FROM node:18.16.0-alpine3.17 AS base
+FROM node:18.20.4-alpine3.20 AS base
 
 # install dependencies
 FROM base as deps
@@ -22,7 +22,9 @@ WORKDIR /app
 COPY --from=builder /app/.env.production ./.env
 COPY --from=builder /app/app.js ./
 COPY --from=builder /app/.next/standalone ./.next/standalone
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/prisma ./
+COPY --from=builder /app/public ./public
 
 CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config app.js

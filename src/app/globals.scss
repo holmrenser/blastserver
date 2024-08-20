@@ -1,1 +1,13 @@
-@import '~bulma/bulma.sass';
+@use "~bulma/sass" with (
+  $blue: #058aff,
+  $turquoise: #27f1c2,
+  $green: #26c080,
+  $cyan: #6cafce,
+
+  $radius-small: 3px,
+  $radius: 3px,
+  $radius-large: 4px,
+
+  $card-radius: 0.25em
+);
+@use "./bulma-switch.scss";

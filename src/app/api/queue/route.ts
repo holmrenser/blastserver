@@ -4,6 +4,10 @@ import { blastQueue, downloadQueue } from '../queue';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * API endpoint to query how the job queue is doing
+ * @returns 
+ */
 export async function GET() {
   const {
     waiting: blastWaiting,

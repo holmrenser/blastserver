@@ -156,10 +156,13 @@ function processRawHit({ description, hsps, len, num, queryLen }: RawBlastHit): 
   const queryCover = Math.ceil((queryCoverTotal / Number(queryLen)) * 100);
 
   // calculate percent identity
-  const alignLen = formattedHsps.map(({alignLen}) => Number(alignLen)).reduce(add, 0);
-  const identity = formattedHsps.map(({ identity }) => Number(identity)).reduce(add, 0);
+  const [alignLen, identity] = formattedHsps.map(({ alignLen, identity }) => {
+    return [Number(alignLen), Number(identity)]
+  }).reduce(([a_prev,i_prev],[a_curr,i_curr]) => {
+    return [a_prev + a_curr, i_prev + i_curr]
+  }, [0,0]);
   const percentIdentity = (identity / alignLen) * 100;
-  
+
   return { accession, title, taxid, percentIdentity, queryCover, num, len, hsps: formattedHsps }
 }
 
@@ -236,6 +239,7 @@ async function buildTaxTrees(hits: BlastHit[]) {
     }, {});
 
   const filteredancestorIdCounts: Record<string, number> = Object.entries(ancestorIdCounts)
+    // eslint-disable-next-line no-unused-vars
     .filter(([_,value]) => value !== hits.length)
     .reduce((obj, [key,value]) => {
       return {
@@ -256,7 +260,21 @@ async function buildTaxTrees(hits: BlastHit[]) {
   return taxonomyTrees
 }
 
-export default async function formatResults(blastResults: string) {
+export type FormattedBlastResults = {
+  params: any,
+  program: string,
+  queryId: string,
+  queryLen: string,
+  queryTitle: string,
+  hits: BlastHit[] | undefined,
+  stat: string,
+  version: string,
+  db: string,
+  taxonomyTrees: TaxonomyNode[] | undefined,
+  message: string,
+}
+
+export default async function formatResults(blastResults: string): Promise<FormattedBlastResults> {
   // parse blast XML and use destructuring assignment to extract all useful parts
   const results = xml2js(blastResults, { compact: true, trim: true, textFn: replaceJsonTextAttribute })
   const {   
@@ -274,7 +292,7 @@ export default async function formatResults(blastResults: string) {
                   'query-len': queryLen,
                   'query-title': queryTitle,
                    hits: {
-                    Hit: rawHits = []
+                    Hit: _rawHits = []
                    } = { Hit: []},
                    stat,
                    message
@@ -294,7 +312,7 @@ export default async function formatResults(blastResults: string) {
 
   let hits: BlastHit[] | undefined;
   let taxonomyTrees: TaxonomyNode[] | undefined;
-
+  const rawHits = Array.isArray(_rawHits) ? _rawHits : [_rawHits];
   if (!message) {
     // initial result parsing to summarize useful information per hit
     const intermediateHits: BlastHitNoTaxInfo[] = rawHits.map(rawHit => (
@@ -307,7 +325,6 @@ export default async function formatResults(blastResults: string) {
     hits = intermediateHits.map(hit => addTaxInfo({ hit, hitTaxidMap }))
     
     // get taxonomy trees for all hit taxids
-    let taxonomyTrees: TaxonomyNode[];
     try {
       taxonomyTrees = hitTaxids.length === 1
         ? [hitTaxidMap[hitTaxids[0]]]
