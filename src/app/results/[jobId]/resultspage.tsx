@@ -46,8 +46,8 @@ export default function ResultsPage({ data }: { data: BlastJobResults }) {
   const { database } = parameters as any as FormData<BlastFlavour>;
 
   // Next doesn't properly handle basepath in usePathname, so we have to trim manually
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const linkPath = pathname.slice(basePath.length);
+  // const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  // const linkPath = pathname.slice(basePath.length);
 
   if (err) return <p>{err}</p>;
   if (!results)
@@ -85,10 +85,7 @@ export default function ResultsPage({ data }: { data: BlastJobResults }) {
                           ? styles.darkTabLink
                           : styles.lightTabLink
                       } ${panel === activePanel ? styles.isActive : ""}`}
-                      href={{
-                        pathname: linkPath,
-                        query: { panel },
-                      }}
+                      href={{ pathname, query: { panel } }}
                     >
                       {formatPanelName(panel)}
                     </Link>

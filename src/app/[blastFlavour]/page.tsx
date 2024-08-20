@@ -34,9 +34,9 @@ const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS]);
 
 const BLAST_DBS = new Map<BlastFlavour, string[]>([
   ["blastp", Array.from(PROTEIN_DBS.keys())],
-  //['blastx', Array.from(PROTEIN_DBS.keys())],
+  ["blastx", Array.from(PROTEIN_DBS.keys())],
   ["blastn", Array.from(NUCLEOTIDE_DBS.keys())],
-  //['tblastx', Array.from(NUCLEOTIDE_DBS.keys())],
+  ["tblastx", Array.from(NUCLEOTIDE_DBS.keys())],
   ["tblastn", Array.from(NUCLEOTIDE_DBS.keys())],
 ]);
 
@@ -99,7 +99,7 @@ const baseForm = Yup.object().shape({
   expectThreshold: Yup.number()
     .required("Must specify an expect threshold")
     .moreThan(0, "Expect threshold cannot be negative")
-    .default(10.0)
+    .default(0.05)
     .required()
     .transform(numberTransform),
   maxMatchesInQueryRange: Yup.number()
@@ -126,6 +126,7 @@ const baseForm = Yup.object().shape({
 });
 
 const blastpForm = Yup.object()
+  .concat(baseForm)
   .shape({
     flavour: Yup.string().oneOf(["blastp"]).default("blastp").required(),
     database: Yup.string()
@@ -167,12 +168,11 @@ const blastpForm = Yup.object()
       ])
       .default("11,1")
       .required(),
-  })
-  .concat(baseForm);
-
+  });
 interface BlastpParameters extends Yup.InferType<typeof blastpForm> {}
 
 const blastnForm = Yup.object()
+  .concat(baseForm)
   .shape({
     flavour: Yup.string().oneOf(["blastn"]).default("blastn").required(),
     database: Yup.string()
@@ -191,69 +191,48 @@ const blastnForm = Yup.object()
       .oneOf(["linear", "5,2", "2,2", "1,2", "0,2", "3,1", "2,1", "1,1"])
       .default("linear")
       .required(),
-  })
-  .concat(baseForm);
-
+  });
 interface BlastnParameters extends Yup.InferType<typeof blastnForm> {}
 
+const blastxForm = Yup.object()
+  .concat(blastpForm)
+  .shape({
+    flavour: Yup.string().oneOf(["blastx"]).default("blastx").required(),
+  });
+
+interface BlastxParameters extends Yup.InferType<typeof blastxForm> {}
+
 const tblastnForm = Yup.object()
+  .concat(blastpForm)
   .shape({
     flavour: Yup.string().oneOf(["tblastn"]).default("tblastn").required(),
-    database: Yup.string()
-      .oneOf(BLAST_DBS.get("tblastn")!)
-      .default(BLAST_DBS.get("tblastn")![0])
-      .required(),
-    matrix: Yup.string()
-      .oneOf([
-        "PAM30",
-        "PAM70",
-        "PAM250",
-        "BLOSUM45",
-        "BLOSUM50",
-        "BLOSUM62",
-        "BLOSUM80",
-        "BLOSUM90",
-      ])
-      .default("BLOSUM62")
-      .required(),
-    wordSize: Yup.number()
-      .oneOf([3, 5, 6])
-      .default(5)
-      .required()
-      .transform(numberTransform),
-    program: Yup.string().oneOf(["tblastn"]).default("tblastn").required(),
-    gapCosts: Yup.string()
-      .oneOf([
-        "11,2",
-        "10,2",
-        "9,2",
-        "8,2",
-        "7,2",
-        "6,2",
-        "13,1",
-        "12,1",
-        "11,1",
-        "10,1",
-        "9,1",
-      ])
-      .default("11,1")
-      .required(),
-  })
-  .concat(baseForm);
-
+  });
 interface TblastnParameters extends Yup.InferType<typeof tblastnForm> {}
+
+const tblastxForm = Yup.object().concat(baseForm);
+
+interface TblastxParameters extends Yup.InferType<typeof tblastxForm> {}
 
 export type BlastParameters =
   | BlastpParameters
   | BlastnParameters
-  | TblastnParameters;
+  | BlastxParameters
+  | TblastnParameters
+  | TblastxParameters;
 
-type BlastForm = typeof blastpForm | typeof tblastnForm | typeof blastnForm;
+type BlastForm =
+  | typeof blastpForm
+  | typeof tblastnForm
+  | typeof blastnForm
+  | typeof blastxForm
+  | typeof tblastxForm;
 
 const BLASTFLAVOUR_FORMS = new Map<BlastFlavour, BlastForm>([
   ["blastp", blastpForm],
   ["blastn", blastnForm],
+  ["blastx", blastxForm],
   ["tblastn", tblastnForm],
+  ["tblastx", tblastxForm],
 ]);
 
 function EnterQuery({

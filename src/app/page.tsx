@@ -96,22 +96,16 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
-                  //@ts-ignore
-                  disabled
                   className="button is-large is-fullwidth"
                   href="/blastn"
                   title="Search a nucleotide database with a nucleotide query"
-                  style={{ pointerEvents: "none" }}
                 >
                   blastn
                 </Link>
                 <Link
-                  //@ts-ignore
-                  disabled
                   className="button is-large is-fullwidth"
                   href="/tblastx"
                   title="Search a translated nucleotide database with a translated nucleotide query"
-                  style={{ pointerEvents: "none" }}
                 >
                   tblastx
                 </Link>
@@ -129,12 +123,9 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
-                  //@ts-ignore
-                  disabled
                   className="button is-large is-fullwidth"
                   href="/blastx"
                   title="Search a protein database with a translated nucleotide query"
-                  style={{ pointerEvents: "none" }}
                 >
                   blastx
                 </Link>
@@ -155,7 +146,6 @@ export default function HomePage() {
                   className="button is-large is-fullwidth"
                   href="/tblastn"
                   title="Search a translated nucleotide database with a protein query"
-                  style={{ pointerEvents: "none" }}
                 >
                   tblastn
                 </Link>
