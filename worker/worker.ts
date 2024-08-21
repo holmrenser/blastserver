@@ -8,7 +8,6 @@ import Path from 'path';
 import fs from 'fs';
 import { gzipSync } from 'zlib';
 
-import type { BlastFlavour } from '../src/app/[blastFlavour]/blastflavour';
 import type { BlastParameters } from '../src/app/[blastFlavour]/parameters.ts';
 
 const prisma = new PrismaClient();
