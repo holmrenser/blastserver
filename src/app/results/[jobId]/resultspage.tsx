@@ -13,7 +13,7 @@ import { ThemeContext } from "@/app/themecontext";
 import React, { useContext } from "react";
 import type { BlastJobResults } from "@/app/api/[...jobId]/route";
 import type { BlastHit } from "@/app/api/[...jobId]/formatResults";
-import type { BlastFlavour, FormData } from "@/app/[blastFlavour]/blastflavour";
+import type { BlastParameters } from "@/app/[blastFlavour]/parameters";
 
 // eslint-disable-next-line no-unused-vars
 type PANEL_COMPONENT = (arg0: {
@@ -43,7 +43,7 @@ export default function ResultsPage({ data }: { data: BlastJobResults }) {
   const { theme } = useContext(ThemeContext);
 
   const { results, err, parameters } = data;
-  const { database } = parameters as any as FormData<BlastFlavour>;
+  const { database } = parameters as BlastParameters;
 
   // Next doesn't properly handle basepath in usePathname, so we have to trim manually
   // const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
