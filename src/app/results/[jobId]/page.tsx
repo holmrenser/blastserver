@@ -8,10 +8,9 @@ import ErrorComponent from "@/app/results/error";
 import ResultsPage from "./resultspage";
 
 import type {
-  FormData,
-  BlastFlavour,
-  BlastpForm,
-} from "@/app/[blastFlavour]/blastflavour";
+  BlastParameters,
+  BlastpParameters,
+} from "@/app/[blastFlavour]/parameters";
 import type { BlastJobResults } from "@/app/api/[...jobId]/route";
 import { useContext } from "react";
 import { ThemeContext } from "@/app/themecontext";
@@ -65,7 +64,6 @@ function InfoCard({
 }
 
 function UsedParameters({ data }: { data: BlastJobResults }) {
-  // console.log({ parameters })
   let { parameters } = data;
   const {
     flavour,
@@ -77,13 +75,13 @@ function UsedParameters({ data }: { data: BlastJobResults }) {
     maxTargetSeqs,
     expectThreshold,
     lcaseMasking,
-  } = parameters as any as FormData<BlastFlavour>;
+  } = parameters as BlastParameters;
 
   const { theme } = useContext(ThemeContext);
 
   let additionalParams: { [key: string]: string } = {};
   if (flavour === "blastp") {
-    const { matrix, wordSize } = parameters as any as BlastpForm;
+    const { matrix, wordSize } = parameters as BlastpParameters;
     Object.assign(additionalParams, { matrix, wordSize });
   }
 
@@ -144,8 +142,7 @@ function UsedParameters({ data }: { data: BlastJobResults }) {
 function JobStatus({ jobId, data }: { jobId: string; data: BlastJobResults }) {
   const { theme } = useContext(ThemeContext);
   const { parameters, submitted, finished, results, err } = data;
-  const { jobTitle, program, database } =
-    parameters as any as FormData<BlastFlavour>;
+  const { jobTitle, program, database } = parameters as BlastParameters;
   // Job&nbsp;ID <span style={{marginLeft: '8px'}} className='tag is-info is-light'>{jobId}</span>
   return (
     <InfoCard

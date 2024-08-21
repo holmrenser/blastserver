@@ -176,7 +176,7 @@ const blastpForm = Yup.object()
       .default("Conditional compositional score matrix adjustment")
       .defined(),
   });
-interface BlastpParameters extends Yup.InferType<typeof blastpForm> {}
+export interface BlastpParameters extends Yup.InferType<typeof blastpForm> {}
 
 const blastnForm = Yup.object()
   .concat(baseForm)
