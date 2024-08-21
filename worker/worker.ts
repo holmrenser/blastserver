@@ -8,7 +8,8 @@ import Path from 'path';
 import fs from 'fs';
 import { gzipSync } from 'zlib';
 
-import type { FormData, BlastFlavour } from '../src/app/[blastFlavour]/blastflavour';
+import type { BlastFlavour } from '../src/app/[blastFlavour]/blastflavour';
+import type { BlastParameters } from '../src/app/[blastFlavour]/parameters.ts';
 
 const prisma = new PrismaClient();
 
@@ -27,8 +28,8 @@ async function blastJobProcessor(job: Job) {
     flavour, program, query, expectThreshold, database,
     gapCosts, maxTargetSeqs, queryTo, queryFrom,
     // eslint-disable-next-line no-unused-vars
-    taxids, excludeTaxids, filterLowComplexity, lcaseMasking
-  }}: { data: FormData<BlastFlavour> } = job;
+    taxids, excludeTaxids, filterLowComplexity, lcaseMasking, softMasking, shortQueries
+  }}: { data: BlastParameters } = job;
 
   if (typeof query !== 'string' || query.length === 0) {
     throw new Error('No query provided')
@@ -52,8 +53,8 @@ async function blastJobProcessor(job: Job) {
     args.push('-lcase_masking')
   }
 
-  if (flavour === 'blastp') {
-    const { data: { matrix, wordSize }} = job;
+  if (flavour === 'blastp' || flavour === 'blastx' || flavour === 'tblastn') {
+    const { data: { matrix, wordSize, compositionalAdjustment }} = job;
     args.push(
       '-matrix', matrix,
       '-word_size', String(wordSize)

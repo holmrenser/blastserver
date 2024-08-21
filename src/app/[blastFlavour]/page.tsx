@@ -8,242 +8,26 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 
 import { TaxonomySelect } from "./taxonomyselect";
-import "./blastFlavour.scss";
-import type { BlastFlavour } from "./blastflavour";
-//@ts-ignore
-import { ALLOWED_FLAVOURS } from "./blastflavour.d.ts";
+import {
+  ALLOWED_FLAVOURS,
+  BLAST_DBS,
+  DB_NAMES,
+  PROGRAMS,
+  BLASTFLAVOUR_FORMS,
+} from "./parameters";
+import type { BlastParameters, BlastFlavour } from "./parameters";
 import { ThemeContext } from "../themecontext";
 import type { Theme } from "../themecontext";
 
-const NUCLEOTIDE_DBS = new Map<string, string>([
-  ["nt", "Nucleotide collection"],
-  ["refseq_select_rna", "RefSeq Select RNA sequences"],
-  ["refseq_rna", "Reference RNA sequences"],
-  ["Representative_Genomes", "RefSeq representative genomes"],
-  ["16S_ribosomal_RNA", "16S Ribosomal RNA"],
-]);
-const PROTEIN_DBS = new Map<string, string>([
-  ["refseq_protein", "Reference proteins"],
-  ["nr", "Non-redundant protein sequences"],
-  ["landmark", "Model organisms"],
-  ["refseq_select_prot", "RefSeq Select proteins"],
-  ["swissprot", "UniProtKB/Swiss-Prot"],
-]);
-
-const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS]);
-
-const BLAST_DBS = new Map<BlastFlavour, string[]>([
-  ["blastp", Array.from(PROTEIN_DBS.keys())],
-  ["blastx", Array.from(PROTEIN_DBS.keys())],
-  ["blastn", Array.from(NUCLEOTIDE_DBS.keys())],
-  ["tblastx", Array.from(NUCLEOTIDE_DBS.keys())],
-  ["tblastn", Array.from(NUCLEOTIDE_DBS.keys())],
-]);
-
-const PROGRAMS = new Map<BlastFlavour, string[]>([
-  //[
-  //'blastp', [
-  //  'Quick BLASTP (Accelerated protein-protein BLAST)',
-  //  'blastp (protein-protein BLAST)'
-  //]],
-  [
-    "blastn",
-    [
-      "Megablast (Highly similar sequences)",
-      "Discontiguous megablast (More dissimilar sequences)",
-      "Blastn (Somewhat similar sequences)",
-    ],
-  ],
-]);
-
-function numberTransform(_unused: any, val: string) {
-  return val !== "" ? Number(val) : null;
-}
-
-const baseForm = Yup.object().shape({
-  jobTitle: Yup.string().notRequired(),
-  email: Yup.string().notRequired(),
-  query: Yup.string()
-    .required("Query is required")
-    .max(10e4)
-    .trim()
-    .test(
-      "is-not-multifasta",
-      "Query contains multiple FASTA sequences",
-      (value) => (value.match(/>/g) || []).length < 2
-    )
-    .test(
-      "is-not-short",
-      "Query is shorter than 25 characters",
-      (value) => value.length >= 25
-    )
-    .test(
-      "is-not-long",
-      "Query is longer than 10,000 characters",
-      (value) => value.length <= 10_000
-    ),
-  queryFrom: Yup.number()
-    .notRequired()
-    .moreThan(0, "Query FROM cannot be negative")
-    .transform(numberTransform),
-  queryTo: Yup.number()
-    .notRequired()
-    .moreThan(0, "Query TO cannot be negative")
-    .transform(numberTransform),
-  maxTargetSeqs: Yup.number()
-    .required("Must specify maximum number of target sequences")
-    .oneOf([10, 50, 100, 250, 500, 1000, 5000])
-    .required()
-    .default(100)
-    .transform(numberTransform),
-  expectThreshold: Yup.number()
-    .required("Must specify an expect threshold")
-    .moreThan(0, "Expect threshold cannot be negative")
-    .default(0.05)
-    .required()
-    .transform(numberTransform),
-  maxMatchesInQueryRange: Yup.number()
-    .notRequired()
-    .moreThan(-1, "Max. matches in query range cannot be negative")
-    .default(0)
-    .required()
-    .transform(numberTransform),
-  taxids: Yup.array().of(Yup.string()).default([]).required(),
-  excludeTaxids: Yup.boolean().default(false).required(),
-  softMasking: Yup.boolean().default(false).required(),
-  lcaseMasking: Yup.boolean().default(false).required(),
-  filterLowComplexity: Yup.boolean().default(false).required(),
-  shortQueries: Yup.boolean().default(true).required(),
-  compositionalAdjustment: Yup.string()
-    .oneOf([
-      "No adjustment",
-      "Compositon-based statistics",
-      "Conditional compositional score matrix adjustment",
-      "Universal compositional score matrix adjustment",
-    ])
-    .default("Conditional compositional score matrix adjustment")
-    .notRequired(),
-});
-
-const blastpForm = Yup.object()
-  .concat(baseForm)
-  .shape({
-    flavour: Yup.string().oneOf(["blastp"]).default("blastp").required(),
-    database: Yup.string()
-      .oneOf(BLAST_DBS.get("blastp")!)
-      .default(BLAST_DBS.get("blastp")![0])
-      .required(),
-    matrix: Yup.string()
-      .oneOf([
-        "PAM30",
-        "PAM70",
-        "PAM250",
-        "BLOSUM45",
-        "BLOSUM50",
-        "BLOSUM62",
-        "BLOSUM80",
-        "BLOSUM90",
-      ])
-      .default("BLOSUM62")
-      .required(),
-    wordSize: Yup.number()
-      .oneOf([3, 5, 6])
-      .default(5)
-      .required()
-      .transform(numberTransform),
-    program: Yup.string().oneOf(["blastp"]).default("blastp").required(),
-    gapCosts: Yup.string()
-      .oneOf([
-        "11,2",
-        "10,2",
-        "9,2",
-        "8,2",
-        "7,2",
-        "6,2",
-        "13,1",
-        "12,1",
-        "11,1",
-        "10,1",
-        "9,1",
-      ])
-      .default("11,1")
-      .required(),
-  });
-interface BlastpParameters extends Yup.InferType<typeof blastpForm> {}
-
-const blastnForm = Yup.object()
-  .concat(baseForm)
-  .shape({
-    flavour: Yup.string().oneOf(["blastn"]).default("blastn").required(),
-    database: Yup.string()
-      .oneOf(BLAST_DBS.get("blastn")!)
-      .default(BLAST_DBS.get("blastn")![0])
-      .required(),
-    wordSize: Yup.number()
-      .oneOf([16, 20, 24, 28, 32, 48, 64, 128, 256])
-      .default(28)
-      .defined(),
-    matchMismatch: Yup.string()
-      .oneOf(["1,-2", "1,-3", "1,-4", "2,-3", "4,-5", "1,-1"])
-      .default("1,-2")
-      .defined(),
-    gapCosts: Yup.string()
-      .oneOf(["linear", "5,2", "2,2", "1,2", "0,2", "3,1", "2,1", "1,1"])
-      .default("linear")
-      .required(),
-  });
-interface BlastnParameters extends Yup.InferType<typeof blastnForm> {}
-
-const blastxForm = Yup.object()
-  .concat(blastpForm)
-  .shape({
-    flavour: Yup.string().oneOf(["blastx"]).default("blastx").required(),
-  });
-
-interface BlastxParameters extends Yup.InferType<typeof blastxForm> {}
-
-const tblastnForm = Yup.object()
-  .concat(blastpForm)
-  .shape({
-    flavour: Yup.string().oneOf(["tblastn"]).default("tblastn").required(),
-  });
-interface TblastnParameters extends Yup.InferType<typeof tblastnForm> {}
-
-const tblastxForm = Yup.object().concat(baseForm);
-
-interface TblastxParameters extends Yup.InferType<typeof tblastxForm> {}
-
-export type BlastParameters =
-  | BlastpParameters
-  | BlastnParameters
-  | BlastxParameters
-  | TblastnParameters
-  | TblastxParameters;
-
-type BlastForm =
-  | typeof blastpForm
-  | typeof tblastnForm
-  | typeof blastnForm
-  | typeof blastxForm
-  | typeof tblastxForm;
-
-const BLASTFLAVOUR_FORMS = new Map<BlastFlavour, BlastForm>([
-  ["blastp", blastpForm],
-  ["blastn", blastnForm],
-  ["blastx", blastxForm],
-  ["tblastn", tblastnForm],
-  ["tblastx", tblastxForm],
-]);
+import "./blastFlavour.scss";
 
 function EnterQuery({
   register,
   errors,
-  //  formDescription,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
   errors: FieldErrors;
-  formDescription: Yup.SchemaObjectDescription;
   theme: Theme;
 }) {
   return (
@@ -391,14 +175,12 @@ function ChooseSearchSet({
   errors,
   blastFlavour,
   control,
-  //  formDescription,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
   errors: FieldErrors;
   blastFlavour: BlastFlavour;
   control: Control<BlastParameters>;
-  formDescription: Yup.SchemaObjectDescription;
   theme: Theme;
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
@@ -422,7 +204,7 @@ function ChooseSearchSet({
               >
                 <select
                   {...register("database")}
-                  style={{ minWidth: 290 }}
+                  style={{ minWidth: 290, maxWidth: 290 }}
                   className={`${
                     theme === "dark"
                       ? "dark has-background-grey is-dark has-text-light"
@@ -468,20 +250,18 @@ function ChooseSearchSet({
 function ProgramSelection({
   blastFlavour,
   register,
-  //  errors,
-  //  getValues,
-  //  formDescription,
+  setValue,
+  watch,
   theme,
 }: {
   blastFlavour: BlastFlavour;
   register: UseFormRegister<BlastParameters>;
-  errors: FieldErrors;
-  getValues: Function;
-  formDescription: Yup.SchemaObjectDescription;
+  setValue: Function;
+  watch: Function;
   theme: Theme;
 }) {
-  if (!PROGRAMS.has(blastFlavour)) return null;
-  const selectedProgram = "Blastn (Somewhat similar sequences)"; //getValues('program');
+  if (blastFlavour !== "blastn") return null;
+  const selectedProgram = watch("program");
   return (
     <fieldset
       className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
@@ -494,20 +274,29 @@ function ProgramSelection({
         <div className="field-body">
           <div className="field">
             <div className="control">
-              {PROGRAMS.get(blastFlavour)?.map((program: string) => (
-                <React.Fragment key={program}>
-                  <label className="radio is-small">
-                    <input
-                      type="radio"
-                      checked={program === selectedProgram}
-                      {...register("program")}
-                    />
-                    &nbsp;
-                    {program}
-                  </label>
-                  <br />
-                </React.Fragment>
-              ))}
+              {PROGRAMS.get(blastFlavour)?.map((program: string) => {
+                console.log({ program, selectedProgram });
+                return (
+                  <React.Fragment key={program}>
+                    <label className="radio is-small">
+                      <input
+                        type="radio"
+                        checked={program === selectedProgram}
+                        value={program}
+                        {...register("program", {
+                          onChange: ({ target: { value } }) => {
+                            console.log({ value });
+                            setValue("program", value);
+                          },
+                        })}
+                      />
+                      &nbsp;
+                      {program}
+                    </label>
+                    <br />
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -517,18 +306,12 @@ function ProgramSelection({
 }
 
 function SubmitButton({
-  //  register,
-  //  errors,
   getValues,
   watch,
-  //  formDescription,
   theme,
 }: {
-  register: UseFormRegister<BlastParameters>;
-  errors: FieldErrors;
   getValues: Function;
   watch: Function;
-  formDescription: Yup.SchemaObjectDescription;
   theme: Theme;
 }) {
   const db = watch("database");
@@ -568,15 +351,11 @@ function SubmitButton({
 
 function AlgorithmParameters({
   register,
-  //  errors,
-  //  getValues,
   formDescription,
   blastFlavour,
   theme,
 }: {
   register: UseFormRegister<BlastParameters>;
-  errors: FieldErrors;
-  getValues: Function;
   formDescription: Yup.SchemaObjectDescription;
   blastFlavour: BlastFlavour;
   theme: Theme;
@@ -1002,7 +781,6 @@ export default function BlastFlavourPage({
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound();
   }
-  // const defaultProgram = (PROGRAMS.get(blastFlavour) || [blastFlavour])[0];
 
   const blastForm = BLASTFLAVOUR_FORMS.get(blastFlavour)!;
 
@@ -1012,6 +790,7 @@ export default function BlastFlavourPage({
     register,
     handleSubmit,
     getValues,
+    setValue,
     formState: { errors },
     control,
     watch,
@@ -1054,40 +833,24 @@ export default function BlastFlavourPage({
           <h1 className={`title ${theme === "dark" ? "has-text-light" : ""}`}>
             {blastFlavour}
           </h1>
-          <EnterQuery
-            register={register}
-            errors={errors}
-            formDescription={formDescription}
-            theme={theme}
-          />
+          <EnterQuery register={register} errors={errors} theme={theme} />
           <ChooseSearchSet
             register={register}
             errors={errors}
             blastFlavour={blastFlavour}
             control={control}
-            formDescription={formDescription}
             theme={theme}
           />
           <ProgramSelection
             register={register}
-            errors={errors}
-            getValues={getValues}
-            blastFlavour={blastFlavour}
-            formDescription={formDescription}
-            theme={theme}
-          />
-          <SubmitButton
-            register={register}
-            errors={errors}
-            getValues={getValues}
+            setValue={setValue}
             watch={watch}
-            formDescription={formDescription}
+            blastFlavour={blastFlavour}
             theme={theme}
           />
+          <SubmitButton getValues={getValues} watch={watch} theme={theme} />
           <AlgorithmParameters
             register={register}
-            errors={errors}
-            getValues={getValues}
             formDescription={formDescription}
             blastFlavour={blastFlavour}
             theme={theme}

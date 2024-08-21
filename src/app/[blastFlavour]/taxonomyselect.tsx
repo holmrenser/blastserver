@@ -9,7 +9,7 @@ const AsyncSelect = dynamic(
 import { Controller } from "react-hook-form";
 import type { Control, UseFormRegister } from "react-hook-form";
 
-import type { BlastParameters } from "./page";
+import type { BlastParameters } from "./parameters";
 import type { Theme } from "../themecontext";
 
 type SelectElement = {
@@ -27,7 +27,7 @@ function DropdownIndicator() {
 }
 
 function loadOptions(inputValue: string) {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   return new Promise<SelectElement[]>((resolve, reject) => {
     const url =
       `${basePath}/api/taxonomy?` + new URLSearchParams({ query: inputValue });

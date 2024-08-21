@@ -12,7 +12,7 @@ function initDb() {
 
 async function insertTaxonmy() {
   const prisma = new PrismaClient();
-  const { TAXONOMY_FILE } = process.env; // `${process.env.}/taxonomy/taxonomy.tsv`;
+  const { TAXONOMY_FILE } = process.env;
   const taxonomyCount = await prisma.taxonomy.count();
   if (taxonomyCount) {
     console.log(`FOUND ${taxonomyCount} TAXONOMY ENTRIES`);

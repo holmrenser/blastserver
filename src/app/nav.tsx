@@ -8,7 +8,7 @@ import { ThemeContext } from "./themecontext";
 import { QueueStatus } from "./queuestatus";
 
 //@ts-ignore
-import { ALLOWED_FLAVOURS } from "./[blastFlavour]/blastflavour.d.ts";
+import { ALLOWED_FLAVOURS } from "./[blastFlavour]/parameters";
 // import Snowfall from "react-snowfall";
 /*
 function SantaCanvas() {
