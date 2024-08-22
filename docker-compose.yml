@@ -43,7 +43,7 @@ services:
       replicas: 2
     env_file: .env.production
     volumes:
-      - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}":
+      - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
 
   redis:
     image: redis:7.2.0
