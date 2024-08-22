@@ -17,6 +17,6 @@
       "@/*": ["./worker/*"]
     }
   },
-  "include": ["worker/*Worker.ts"],
+  "include": ["worker/*worker.ts"],
   "exclude": ["node_modules"]
 }
