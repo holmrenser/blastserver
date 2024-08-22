@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { saveAs } from "file-saver";
 import type { blastjob } from "@prisma/client";
 
-import ErrorComponent from "../error.tsx";
+import ErrorComponent from "../error";
 
 function Status({ message }: { message: string }) {
   return (
