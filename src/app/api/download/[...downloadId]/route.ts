@@ -1,19 +1,28 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import type { download } from '@prisma/client';
 
 import prisma from '@/app/api/database';
 
-export async function GET(_: NextRequest, context: { params: { downloadId: string[]}}) {
+export const dynamic = 'force-dynamic';
+
+export async function GET(
+  _: NextRequest,
+  context: { params: { downloadId: string[]}}
+): Promise<NextResponse<download>> {
   const { params: { downloadId }} = context;
-  console.log(`Requested download job ${downloadId}`);
+  console.log(`Checking download status ${downloadId}`);
 
-  let job;
+  let download: download | null;
   try {
-    job = await prisma.blastjob.findFirst({ where: { id: downloadId[0] }});
+    download = await prisma.download.findFirst({ where: { id: downloadId[0] }});
   } catch (err) {
-    console.error(err);
+    console.error((err as Error).message);
+    return new NextResponse((err as Error).message, { status: 500 });
   }
-  // const formattedResults = job?.results ? await formatResults(job.results) : null;
+  if (!download) {
+    return new NextResponse('Download not found', { status: 404 });
+  }
 
-  return NextResponse.json({...job })
+  return NextResponse.json({...download })
 }

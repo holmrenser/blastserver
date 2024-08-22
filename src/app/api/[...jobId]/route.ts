@@ -18,7 +18,10 @@ export type BlastJobResults = Omit<blastjob, 'results'> & {
  * @param context 
  * @returns 
  */
-export async function GET(_: NextRequest, context: { params: { jobId: string[]}}): Promise<NextResponse<BlastJobResults>> {
+export async function GET(
+  _: NextRequest,
+  context: { params: { jobId: string[]}}
+): Promise<NextResponse<BlastJobResults>> {
   const { params: { jobId }} = context;
   console.log(`Requested BLAST job ${jobId}`);
 

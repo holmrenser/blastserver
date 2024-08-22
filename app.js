@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const { spawnSync } = require("child_process");
+import { PrismaClient } from "@prisma/client";
+import { spawnSync } from "child_process";
 
 function initDb() {
   const { stdout, stderr } = spawnSync(

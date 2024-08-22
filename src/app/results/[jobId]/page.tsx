@@ -223,7 +223,7 @@ export default function ResultsWrapper({
   params: {
     jobId: string;
   };
-}) {
+}): React.JSX.Element {
   const { jobId } = params;
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -239,14 +239,9 @@ export default function ResultsWrapper({
     }
   );
 
-  // const { theme } = useContext(ThemeContext);
-
   if (error) return <ErrorComponent statusCode={500} />;
   if (isLoading) return <Status message="loading" />;
   if (!data) return <Status message="fetching" />;
-
-  // const { submitted, results, finished, parameters, err } = data;
-  // const { database } = parameters as any as FormData<BlastFlavour>;
 
   return (
     <div className="container is-fullhd">

@@ -48,11 +48,8 @@ export default function Descriptions({
   database: string;
 }): React.JSX.Element {
   const pathname = usePathname();
-  const { theme } = useContext(ThemeContext);
-
-  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const linkPath = pathname.slice(basePath.length);
+  const { theme } = useContext(ThemeContext);
 
   const [selectionSet, toggleSelection, clearSelection, addItem] =
     useSelectionSet<string>();
@@ -84,7 +81,7 @@ export default function Descriptions({
   }, [cachedCheckSelectAll]);
 
   function submitSelection() {
-    console.log({ selectionSet });
+    console.log({ selectionSet, database, basePath });
     fetch(`${basePath}/api/download`, {
       body: JSON.stringify({
         sequenceIds: Array.from(selectionSet),
@@ -100,7 +97,7 @@ export default function Descriptions({
       .then((data) => {
         const { jobId } = data;
         console.log({ jobId });
-        // window.location.replace(`${basePath}/results/${jobId}`) // HACK
+        window.location.replace(`${basePath}/download/${jobId}`); // HACK
       });
   }
 
@@ -129,7 +126,7 @@ export default function Descriptions({
               <button
                 className="button navbar-item is-small is-light"
                 onClick={submitSelection}
-                disabled={true /*selectionSet.size === 0*/}
+                disabled={selectionSet.size === 0}
               >
                 Download
               </button>
@@ -212,7 +209,7 @@ export default function Descriptions({
                   <td data-label="Description">
                     <Link
                       href={{
-                        pathname: linkPath,
+                        pathname,
                         query: {
                           panel: "alignments",
                         },

@@ -15,8 +15,7 @@ import type { BlastJobResults } from "@/app/api/[...jobId]/route";
 import type { BlastHit } from "@/app/api/[...jobId]/formatResults";
 import type { BlastParameters } from "@/app/[blastFlavour]/parameters";
 
-// eslint-disable-next-line no-unused-vars
-type PANEL_COMPONENT = (arg0: {
+type PANEL_COMPONENT = (_options: {
   hits: BlastHit[];
   queryLength: number;
   taxonomyTrees: any;
@@ -44,10 +43,6 @@ export default function ResultsPage({ data }: { data: BlastJobResults }) {
 
   const { results, err, parameters } = data;
   const { database } = parameters as BlastParameters;
-
-  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
-  // const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  // const linkPath = pathname.slice(basePath.length);
 
   if (err) return <p>{err}</p>;
   if (!results)

@@ -2,7 +2,8 @@
   "name": "blastserver",
   "version": "0.1.0",
   "private": true,
-  "engines":{
+  "type": "module",
+  "engines": {
     "node": ">= v18.17.0"
   },
   "scripts": {
@@ -10,9 +11,11 @@
     "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
     "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && cp -r .next/static .next/standalone/.next/static",
     "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build && cp -r .next/static .next/standalone/.next/static",
-    "build:worker": "rm -rf worker/worker worker/src && npx tsc -p tsconfig.worker.json && mv worker/worker/worker.js worker/worker.mjs && rm -rf worker/worker worker/src",
+    "build:worker": "rm -rf worker/build && npx tsc -p tsconfig.worker.json",
     "start:app": "next start",
-    "start:worker": "node -r dotenv/config worker/worker.mjs dotenv_config_path=./.env.development",
+    "start:worker": "run-p start:blastworker start:downloadworker",
+    "start:blastworker": "node -r dotenv/config worker/build/worker/blastworker.js dotenv_config_path=./.env.development",
+    "start:downloadworker": "node -r dotenv/config worker/build/worker/downloadworker.js dotenv_config_path=./.env.development",
     "lint": "next lint"
   },
   "dependencies": {
@@ -47,6 +50,10 @@
     "yup": "^1.2.0"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
+    "@types/wicg-file-system-access": "^2023.10.5",
+    "file-saver": "^2.0.5",
+    "npm-run-all": "^4.1.5",
     "supports-color": "^9.4.0"
   }
 }

@@ -1,10 +1,9 @@
-name: "${NAME}" 
+name: "${NAME}"
 services:
   app:
     build:
       context: .
       dockerfile: app.Dockerfile
-      # network: host
     image: blastserver_app:latest
     depends_on:
       redis:
@@ -15,12 +14,12 @@ services:
       - "${APP_PORT}:3000"
     env_file: .env.production
 
-  worker:
+  blastworker:
     build:
       context: .
       dockerfile: worker.Dockerfile
-      # network: host
     image: blastserver_worker:latest
+    container_name: blastserver_blastworker
     depends_on:
       redis:
         condition: service_healthy
@@ -31,6 +30,20 @@ services:
     env_file: .env.production
     volumes:
       - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
+
+  downloadworker:
+    image: blastserver_worker:latest
+    container_name: blastserver_downloadworker
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    env_file: .env.production
+    volumes:
+      - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}":
 
   redis:
     image: redis:7.2.0
@@ -53,7 +66,11 @@ services:
       - "5432"
     env_file: .env.production
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost",
+        ]
       interval: 10s
       timeout: 60s
       retries: 10

@@ -29,9 +29,9 @@ ENV NODE_ENV production
 
 WORKDIR /app
 COPY --from=builder /app/ncbi-blast-$BLAST_VERSION+/bin/* /usr/bin/
-COPY --from=builder /app/worker/worker.mjs ./
+COPY --from=builder /app/worker/build/worker/* ./
 COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/.env.production ./.env
 COPY --from=builder /app/prisma ./
 
-CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config worker.mjs
+CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config blastworker.js & node -r dotenv/config downloadworker.js

@@ -7,7 +7,6 @@ import prisma from '../database';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  // const { sequenceIds }: { sequenceIds: string[] } = await request.json();
   const params = await request.json();
   const { sequenceIds, database }: { sequenceIds: string[], database: string } = params;
   if (!Array.isArray(sequenceIds)) {
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   sequenceIds.sort();
-  const jobId = hash(sequenceIds);
+  const jobId = hash(sequenceIds).slice(0,10);
   console.log(`Download request ${jobId}`)
   const existingJob = await prisma.download.findFirst({ where: { id: jobId }});
   if (!existingJob) {

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "./worker",
+    "outDir": "./worker/build",
     "target": "es6",
     "lib": ["esnext"],
     "allowJs": true,
@@ -17,6 +17,6 @@
       "@/*": ["./worker/*"]
     }
   },
-  "include": ["worker/worker.ts"],
+  "include": ["worker/*Worker.ts"],
   "exclude": ["node_modules"]
 }
