@@ -9,7 +9,7 @@
   "scripts": {
     "dev:app": "ENV_FILE='./.env.development' next dev",
     "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
-    "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && cp -r .next/static .next/standalone/.next/static",
+    "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && ls -lah .next && cp -r .next/static .next/standalone/.next/static",
     "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build && cp -r .next/static .next/standalone/.next/static",
     "build:worker": "rm -rf worker/build && npx tsc -p tsconfig.worker.json",
     "start:app": "next start",
