@@ -1,6 +1,7 @@
 // @ts-check
 
-require("dotenv").config({ path: process.env.ENV_FILE });
+import { config } from "dotenv";
+config({ path: process.env.ENV_FILE });
 
 // this is only logged during building
 const { env } = process;
@@ -10,7 +11,7 @@ console.log(
 console.log("ENVIRONMENT VARIABLES:", env);
 
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   output: "standalone",
   experimental: {
     serverComponentsExternalPackages: ["bullmq"],
@@ -18,3 +19,5 @@ module.exports = {
   },
   basePath: process.env.BASE_PATH,
 };
+
+export default nextConfig;
