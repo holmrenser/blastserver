@@ -33,5 +33,6 @@ COPY --from=builder /app/worker/build/worker/* ./
 COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/.env.production ./.env
 COPY --from=builder /app/prisma ./
+COPY --from=builder /app/package.json ./
 
-CMD node ./node_modules/.bin/prisma migrate deploy && node -r dotenv/config blastworker.js & node -r dotenv/config downloadworker.js
+CMD node ./node_modules/.bin/prisma migrate deploy && npm run start:worker
