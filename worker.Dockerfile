@@ -1,4 +1,4 @@
-FROM node:18.16.0-bullseye AS base
+FROM node:20.17.0-bullseye AS base
 
 ARG BLAST_VERSION=2.14.1
 
