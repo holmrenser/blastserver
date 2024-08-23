@@ -29,7 +29,7 @@ services:
     env_file: .env.production
     volumes:
       - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
-    command: printf "running from compose\n" && node ./node_modules/.bin/prisma migrate deploy && npm run start:blastworker
+    command: sh -cx "node ./node_modules/.bin/prisma migrate deploy && npm run start:blastworker"
 
   downloadworker:
     image: blastserver_worker:latest
@@ -43,7 +43,7 @@ services:
     env_file: .env.production
     volumes:
       - "${BLAST_DB_PATH}:${APP_BLAST_DB_PATH}"
-    command: printf "running from compose\n" && node ./node_modules/.bin/prisma migrate deploy && npm run start:downloadworker
+    command: sh -cx "node ./node_modules/.bin/prisma migrate deploy && npm run start:downloadworker"
 
   redis:
     image: redis:7.2.0
