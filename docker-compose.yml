@@ -19,7 +19,6 @@ services:
       context: .
       dockerfile: worker.Dockerfile
     image: blastserver_worker:latest
-    container_name: blastserver_blastworker
     depends_on:
       redis:
         condition: service_healthy
@@ -34,7 +33,6 @@ services:
 
   downloadworker:
     image: blastserver_worker:latest
-    container_name: blastserver_downloadworker
     depends_on:
       redis:
         condition: service_healthy
