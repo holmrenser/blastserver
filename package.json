@@ -8,14 +8,16 @@
   },
   "scripts": {
     "dev:app": "ENV_FILE='./.env.development' next dev",
-    "dev:worker": "npx tsc -p tsconfig.worker.json --watch",
     "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && ls -lah .next && cp -r .next/static .next/standalone/.next/static",
     "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build && cp -r .next/static .next/standalone/.next/static",
     "build:worker": "rm -rf worker/build && npx tsc -p tsconfig.worker.json",
     "start:app": "next start",
-    "start:worker": "run-p start:blastworker start:downloadworker",
-    "start:blastworker": "node -r dotenv/config worker/build/worker/blastworker.js dotenv_config_path=./.env.development",
-    "start:downloadworker": "node -r dotenv/config worker/build/worker/downloadworker.js dotenv_config_path=./.env.development",
+    "dev:worker": "run-p dev:blastworker dev:downloadworker",
+    "dev:blastworker": "node -r dotenv/config worker/build/worker/blastworker.js dotenv_config_path=./.env.development",
+    "dev:downloadworker": "node -r dotenv/config worker/build/worker/downloadworker.js dotenv_config_path=./.env.development",
+    "start:worker": "run-p start:blastworker start:downloadworer",
+    "start:blastworker": "node -r dotenv/config blastworker.js dotenv_config_path=./.env",
+    "start:downloadworker": "node -r dotenv/config downloadworker.js dotenv_config_path=./.env",
     "lint": "next lint"
   },
   "dependencies": {
