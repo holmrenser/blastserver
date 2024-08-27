@@ -13,11 +13,15 @@ export const NUCLEOTIDE_DBS = new Map<string, string>([
 ]);
 
 export const PROTEIN_DBS = new Map<string, string>([
-  ["refseq_protein", "Reference proteins"],
   ["nr", "Non-redundant protein sequences"],
-  ["landmark", "Model organisms"],
   ["refseq_select_prot", "RefSeq Select proteins"],
+  ["refseq_protein", "Reference proteins"],
+  ["landmark", "Model organisms"],
   ["swissprot", "UniProtKB/Swiss-Prot"],
+  ["pataa", "Patented protein sequences"],
+  ["pdb", "Protein Data Bank proteins"],
+  ["env_nr", "Metagenomic proteins"],
+  ["tsa_nr", "Transcriptome Shotgun Assembly proteins"],
 ]);
 
 export const DB_NAMES = new Map<string, string>([...PROTEIN_DBS, ...NUCLEOTIDE_DBS]);
