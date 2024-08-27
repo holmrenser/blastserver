@@ -46,6 +46,7 @@ function blastJobProcessor(job) {
             args.push('-lcase_masking');
         }
         if (flavour === 'blastp' || flavour === 'blastx' || flavour === 'tblastn') {
+            // eslint-disable-next-line no-unused-vars
             const { data: { matrix, wordSize, compositionalAdjustment } } = job;
             args.push('-matrix', matrix, '-word_size', String(wordSize));
         }
@@ -63,10 +64,10 @@ function blastJobProcessor(job) {
                 throw new Error(`Writing tmp file failed: ${err}`);
             }
             if (excludeTaxids) {
-                args.push('-negative_taxidlist', tmpFile);
+                args.push('-negative_taxidlist', tmpFile, '-no_taxid_expansion');
             }
             else {
-                args.push('-taxidlist', tmpFile);
+                args.push('-taxidlist', tmpFile, '-no_taxid_expansion');
             }
         }
         // Very large max buffer so we capture all BLAST output

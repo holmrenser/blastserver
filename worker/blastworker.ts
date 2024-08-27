@@ -48,6 +48,7 @@ async function blastJobProcessor(job: Job) {
   }
 
   if (flavour === 'blastp' || flavour === 'blastx' || flavour === 'tblastn') {
+    // eslint-disable-next-line no-unused-vars
     const { data: { matrix, wordSize, compositionalAdjustment }} = job;
     args.push(
       '-matrix', matrix,
@@ -62,15 +63,16 @@ async function blastJobProcessor(job: Job) {
     })).map(({ id }) => id)
     const tmpFile = Path.join(tmpdir(), `blastserver.${Crypto.randomBytes(16).toString('hex')}.tmp`)
     const taxidString = allTaxids.join('\n')
+    
     try {
       await fs.promises.writeFile(tmpFile, taxidString);
     } catch (err) {
       throw new Error(`Writing tmp file failed: ${err}`)
     }
     if (excludeTaxids) {
-      args.push('-negative_taxidlist', tmpFile)
+      args.push('-negative_taxidlist', tmpFile, '-no_taxid_expansion')
     } else {
-      args.push('-taxidlist', tmpFile)
+      args.push('-taxidlist', tmpFile, '-no_taxid_expansion')
     }
   }
 
