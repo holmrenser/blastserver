@@ -5,6 +5,7 @@ export const ALLOWED_FLAVOURS = ['blastp','blastx','blastn','tblastx','tblastn']
 export type BlastFlavour = typeof ALLOWED_FLAVOURS[number];
 
 export const NUCLEOTIDE_DBS = new Map<string, string>([
+  ["core_nt", "Core nucleotide database"],
   ["nt", "Nucleotide collection"],
   ["refseq_select_rna", "RefSeq Select RNA sequences"],
   ["refseq_rna", "Reference RNA sequences"],
@@ -42,9 +43,9 @@ export const PROGRAMS = new Map<BlastFlavour, string[]>([
   [
     "blastn",
     [
+      "Blastn (Somewhat similar sequences)",
       "Megablast (Highly similar sequences)",
       "Discontiguous megablast (More dissimilar sequences)",
-      "Blastn (Somewhat similar sequences)",
     ],
   ],
 ]);

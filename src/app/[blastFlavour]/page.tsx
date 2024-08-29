@@ -275,17 +275,18 @@ function ProgramSelection({
           <div className="field">
             <div className="control">
               {PROGRAMS.get(blastFlavour)?.map((program: string) => {
-                console.log({ program, selectedProgram });
+                // console.log({ program, selectedProgram });
                 return (
                   <React.Fragment key={program}>
                     <label className="radio is-small">
                       <input
+                        disabled
                         type="radio"
                         checked={program === selectedProgram}
                         value={program}
                         {...register("program", {
                           onChange: ({ target: { value } }) => {
-                            console.log({ value });
+                            // console.log({ value });
                             setValue("program", value);
                           },
                         })}
@@ -667,6 +668,7 @@ function AlgorithmParameters({
                       }`}
                     >
                       <select
+                        disabled
                         className={
                           theme === "dark"
                             ? "has-background-grey has-text-light"
@@ -719,6 +721,7 @@ function AlgorithmParameters({
                 <div className="control">
                   <label className="checkbox">
                     <input
+                      disabled
                       type="checkbox"
                       {...register("filterLowComplexity")}
                     />
@@ -741,7 +744,7 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                   <label className="checkbox">
-                    <input type="checkbox" />
+                    <input type="checkbox" disabled />
                     Mask for lookup table only
                   </label>
                 </div>
@@ -757,7 +760,11 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                   <label className="checkbox">
-                    <input type="checkbox" {...register("lcaseMasking")} />
+                    <input
+                      type="checkbox"
+                      disabled
+                      {...register("lcaseMasking")}
+                    />
                     Mask lower case letters
                   </label>
                 </div>
@@ -803,10 +810,7 @@ export default function BlastFlavourPage({
     values: blastForm.default(),
   });
 
-  console.log({ errors });
-
   async function onSubmit(formData: BlastParameters) {
-    console.log({ formData });
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
       headers: {

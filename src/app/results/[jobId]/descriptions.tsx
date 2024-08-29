@@ -185,9 +185,10 @@ export default function Descriptions({
               hsps,
               percentIdentity,
             }) => {
+              console.log({ percentIdentity });
               const scores = hsps.map(({ bitScore }) => Number(bitScore));
-              const maxScore = Math.round(Math.max(...scores));
-              const totalScore = Math.round(
+              const maxScore = Math.floor(Math.max(...scores));
+              const totalScore = Math.floor(
                 scores.reduce((total, score) => total + score, 0)
               );
               const evalues = hsps.map(({ evalue }) => Number(evalue));
