@@ -65,14 +65,11 @@ export default function DownloadPage({
 
   let save = useRef(() => {});
   useEffect(() => {
-    console.log("data changed:", { data });
     if (data && data.results) {
       const blob = new Blob([Buffer.from(data.results, "utf-8")], {
         type: "application/x-gzip-compressed",
       });
-      console.log({ blob });
       save.current = () => {
-        console.log("running Saveas");
         saveAs(blob, `blastresult.${downloadId}.fa.gz`);
       };
       save.current();
@@ -83,7 +80,6 @@ export default function DownloadPage({
   if (isLoading) return <Status message="loading" />;
   if (!data) return <Status message={`Preparing download ${downloadId}`} />;
 
-  console.log("Found data");
   return (
     <>
       <h1>Preparing download {downloadId} complete</h1>

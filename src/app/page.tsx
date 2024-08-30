@@ -76,6 +76,7 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
+                  prefetch
                   className="button is-large is-fullwidth"
                   href="/blastp"
                   title="Search a protein database with a protein query"
@@ -96,6 +97,7 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
+                  prefetch
                   className="button is-large is-fullwidth"
                   href="/blastn"
                   title="Search a nucleotide database with a nucleotide query"
@@ -103,6 +105,7 @@ export default function HomePage() {
                   blastn
                 </Link>
                 <Link
+                  prefetch
                   className="button is-large is-fullwidth"
                   href="/tblastx"
                   title="Search a translated nucleotide database with a translated nucleotide query"
@@ -123,6 +126,7 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
+                  prefetch
                   className="button is-large is-fullwidth"
                   href="/blastx"
                   title="Search a protein database with a translated nucleotide query"
@@ -143,6 +147,7 @@ export default function HomePage() {
                   theme={theme}
                 />
                 <Link
+                  prefetch
                   className="button is-large is-fullwidth"
                   href="/tblastn"
                   title="Search a translated nucleotide database with a protein query"

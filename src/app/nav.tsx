@@ -62,6 +62,7 @@ export default function Nav() {
             >
               {ALLOWED_FLAVOURS.map((flavour) => (
                 <Link
+                  prefetch
                   className={`navbar-item ${
                     theme === "dark"
                       ? "has-background-grey-dark has-text-light"

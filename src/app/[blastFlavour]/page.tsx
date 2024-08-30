@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useContext } from "react";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
+import type { Route } from "next";
 import { useForm } from "react-hook-form";
 import type { FieldErrors, Control, UseFormRegister } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -275,7 +276,6 @@ function ProgramSelection({
           <div className="field">
             <div className="control">
               {PROGRAMS.get(blastFlavour)?.map((program: string) => {
-                // console.log({ program, selectedProgram });
                 return (
                   <React.Fragment key={program}>
                     <label className="radio is-small">
@@ -286,7 +286,6 @@ function ProgramSelection({
                         value={program}
                         {...register("program", {
                           onChange: ({ target: { value } }) => {
-                            // console.log({ value });
                             setValue("program", value);
                           },
                         })}
@@ -810,6 +809,8 @@ export default function BlastFlavourPage({
     values: blastForm.default(),
   });
 
+  const router = useRouter();
+
   async function onSubmit(formData: BlastParameters) {
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
@@ -821,8 +822,8 @@ export default function BlastFlavourPage({
     })
       .then((res) => res.json())
       .then((data) => {
-        const { jobId } = data;
-        window.location.replace(`${basePath}/results/${jobId}`); // HACK
+        const { jobId }: { jobId: String } = data;
+        router.push(`${basePath}/results/${jobId}` as Route);
       });
   }
 

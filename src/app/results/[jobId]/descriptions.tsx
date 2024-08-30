@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import type { Route } from "next";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
 import styles from "./descriptions.module.scss";
@@ -50,6 +51,7 @@ export default function Descriptions({
   const pathname = usePathname();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const { theme } = useContext(ThemeContext);
+  const router = useRouter();
 
   const [selectionSet, toggleSelection, clearSelection, addItem] =
     useSelectionSet<string>();
@@ -81,7 +83,6 @@ export default function Descriptions({
   }, [cachedCheckSelectAll]);
 
   function submitSelection() {
-    console.log({ selectionSet, database, basePath });
     fetch(`${basePath}/api/download`, {
       body: JSON.stringify({
         sequenceIds: Array.from(selectionSet),
@@ -95,9 +96,8 @@ export default function Descriptions({
     })
       .then((res) => res.json())
       .then((data) => {
-        const { jobId } = data;
-        console.log({ jobId });
-        window.location.replace(`${basePath}/download/${jobId}`); // HACK
+        const { jobId }: { jobId: String } = data;
+        router.push(`${basePath}/download/${jobId}` as Route);
       });
   }
 
@@ -185,7 +185,6 @@ export default function Descriptions({
               hsps,
               percentIdentity,
             }) => {
-              console.log({ percentIdentity });
               const scores = hsps.map(({ bitScore }) => Number(bitScore));
               const maxScore = Math.floor(Math.max(...scores));
               const totalScore = Math.floor(

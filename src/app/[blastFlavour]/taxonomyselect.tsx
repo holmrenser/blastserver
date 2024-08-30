@@ -1,11 +1,5 @@
-// import dynamic from "next/dynamic";
+import React, { useId } from "react";
 import AsyncSelect from "react-select/async";
-/*
-const AsyncSelect = dynamic(
-  import("react-select/async").then((mod: any) => mod.AsyncSelect),
-  { ssr: false }
-);
-*/
 import { Controller } from "react-hook-form";
 import type { Control, UseFormRegister } from "react-hook-form";
 
@@ -60,7 +54,8 @@ export function TaxonomySelect({
   control: Control<BlastParameters>;
   register: UseFormRegister<BlastParameters>;
   theme: Theme;
-}) {
+}): React.JSX.Element {
+  const instanceId = useId();
   return (
     <>
       <div className={`select is-small ${theme === "dark" ? "is-dark" : ""}`}>
@@ -70,6 +65,7 @@ export function TaxonomySelect({
           render={({ field: { onChange, onBlur, ref } }) => {
             return (
               <AsyncSelect
+                instanceId={instanceId}
                 styles={{
                   control: (baseStyles) => {
                     const height = 30;

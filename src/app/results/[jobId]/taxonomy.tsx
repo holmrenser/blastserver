@@ -17,8 +17,6 @@ function* depthFirst(
   isLast: boolean = false,
   hasSiblings: boolean = false
 ): Generator<FormattedTaxonomyNode> {
-  const { name } = tree;
-  console.log({ name, depth, isLast, siblingLevels });
   if (isLast) {
     siblingLevels = siblingLevels.filter((l) => l !== depth - 1);
   }
