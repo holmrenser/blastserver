@@ -823,7 +823,7 @@ export default function BlastFlavourPage({
       .then((res) => res.json())
       .then((data) => {
         const { jobId }: { jobId: String } = data;
-        router.push(`${basePath}/results/${jobId}` as Route);
+        router.push(`results/${jobId}` as Route);
       });
   }
 
