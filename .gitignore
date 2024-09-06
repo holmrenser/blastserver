@@ -14,7 +14,7 @@
 
 # production
 /build
-/worker/worker.mjs
+/worker/build*
 
 # misc
 .DS_Store

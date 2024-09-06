@@ -36,12 +36,17 @@ async function blastJobProcessor(job: Job) {
     '-db', dbPath,
     '-evalue', String(expectThreshold),
     '-outfmt', '16',
-    '-gapopen', gapOpen,
-    '-gapextend', gapExtend,
     '-num_threads', numThreads,
     '-max_target_seqs', String(maxTargetSeqs),
     '-query_loc', `${queryFrom || 1}-${queryTo || query.length}`,
   ];
+
+  if (flavour !== 'tblastx') {
+    args.push(
+      '-gapopen', gapOpen,
+      '-gapextend', gapExtend
+    )
+  }
 
   if (lcaseMasking) {
     args.push('-lcase_masking')
