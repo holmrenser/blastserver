@@ -20,7 +20,7 @@ export const PROTEIN_DBS = new Map<string, string>([
   ["landmark", "Model organisms"],
   ["swissprot", "UniProtKB/Swiss-Prot"],
   ["pataa", "Patented protein sequences"],
-  ["pdb", "Protein Data Bank proteins"],
+  ["pdbaa", "Protein Data Bank proteins"],
   ["env_nr", "Metagenomic proteins"],
   ["tsa_nr", "Transcriptome Shotgun Assembly proteins"],
 ]);
