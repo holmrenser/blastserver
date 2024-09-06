@@ -31,8 +31,8 @@ export const BLAST_DBS = new Map<BlastFlavour, string[]>([
   ["blastp", Array.from(PROTEIN_DBS.keys())],
   ["blastx", Array.from(PROTEIN_DBS.keys())],
   ["blastn", Array.from(NUCLEOTIDE_DBS.keys())],
-  ["tblastx", Array.from(NUCLEOTIDE_DBS.keys())],
-  ["tblastn", Array.from(NUCLEOTIDE_DBS.keys())],
+  ["tblastx", Array.from(NUCLEOTIDE_DBS.keys()).filter(db => db !== '16S_ribosomal_RNA')],
+  ["tblastn", Array.from(NUCLEOTIDE_DBS.keys()).filter(db => db !== '16S_ribosomal_RNA')],
 ]);
 
 export const PROGRAMS = new Map<BlastFlavour, string[]>([

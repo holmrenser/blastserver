@@ -18,3 +18,28 @@
     max-width: 90vw;
   }
 }
+
+.hspTable {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+
+  th,
+  td {
+    border-left: None;
+    border-right: None;
+  }
+  th {
+    border-bottom: None;
+    padding-top: 0.2rem;
+    padding-bottom: 0rem;
+    font-weight: 100;
+    font-size: smaller;
+  }
+  td {
+    border-top: None;
+    padding-top: 0rem;
+    padding-bottom: 0.2rem;
+    font-weight: 500;
+    font-size: small;
+  }
+}

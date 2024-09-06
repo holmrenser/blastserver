@@ -193,7 +193,7 @@ export default function Descriptions({
               const evalues = hsps.map(({ evalue }) => Number(evalue));
               const evalue = Math.min(...evalues);
               const formattedEvalue =
-                evalue === 0 ? evalue : evalue.toExponential(2);
+                evalue === 0 ? evalue : evalue.toExponential(0);
               return (
                 <tr key={num}>
                   <td data-label="Select">

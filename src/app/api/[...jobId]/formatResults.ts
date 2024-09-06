@@ -9,7 +9,7 @@ type HitDescription = {
   taxid: string
 }
 
-type Hsp = {
+export type Hsp = {
   queryFrom: string,
   queryTo: string,
   bitScore: string,
@@ -184,8 +184,18 @@ function addChildren(root: TaxonomyNode, childOptions: TaxonomyNode[]) {
 }
 
 async function getTaxIdMap(taxids: string[]): Promise<TaxidMap> {
-  const taxInfo = await prisma.taxonomy.findMany({ where: { id: { in: taxids }}})
-  const taxidMap = Object.fromEntries(taxInfo.map(
+  let taxInfo: {
+    id: string;
+    name: string;
+    ancestors: string[];
+  }[];
+  try {
+    taxInfo = await prisma.taxonomy.findMany({ where: { id: { in: taxids }}})
+  } catch(err) {
+    console.error(`prisma.taxonomy.findMany: ${err}`);
+    taxInfo = []
+  }
+    const taxidMap = Object.fromEntries(taxInfo.map(
     ({id, name, ancestors}: {id: string, name: string, ancestors: string[]}) => {
       return [id, {id, name, ancestors}]
     }
@@ -214,7 +224,7 @@ async function buildTaxTrees(hits: BlastHit[]) {
   
   const hitTaxids = hits.map(({ taxid }: { taxid: string }) => taxid);
   
-  const allTaxIds = [...ancestorIds, ...hitTaxids]
+  const allTaxIds = [...ancestorIds, ...hitTaxids];
   
   let taxonomy: TaxonomyNode[];
   try {
@@ -321,6 +331,7 @@ export default async function formatResults(blastResults: string): Promise<Forma
   
     // add taxonomy info for all hits
     const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
+      .filter(taxid => typeof taxid !== 'undefined');
     const hitTaxidMap = await getTaxIdMap(hitTaxids);
     hits = intermediateHits.map(hit => addTaxInfo({ hit, hitTaxidMap }))
     

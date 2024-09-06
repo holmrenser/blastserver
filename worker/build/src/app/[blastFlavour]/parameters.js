@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 export const ALLOWED_FLAVOURS = ['blastp', 'blastx', 'blastn', 'tblastx', 'tblastn'];
 export const NUCLEOTIDE_DBS = new Map([
+    ["core_nt", "Core nucleotide database"],
     ["nt", "Nucleotide collection"],
     ["refseq_select_rna", "RefSeq Select RNA sequences"],
     ["refseq_rna", "Reference RNA sequences"],
@@ -23,8 +24,8 @@ export const BLAST_DBS = new Map([
     ["blastp", Array.from(PROTEIN_DBS.keys())],
     ["blastx", Array.from(PROTEIN_DBS.keys())],
     ["blastn", Array.from(NUCLEOTIDE_DBS.keys())],
-    ["tblastx", Array.from(NUCLEOTIDE_DBS.keys())],
-    ["tblastn", Array.from(NUCLEOTIDE_DBS.keys())],
+    ["tblastx", Array.from(NUCLEOTIDE_DBS.keys()).filter(db => db !== '16S_ribosomal_RNA')],
+    ["tblastn", Array.from(NUCLEOTIDE_DBS.keys()).filter(db => db !== '16S_ribosomal_RNA')],
 ]);
 export const PROGRAMS = new Map([
     ["blastp", ["blastp"]],
@@ -34,9 +35,9 @@ export const PROGRAMS = new Map([
     [
         "blastn",
         [
+            "Blastn (Somewhat similar sequences)",
             "Megablast (Highly similar sequences)",
             "Discontiguous megablast (More dissimilar sequences)",
-            "Blastn (Somewhat similar sequences)",
         ],
     ],
 ]);
