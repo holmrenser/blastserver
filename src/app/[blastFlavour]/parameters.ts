@@ -196,17 +196,18 @@ const blastnForm = Yup.object()
       .default(BLAST_DBS.get("blastn")![0])
       .defined(),
     wordSize: Yup.number()
-      .oneOf([16, 20, 24, 28, 32, 48, 64, 128, 256])
-      .default(28)
+      .oneOf([7, 11, 15])
+      .default(11)
       .defined(),
     matchMismatch: Yup.string()
       .oneOf(["1,-2", "1,-3", "1,-4", "2,-3", "4,-5", "1,-1"])
-      .default("1,-2")
+      .default("2,-3")
       .defined(),
     gapCosts: Yup.string()
       .oneOf(["linear", "5,2", "2,2", "1,2", "0,2", "3,1", "2,1", "1,1"])
-      .default("linear")
+      .default("5,2")
       .defined(),
+    lcaseMasking: Yup.boolean().default(false).defined(),
   });
 interface BlastnParameters extends Yup.InferType<typeof blastnForm> {}
 
