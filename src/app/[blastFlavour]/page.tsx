@@ -413,7 +413,11 @@ function AlgorithmParameters({
               <div className="field">
                 <div className="control">
                   <label className="checkbox">
-                    <input type="checkbox" {...register("shortQueries")} />
+                    <input
+                      disabled
+                      type="checkbox"
+                      {...register("shortQueries")}
+                    />
                     Automatically adjust parameters for short input sequences
                   </label>
                 </div>

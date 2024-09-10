@@ -207,7 +207,7 @@ const blastnForm = Yup.object()
       .oneOf(["linear", "5,2", "2,2", "1,2", "0,2", "3,1", "2,1", "1,1"])
       .default("5,2")
       .defined(),
-    lcaseMasking: Yup.boolean().default(false).defined(),
+    filterLowComplexity: Yup.boolean().default(true).defined(),
   });
 interface BlastnParameters extends Yup.InferType<typeof blastnForm> {}
 
