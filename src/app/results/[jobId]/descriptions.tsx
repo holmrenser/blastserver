@@ -97,7 +97,7 @@ export default function Descriptions({
       .then((res) => res.json())
       .then((data) => {
         const { jobId }: { jobId: String } = data;
-        router.push(`download/${jobId}` as Route);
+        router.push(`/download/${jobId}` as Route);
       });
   }
 

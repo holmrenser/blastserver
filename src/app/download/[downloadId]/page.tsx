@@ -4,7 +4,7 @@ import React, { use, useEffect, useRef } from "react";
 import useSWR from "swr";
 //@ts-ignore
 import { saveAs } from "file-saver";
-import type { download } from "@prisma/client";
+import type { download } from "@/app/api/download/[...downloadId]/route"; //"@prisma/client";
 
 import ErrorComponent from "../error";
 
@@ -64,11 +64,15 @@ export default function DownloadPage({
   );
 
   let save = useRef(() => {});
+
   useEffect(() => {
     if (data && data.results) {
-      const blob = new Blob([new Uint8Array(data.results)], {
-        type: "application/x-gzip-compressed",
-      });
+      const blob = new Blob(
+        [Uint8Array.from(atob(data.results), (c) => c.charCodeAt(0))], // change base64 encoded gzipped data into uint8array for download blob
+        {
+          type: "application/x-gzip-compressed",
+        }
+      );
       save.current = () => {
         saveAs(blob, `blastresult.${downloadId}.fa.gz`);
       };
