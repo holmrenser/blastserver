@@ -13,8 +13,8 @@ console.log("ENVIRONMENT VARIABLES:", env);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  serverExternalPackages: ["bullmq"],
   experimental: {
-    serverComponentsExternalPackages: ["bullmq"],
     typedRoutes: true,
   },
   basePath: process.env.BASE_PATH,

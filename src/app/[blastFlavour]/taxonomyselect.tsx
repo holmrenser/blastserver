@@ -51,7 +51,7 @@ export function TaxonomySelect({
   register,
   theme,
 }: {
-  control: Control<BlastParameters>;
+  control: Control<BlastParameters, any, unknown>;
   register: UseFormRegister<BlastParameters>;
   theme: Theme;
 }): React.JSX.Element {

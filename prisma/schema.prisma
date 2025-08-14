@@ -3,7 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
+  previewFeatures = ["fullTextSearchPostgres"]
   binaryTargets   = ["native", "darwin-arm64", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
 }
 
@@ -33,7 +33,7 @@ model download {
   sequenceIds String[]
   submitted   DateTime
   finished    DateTime?
-  results     Bytes?
+  results     Bytes? // Results are gzipped on the worker
   log         String?
   err         String?
 }

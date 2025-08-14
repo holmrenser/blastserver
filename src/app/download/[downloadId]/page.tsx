@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { use, useEffect, useRef } from "react";
 import useSWR from "swr";
 //@ts-ignore
 import { saveAs } from "file-saver";
-import type { blastjob } from "@prisma/client";
+import type { download } from "@prisma/client";
 
 import ErrorComponent from "../error";
 
@@ -44,14 +44,14 @@ async function fetcher(url: string) {
 export default function DownloadPage({
   params,
 }: {
-  params: {
+  params: Promise<{
     downloadId: string;
-  };
+  }>;
 }): React.JSX.Element {
-  const { downloadId } = params;
+  const { downloadId } = use(params);
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-  const { data, isLoading, error } = useSWR<blastjob, Error>(
+  const { data, isLoading, error } = useSWR<download, Error>(
     `${basePath}/api/download/${downloadId}`,
     fetcher,
     {
@@ -66,7 +66,7 @@ export default function DownloadPage({
   let save = useRef(() => {});
   useEffect(() => {
     if (data && data.results) {
-      const blob = new Blob([Buffer.from(data.results, "utf-8")], {
+      const blob = new Blob([new Uint8Array(data.results)], {
         type: "application/x-gzip-compressed",
       });
       save.current = () => {

@@ -1,6 +1,6 @@
-FROM node:20.17.0-bullseye AS base
+FROM node:24.5.0-alpine3.22 AS base
 
-ARG BLAST_VERSION=2.14.1
+ARG BLAST_VERSION=2.17.0
 
 # install dependencies
 FROM base as deps

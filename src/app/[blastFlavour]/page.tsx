@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useContext } from "react";
-import { notFound, useRouter } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import type { Route } from "next";
-import { useForm } from "react-hook-form";
-import type { FieldErrors, Control, UseFormRegister } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
+import type { FieldErrors, Control, UseFormRegister, SubmitErrorHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 
@@ -181,7 +181,7 @@ function ChooseSearchSet({
   register: UseFormRegister<BlastParameters>;
   errors: FieldErrors;
   blastFlavour: BlastFlavour;
-  control: Control<BlastParameters>;
+  control: Control<BlastParameters, any, unknown>;
   theme: Theme;
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour);
@@ -780,13 +780,9 @@ function AlgorithmParameters({
   );
 }
 
-export default function BlastFlavourPage({
-  params,
-}: {
-  params: { blastFlavour: BlastFlavour };
-}) {
+export default function BlastFlavourPage() {
   const { theme } = useContext(ThemeContext);
-  const { blastFlavour } = params;
+  const { blastFlavour } = useParams<{ blastFlavour: BlastFlavour }>();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound();
@@ -815,7 +811,8 @@ export default function BlastFlavourPage({
 
   const router = useRouter();
 
-  async function onSubmit(formData: BlastParameters) {
+  //async function onSubmit(formData: BlastParameters) {
+  const onSubmit: SubmitHandler<any> = (formData: BlastParameters) => {
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
       headers: {
@@ -829,8 +826,9 @@ export default function BlastFlavourPage({
         const { jobId }: { jobId: String } = data;
         router.push(`results/${jobId}` as Route);
       });
-  }
-
+  };
+  const onError: SubmitErrorHandler<BlastParameters> = (errors) =>
+    console.log(errors)
   return (
     <section
       className={`section ${
@@ -838,7 +836,7 @@ export default function BlastFlavourPage({
       }`}
     >
       <div className="container is-fullhd">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onError)}>
           <h1 className={`title ${theme === "dark" ? "has-text-light" : ""}`}>
             {blastFlavour}
           </h1>

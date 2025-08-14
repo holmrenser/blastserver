@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import React from "react";
+import React, { use } from "react";
 import type { ReactNode } from "react";
 
 import ErrorComponent from "@/app/results/error";
@@ -220,11 +220,11 @@ function Status({ message }: { message: string }) {
 export default function ResultsWrapper({
   params,
 }: {
-  params: {
+  params: Promise<{
     jobId: string;
-  };
+  }>;
 }): React.JSX.Element {
-  const { jobId } = params;
+  const { jobId } = use(params);
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const { data, isLoading, error } = useSWR<BlastJobResults, Error>(
