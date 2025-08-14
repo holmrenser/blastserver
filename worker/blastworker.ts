@@ -103,6 +103,9 @@ async function blastJobProcessor(job: Job) {
   console.log(`Running '${program} ${args.join(" ")}'`);
 
   const result = spawnSync(flavour, args, options);
+
+  console.log({ result });
+
   const stderr = result.stderr.toString("utf8");
   if (stderr) throw new Error(stderr);
   const stdout = result.stdout
