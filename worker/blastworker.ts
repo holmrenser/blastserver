@@ -104,14 +104,12 @@ async function blastJobProcessor(job: Job) {
 
   const result = spawnSync(flavour, args, options);
 
-  console.log({ result });
-
   const stderr = result.stderr.toString("utf8");
   if (stderr) throw new Error(stderr);
   const stdout = result.stdout
     .toString("utf8")
     .replace('encoding="US-ASCII"', 'encoding="UTF8"');
-  console.log({ stdout });
+
   await prisma.blastjob.update({
     where: { id: job.id },
     data: {

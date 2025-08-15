@@ -1,4 +1,4 @@
-FROM node:24.5.0-alpine3.22 AS base
+FROM node:24.5.0-trixie AS base
 
 ARG BLAST_VERSION=2.17.0
 
