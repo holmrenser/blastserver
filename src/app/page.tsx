@@ -4,11 +4,7 @@ import type { Route } from "next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 type Moltype = "nucleotide" | "protein";
 
@@ -72,7 +68,7 @@ function FlavourButton({
   children: React.ReactNode;
 }) {
   return (
-    <Button asChild size="lg" className="w-full">
+    <Button asChild size="lg" className="w-full" variant="default">
       <Link prefetch href={href as Route} title={title}>
         {children}
       </Link>
