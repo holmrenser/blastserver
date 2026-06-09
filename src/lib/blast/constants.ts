@@ -1,6 +1,6 @@
-// Zod-free BLAST domain constants. Kept separate from schema.ts so the BullMQ
-// workers (compiled with tsconfig.worker.json, which maps "@/" to ./worker)
-// can import the allowlists without pulling in zod or the "@/" alias.
+// Zod-free BLAST domain constants. Kept separate from schema.ts so the workers
+// (compiled with tsconfig.worker.json, which maps "@/" to ./worker) can import
+// the allowlists without pulling in zod or the "@/" alias.
 
 export const ALLOWED_FLAVOURS = [
   "blastp",

@@ -1,10 +1,13 @@
-// Shared lifecycle helpers for the BullMQ worker processes: a tiny health
-// server for health probes and graceful shutdown so in-flight BLAST jobs
-// drain (rather than being killed and left locked) on rolling updates / scale-down.
+// Shared lifecycle helpers for the pg-boss worker processes: a tiny health
+// server for health probes and graceful shutdown so in-flight BLAST jobs drain
+// (rather than being killed and left for the expiry to retry) on rolling
+// updates / scale-down.
 
 import http from "http";
-import type { Worker } from "bullmq";
 import type { PrismaClient } from "@prisma/client";
+import { PgBoss } from "pg-boss";
+
+import { PGBOSS_MAX_CONNECTIONS } from "../src/lib/queue.js";
 
 /**
  * Starts a minimal HTTP server for liveness/readiness probes.
@@ -27,7 +30,7 @@ export function startHealthServer(isReady: () => boolean): http.Server {
   return server;
 }
 
-/** Error codes that mean "couldn't reach the Redis backend", not a job failure. */
+/** Error codes that mean "couldn't reach Postgres", not a job failure. */
 const CONN_CODES = new Set(["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT"]);
 const codeOf = (e: unknown) => (e as { code?: string } | null)?.code ?? "";
 
@@ -50,57 +53,65 @@ function describeError(err: unknown): string {
 }
 
 /**
- * Logs worker `error` events with their real cause. A Redis-unreachable error
- * (which BullMQ re-emits on every reconnect attempt) is collapsed to a single
- * actionable hint until the connection recovers, instead of spamming an opaque
- * "AggregateError" on every retry.
+ * Creates and starts a pg-boss client for a worker process and ensures its
+ * queue exists. pg-boss provisions its own schema on first `start()` (guarded by
+ * a Postgres advisory lock, so concurrent replicas are safe) and `createQueue`
+ * is idempotent.
  */
-function attachErrorLogging(worker: Worker, name: string): void {
-  let redisHintShown = false;
-  worker.on("ready", () => {
-    redisHintShown = false; // a later drop should warn once more
+export async function startWorkerBoss(queue: string): Promise<PgBoss> {
+  const boss = new PgBoss({
+    connectionString: process.env.DATABASE_URL,
+    max: PGBOSS_MAX_CONNECTIONS,
   });
-  worker.on("error", (err) => {
+  await boss.start();
+  await boss.createQueue(queue);
+  return boss;
+}
+
+/**
+ * Logs pg-boss `error` events with their real cause. A Postgres-unreachable
+ * error is collapsed to a single actionable hint until it recovers, instead of
+ * spamming an opaque error on every reconnect attempt.
+ */
+function attachErrorLogging(boss: PgBoss, name: string): void {
+  let connHintShown = false;
+  boss.on("error", (err) => {
     if (isConnectionError(err)) {
-      if (!redisHintShown) {
-        const host = process.env.JOBQUEUE_HOST ?? "localhost";
-        const port = process.env.JOBQUEUE_PORT ?? "6379";
+      if (!connHintShown) {
         console.error(
-          `[${name}] Cannot reach Redis at ${host}:${port} — is it running? ` +
-            "Start it with `docker compose up -d redis`. " +
-            "Suppressing further connection errors until reconnect."
+          `[${name}] Cannot reach Postgres — is DATABASE_URL correct and the ` +
+            "database running? Suppressing further connection errors until recovery."
         );
-        redisHintShown = true;
+        connHintShown = true;
       }
-      return; // throttle the repeated ECONNREFUSED spam
+      return;
     }
-    console.warn(`[${name}] worker error: ${describeError(err)}`, err);
+    console.warn(`[${name}] pg-boss error: ${describeError(err)}`, err);
   });
 }
 
 /**
  * Wires error logging + health probes + SIGTERM/SIGINT handling for a worker. On
- * a signal it stops accepting new jobs, waits for the in-flight job to finish
- * (`worker.close()`), then closes the health server and the DB connection.
+ * a signal it stops accepting new jobs and waits for the in-flight job to finish
+ * (`boss.stop({ graceful: true })`), then closes the health server and the DB
+ * connection.
  */
 export function setupWorkerRuntime(
-  worker: Worker,
+  boss: PgBoss,
   prisma: PrismaClient,
   name: string
 ): void {
-  attachErrorLogging(worker, name);
+  attachErrorLogging(boss, name);
 
   let shuttingDown = false;
-  const healthServer = startHealthServer(
-    () => worker.isRunning() && !shuttingDown
-  );
+  const healthServer = startHealthServer(() => !shuttingDown);
 
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log(`Received ${signal}; draining worker before exit...`);
     try {
-      await worker.close(); // resolves once the active job completes
+      await boss.stop({ graceful: true }); // resolves once active jobs finish
       await new Promise<void>((resolve) => healthServer.close(() => resolve()));
       await prisma.$disconnect();
     } catch (err) {
@@ -113,11 +124,3 @@ export function setupWorkerRuntime(
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 }
-
-/** Output buffer cap (bytes) for spawnSync; bounded to avoid unbounded memory. */
-export const MAX_BUFFER =
-  Number(process.env.BLAST_MAX_BUFFER) || 1024 * 1024 * 1024; // 1 GiB
-
-/** BullMQ stalled-job lock (ms); only bounds how long a crashed job stays locked. */
-export const LOCK_DURATION =
-  Number(process.env.BLAST_LOCK_DURATION_MS) || 1_800_000; // 30 min

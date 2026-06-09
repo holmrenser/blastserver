@@ -40,12 +40,12 @@
 ## Backend
 
 - Next.js API routes (App Router) — no separate Express server
-- BullMQ on Redis for the job queue (https://docs.bullmq.io/guide/connections)
-- Two BullMQ workers: `blastworker` (runs BLAST+ binaries) and `downloadworker` (`blastdbcmd`)
+- pg-boss for the job queue, running on Postgres — no separate broker (https://github.com/timgit/pg-boss). Provides retries, exponential backoff, and per-job timeouts.
+- Two pg-boss workers: `blastworker` (runs BLAST+ binaries) and `downloadworker` (`blastdbcmd`)
 - PostgreSQL via Prisma; NCBI BLAST databases on disk
 - Diamond support: not yet implemented
 
 ## Deployment / scaling
 
-- Docker Compose (`docker-compose.yml`): app + redis + postgres + multiple worker replicas
+- Docker Compose (`docker-compose.yml`): app + postgres + multiple worker replicas
 - Horizontal scaling via additional `blastworker` / `downloadworker` replicas

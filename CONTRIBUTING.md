@@ -7,7 +7,7 @@ together, see the [README](README.md).
 ## Prerequisites
 
 - **Node.js ≥ 24.4.1** (see `engines` in [package.json](package.json)).
-- **Docker** (Desktop on macOS/Windows) — used for the local Postgres, Redis, and
+- **Docker** (Desktop on macOS/Windows) — used for the local Postgres and
   workers. On Apple Silicon, enable *Settings → General → Use Rosetta for
   x86/amd64 emulation* (the images are `linux/amd64`; the BLAST+ binaries are
   x86_64).
@@ -23,16 +23,17 @@ the NCBI BLAST+ binaries (`blastp`, `blastn`, … and `blastdbcmd`) on your `PAT
 
 The recommended loop runs the data services **and** the workers in Docker, and the
 Next.js app on the host with hot module reloading. The base
-[docker-compose.yml](docker-compose.yml) only `expose`s Postgres/Redis
+[docker-compose.yml](docker-compose.yml) only `expose`s Postgres
 network-internally, so [docker-compose.dev.yml](docker-compose.dev.yml) is a
-dev-only overlay that publishes their ports to the host — that's what lets a
-host-run `next dev` reach them.
+dev-only overlay that publishes its port to the host — that's what lets a
+host-run `next dev` reach it. (The job queue runs on Postgres via pg-boss, so
+there's no separate broker to publish.)
 
 1. **Install:** `npm ci`
 2. **Env:** `cp .env.example .env.development`. The committed defaults already point
-   `DATABASE_URL` / `JOBQUEUE_HOST` at the published compose ports — see
+   `DATABASE_URL` at the published compose port — see
    [Environment variables](#environment-variables).
-3. **Start the infra** (Postgres + Redis + one-shot migrate/seed + both workers,
+3. **Start the infra** (Postgres + one-shot migrate/seed + both workers,
    backgrounded):
 
    ```bash
@@ -60,7 +61,7 @@ iterate on worker code, bring up only the data services and run the workers on t
 host (requires BLAST+ on `PATH`):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis migrate
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres migrate
 npm run build:worker && npm run dev:worker
 ```
 
@@ -85,7 +86,8 @@ same images used in production.
 | `npm run build:app:prod` / `build:worker` | production builds |
 | `npm run migrate:deploy` | apply migrations + seed taxonomy (the one-shot bootstrap) |
 | `npm run lint` | ESLint (flat config) |
-| `npm test` | Jest unit tests |
+| `npm test` | Jest unit tests (jsdom) |
+| `npm run test:integration` | Jest integration tests (Node; needs a migrated Postgres at `DATABASE_URL`) |
 | `npx tsc --noEmit` / `tsc -p tsconfig.worker.json --noEmit` | typecheck app / worker |
 
 ## Database & migrations
@@ -106,6 +108,8 @@ migration.
 
    ```bash
    npm run lint && npm run build:worker && npm run build:app:prod && npm test
+   # integration tests need a migrated Postgres at DATABASE_URL:
+   npm run test:integration
    ```
 
 3. Open a PR against `main`. CI must be green before merge; on merge to `main` the
@@ -124,12 +128,13 @@ Copy [`.env.example`](.env.example) as the reference for every key.
 
 | Variable | Used by | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | app, workers, migrate | Postgres connection string |
-| `JOBQUEUE_HOST` / `JOBQUEUE_PORT` | app, workers | Redis host/port for BullMQ |
+| `DATABASE_URL` | app, workers, migrate | Postgres connection string (also backs the pg-boss queue) |
+| `JOB_RETRY_LIMIT` | app | times a failed job is retried before it's marked failed (default `2`) |
+| `JOB_EXPIRE_SECONDS` | app | per-job timeout before pg-boss retries/fails it (default `1800`) |
+| `PGBOSS_MAX_CONNECTIONS` | app, workers | pg-boss pool size per process (default `5`) |
 | `APP_BLAST_DB_PATH` | workers | directory containing BLAST databases |
 | `NUM_BLAST_THREADS` | blastworker | `-num_threads` passed to BLAST (default `4`) |
 | `BLAST_MAX_BUFFER` | workers | cap (bytes) on spawnSync output buffer (default 1 GiB) |
-| `BLAST_LOCK_DURATION_MS` | workers | BullMQ stalled-job lock in ms (default 30 min) |
 | `HEALTH_PORT` | workers | port for the worker `/healthz` `/readyz` server (default 8080) |
 | `TAXONOMY_FILE` | migrate | taxonomy TSV path **on the Postgres host** (seed COPY is server-side) |
 | `BASE_PATH` / `NEXT_PUBLIC_BASE_PATH` | app (build arg) | base path when served under a sub-path |
@@ -140,6 +145,6 @@ Copy [`.env.example`](.env.example) as the reference for every key.
 ### Health endpoints
 
 - App: `GET /api/health` (liveness) and `GET /api/ready` (readiness — checks
-  Postgres + Redis).
+  Postgres, which also backs the queue).
 - Workers: `GET /healthz` (liveness) and `GET /readyz` (readiness) on
   `HEALTH_PORT`.

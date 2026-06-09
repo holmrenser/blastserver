@@ -1,9 +1,10 @@
 import hash from "object-hash";
 import { NextResponse, NextRequest } from "next/server";
 
-import { downloadQueue } from "../queue";
+import { getBoss } from "../queue";
 import prisma from "../database";
 import { DB_NAMES } from "@/lib/blast/schema";
+import { DOWNLOAD_QUEUE, JOB_EXPIRE_SECONDS, JOB_RETRY_LIMIT } from "@/lib/queue";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
   console.log(`Download request ${jobId}`);
 
   try {
+    const boss = await getBoss();
     await prisma.$transaction(async (tx) => {
       const existingJob = await tx.download.findFirst({ where: { id: jobId } });
       if (existingJob) {
@@ -62,10 +64,15 @@ export async function POST(request: NextRequest) {
       await tx.download.create({
         data: { id: jobId, sequenceIds: sortedIds, submitted: new Date() },
       });
-      await downloadQueue.add(
-        "download",
-        { sequenceIds: sortedIds, database },
-        { jobId }
+      await boss.send(
+        DOWNLOAD_QUEUE,
+        { jobId, sequenceIds: sortedIds, database },
+        {
+          singletonKey: jobId,
+          retryLimit: JOB_RETRY_LIMIT,
+          retryBackoff: true,
+          expireInSeconds: JOB_EXPIRE_SECONDS,
+        }
       );
     });
   } catch (error) {

@@ -8,6 +8,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Real Postgres for the integration tests. It also backs the job queue
+    # (pg-boss), though the integration tests stub the queue.
+    services:
+      postgres:
+        image: postgres:15.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blastserver
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d blastserver"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/blastserver?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,11 +34,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+      - run: npx prisma migrate deploy
       - run: npm run lint
       # Typecheck + build the worker bundle and the standalone app.
       - run: npm run build:worker
       - run: npm run build:app:prod
-      - run: npm test -- --passWithNoTests
+      # Unit tests (jsdom) then integration tests (Node + the Postgres service).
+      - run: npm test
+      - run: npm run test:integration
 
   images:
     needs: test

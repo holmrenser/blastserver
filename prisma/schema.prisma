@@ -16,6 +16,7 @@ model blastjob {
   id         String    @id @unique
   parameters Json
   submitted  DateTime
+  started    DateTime?
   finished   DateTime?
   results    String?   @db.Xml
   log        String?
@@ -26,12 +27,17 @@ model taxonomy {
   id        String   @id @unique
   name      String
   ancestors String[]
+  // A pg_trgm GIN index on `name` (taxonomy_name_trgm) backs the autocomplete's
+  // case-insensitive `contains` search. Prisma's schema DSL can't express GIN
+  // trigram indexes, so it lives in a raw migration
+  // (20260609120000_taxonomy_name_trgm) rather than here.
 }
 
 model download {
   id          String    @id @unique
   sequenceIds String[]
   submitted   DateTime
+  started     DateTime?
   finished    DateTime?
   results     Bytes? // Results are gzipped on the worker
   log         String?

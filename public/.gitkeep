@@ -1,0 +1,3 @@
+# Keeps the Next.js public/ directory present. app.Dockerfile copies
+# /app/public into the runtime image, so the directory must exist even when it
+# holds no static assets (the App Router serves favicon.ico from src/app/).

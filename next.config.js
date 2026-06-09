@@ -3,7 +3,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  serverExternalPackages: ["bullmq"],
+  serverExternalPackages: ["pg-boss"],
   experimental: {
     typedRoutes: true,
   },

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import prisma from "../database";
-import { blastQueue } from "../queue";
 
 export const dynamic = "force-dynamic";
 
-// Readiness probe: only take traffic once both Postgres and Redis are reachable.
+// Readiness probe: only take traffic once Postgres is reachable. The job queue
+// now lives in Postgres too (pg-boss), so a single database check covers both
+// persistence and the queue backend.
 export async function GET() {
   const checks: Record<string, boolean> = {};
 
@@ -14,17 +15,6 @@ export async function GET() {
     checks.database = true;
   } catch {
     checks.database = false;
-  }
-
-  try {
-    // BullMQ's IRedisClient type omits ping(); the underlying ioredis client has it.
-    const client = (await blastQueue.client) as unknown as {
-      ping: () => Promise<string>;
-    };
-    await client.ping();
-    checks.redis = true;
-  } catch {
-    checks.redis = false;
   }
 
   const ready = Object.values(checks).every(Boolean);

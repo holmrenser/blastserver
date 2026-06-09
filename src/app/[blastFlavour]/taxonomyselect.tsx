@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import { Check, ChevronsUpDown, X } from "lucide-react";
@@ -28,6 +28,11 @@ import {
 type TaxonomyEntry = { id: string; name: string };
 type Option = { value: string; label: string };
 
+// Below this length a pg_trgm index can't back the search (it would full-scan
+// ~2.7M rows), and 1-2 char queries match too much to be useful anyway. Keep in
+// sync with MIN_QUERY_LENGTH in src/app/api/taxonomy/route.ts.
+const MIN_QUERY_LENGTH = 3;
+
 async function fetchTaxonomy(query: string): Promise<Option[]> {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const url = `${basePath}/api/taxonomy?` + new URLSearchParams({ query });
@@ -54,16 +59,26 @@ function TaxonomyCombobox({
   const [loading, setLoading] = useState(false);
   // Remember labels for selected ids so badges stay readable across searches.
   const [labels, setLabels] = useState<Record<string, string>>({});
+  // Cache results per query so retyping / backtracking doesn't refetch.
+  const cache = useRef<Map<string, Option[]>>(new Map());
 
   useEffect(() => {
-    if (!search) {
+    const query = search.trim();
+    if (query.length < MIN_QUERY_LENGTH) {
       setOptions([]);
+      setLoading(false);
+      return;
+    }
+    const cached = cache.current.get(query);
+    if (cached) {
+      setOptions(cached);
       setLoading(false);
       return;
     }
     setLoading(true);
     const handle = setTimeout(async () => {
-      const opts = await fetchTaxonomy(search);
+      const opts = await fetchTaxonomy(query);
+      cache.current.set(query, opts);
       setOptions(opts);
       setLoading(false);
     }, 250);
@@ -110,14 +125,16 @@ function TaxonomyCombobox({
                   Searching…
                 </div>
               )}
-              {!loading && !search && (
+              {!loading && search.trim().length < MIN_QUERY_LENGTH && (
                 <div className="py-3 text-center text-sm text-muted-foreground">
-                  Start typing to see suggestions
+                  Type at least {MIN_QUERY_LENGTH} characters to see suggestions
                 </div>
               )}
-              {!loading && search && options.length === 0 && (
-                <CommandEmpty>No results found</CommandEmpty>
-              )}
+              {!loading &&
+                search.trim().length >= MIN_QUERY_LENGTH &&
+                options.length === 0 && (
+                  <CommandEmpty>No results found</CommandEmpty>
+                )}
               {options.length > 0 && (
                 <CommandGroup>
                   {options.map((opt) => (
