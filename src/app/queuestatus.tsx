@@ -2,6 +2,9 @@
 
 import useSWR from "swr";
 
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+
 class DataFetchError extends Error {
   info: string | undefined = undefined;
   status: number | undefined = undefined;
@@ -34,25 +37,29 @@ export function QueueStatus() {
     revalidateOnMount: true,
   });
 
-  if (error) return <p>Error</p>;
-  if (isLoading)
-    return (
-      <i
-        className="is-size-7"
-        style={{ minWidth: "234px", textAlign: "center" }}
-      >
-        ...Connecting...
-      </i>
-    );
-  if (!data) return <p>Fetching</p>;
+  if (error) {
+    return <span className="text-sm text-destructive">Error</span>;
+  }
+  if (isLoading || !data) {
+    return <Skeleton className="h-6 w-56" />;
+  }
 
   const { waiting, completed, active } = data;
 
   return (
-    <div className="tags">
-      <span className="tag is-warning is-light">{waiting} waiting</span>
-      <span className="tag is-info is-light">{active} running</span>
-      <span className="tag is-success is-light">{completed} completed</span>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Badge variant="secondary" className="gap-1.5">
+        <span className="size-2 rounded-full bg-accent-amber" />
+        {waiting} waiting
+      </Badge>
+      <Badge variant="secondary" className="gap-1.5">
+        <span className="size-2 rounded-full bg-accent-blue" />
+        {active} running
+      </Badge>
+      <Badge variant="secondary" className="gap-1.5">
+        <span className="size-2 rounded-full bg-accent-green" />
+        {completed} completed
+      </Badge>
     </div>
   );
 }

@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useContext } from "react";
+import React from "react";
 import { notFound, useParams, useRouter } from "next/navigation";
 import type { Route } from "next";
-import { useForm, SubmitHandler } from "react-hook-form";
-import type { FieldErrors, Control, UseFormRegister, SubmitErrorHandler } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as Yup from "yup";
+import { Controller, useForm } from "react-hook-form";
+import type {
+  Control,
+  FieldErrors,
+  FieldPath,
+  SubmitErrorHandler,
+  SubmitHandler,
+  UseFormRegister,
+  UseFormWatch,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { TaxonomySelect } from "./taxonomyselect";
 import {
@@ -15,803 +22,475 @@ import {
   DB_NAMES,
   PROGRAMS,
   BLASTFLAVOUR_FORMS,
+  BLASTFLAVOUR_DEFAULTS,
+  getFieldOptions,
 } from "./parameters";
-import type { BlastParameters, BlastFlavour } from "./parameters";
-import { ThemeContext } from "../themecontext";
-import type { Theme } from "../themecontext";
+import type { BlastParameters, BlastFlavour, FieldOptions } from "./parameters";
 
-import "./blastFlavour.scss";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+type BlastControl = Control<BlastParameters, any, unknown>;
+type BlastRegister = UseFormRegister<BlastParameters>;
+type BlastWatch = UseFormWatch<BlastParameters>;
+
+/** A shadcn Select wired to react-hook-form via Controller. */
+function FormSelect({
+  control,
+  name,
+  options,
+  getLabel,
+  disabled,
+  className,
+}: {
+  control: BlastControl;
+  name: FieldPath<BlastParameters>;
+  options: readonly (string | number)[];
+  getLabel?: (option: string | number) => string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Select
+          value={field.value != null ? String(field.value) : undefined}
+          onValueChange={field.onChange}
+          disabled={disabled}
+        >
+          <SelectTrigger className={className}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {options.map((option) => (
+                <SelectItem key={String(option)} value={String(option)}>
+                  {getLabel ? getLabel(option) : String(option)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      )}
+    />
+  );
+}
 
 function EnterQuery({
   register,
   errors,
-  theme,
 }: {
-  register: UseFormRegister<BlastParameters>;
-  errors: FieldErrors;
-  theme: Theme;
+  register: BlastRegister;
+  errors: FieldErrors<BlastParameters>;
 }) {
   return (
-    <fieldset
-      className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
-    >
-      <legend className="label has-text-centered">Enter Query Sequence</legend>
-      <div className="field">
-        <div className="field-body">
-          <div className="field">
-            <label className="label">Enter (single) FASTA sequence</label>
-            <div className="control">
-              <textarea
-                className={`textarea is-small ${
-                  errors.query?.message ? "is-danger" : ""
-                } ${
-                  theme === "dark"
-                    ? "dark has-background-grey is-dark has-text-light"
-                    : ""
-                }`}
-                placeholder="QUERY SEQUENCE"
-                style={{ fontFamily: "monospace" }}
-                {...register("query")}
-              />
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Enter Query Sequence</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field data-invalid={!!errors.query}>
+            <FieldLabel htmlFor="query">
+              Enter (single) FASTA sequence
+            </FieldLabel>
+            <Textarea
+              id="query"
+              placeholder="QUERY SEQUENCE"
+              className="font-mono"
+              rows={6}
+              aria-invalid={!!errors.query}
+              {...register("query")}
+            />
             {errors.query && (
-              <p className="help is-danger">{String(errors.query?.message)}</p>
+              <FieldError
+                errors={[{ message: String(errors.query.message) }]}
+              />
             )}
-          </div>
+          </Field>
 
-          <div className="field">
-            <label className="label">Query subrange</label>
-            <div className="field is-horizontal">
-              <div className="field-label is-small">
-                <label className="label">From</label>
-              </div>
-              <div className="field-body">
-                <div className="field">
-                  <div className="control">
-                    <input
-                      className={`input is-small ${
-                        errors.queryFrom?.message ? "is-danger" : ""
-                      } ${
-                        theme === "dark"
-                          ? "dark has-background-grey is-dark has-text-light"
-                          : ""
-                      }`}
-                      placeholder="FROM"
-                      style={{ maxWidth: 120 }}
-                      {...register("queryFrom")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+          <Field orientation="responsive">
+            <FieldLabel htmlFor="queryFrom">Query subrange (from)</FieldLabel>
+            <Input
+              id="queryFrom"
+              placeholder="FROM"
+              className="max-w-32"
+              aria-invalid={!!errors.queryFrom}
+              {...register("queryFrom")}
+            />
+          </Field>
 
-            <div
-              className="field is-horizontal"
-              style={{ paddingTop: ".75em" }}
-            >
-              <div className="field-label is-small">
-                <label className="label">To</label>
-              </div>
-              <div className="field-body">
-                <div className="field">
-                  <div className="control">
-                    <input
-                      className={`input is-small ${
-                        errors.queryTo?.message ? "is-danger" : ""
-                      } ${
-                        theme === "dark"
-                          ? "dark has-background-grey is-dark has-text-light"
-                          : ""
-                      }`}
-                      placeholder="TO"
-                      type="text"
-                      style={{ maxWidth: 120 }}
-                      {...register("queryTo")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <Field orientation="responsive">
+            <FieldLabel htmlFor="queryTo">Query subrange (to)</FieldLabel>
+            <Input
+              id="queryTo"
+              placeholder="TO"
+              className="max-w-32"
+              aria-invalid={!!errors.queryTo}
+              {...register("queryTo")}
+            />
+          </Field>
 
-      <div className="field is-horizontal">
-        <div className="field-label is-small">
-          <label className="label">Job Title</label>
-        </div>
-        <div className="field-body">
-          <div className="field">
-            <div className="control">
-              <input
-                className={`input is-small ${
-                  errors.jobtitle?.message ? "is-danger" : ""
-                } ${
-                  theme === "dark"
-                    ? "dark has-background-grey is-dark has-text-light"
-                    : ""
-                }`}
-                type="text"
-                placeholder="JOBTITLE"
-                style={{ maxWidth: 240 }}
-                disabled
-                {...register("jobTitle")}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+          <Field orientation="responsive">
+            <FieldLabel htmlFor="jobTitle">Job Title</FieldLabel>
+            <Input
+              id="jobTitle"
+              placeholder="JOBTITLE"
+              className="max-w-60"
+              disabled
+              {...register("jobTitle")}
+            />
+          </Field>
 
-      <div className="field is-horizontal">
-        <div className="field-label is-small">
-          <label className="label">E-mail address</label>
-        </div>
-        <div className="field-body">
-          <div className="field">
-            <div className="control">
-              <input
-                className={`input is-small ${
-                  errors.email?.message ? "is-danger" : ""
-                } ${
-                  theme === "dark"
-                    ? "dark has-background-grey is-dark has-text-light"
-                    : ""
-                }`}
-                type="text"
-                placeholder="JOHN@DOE.COM"
-                style={{ maxWidth: 240 }}
-                disabled
-                {...register("email")}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </fieldset>
+          <Field orientation="responsive">
+            <FieldLabel htmlFor="email">E-mail address</FieldLabel>
+            <Input
+              id="email"
+              placeholder="JOHN@DOE.COM"
+              className="max-w-60"
+              disabled
+              {...register("email")}
+            />
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
   );
 }
 
 function ChooseSearchSet({
-  register,
-  errors,
-  blastFlavour,
   control,
-  theme,
+  blastFlavour,
 }: {
-  register: UseFormRegister<BlastParameters>;
-  errors: FieldErrors;
+  control: BlastControl;
   blastFlavour: BlastFlavour;
-  control: Control<BlastParameters, any, unknown>;
-  theme: Theme;
 }) {
-  const dbOptions = BLAST_DBS.get(blastFlavour);
+  const dbOptions = BLAST_DBS.get(blastFlavour) ?? [];
   return (
-    <fieldset
-      className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
-    >
-      <legend className="label has-text-centered">Choose Search Set</legend>
+    <Card>
+      <CardHeader>
+        <CardTitle>Choose Search Set</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field orientation="responsive">
+            <FieldLabel>Database</FieldLabel>
+            <FormSelect
+              control={control}
+              name="database"
+              options={dbOptions}
+              getLabel={(db) => `${DB_NAMES.get(String(db))} (${db})`}
+              className="w-full max-w-[320px]"
+            />
+          </Field>
 
-      <div className="field is-horizontal">
-        <div className="field-label is-small">
-          <label className="label">Database</label>
-        </div>
-        <div className="field-body">
-          <div className="field">
-            <div className="control">
-              <div
-                className={`select is-small ${
-                  errors.database?.message ? "is-danger" : ""
-                } ${theme === "dark" ? "is-dark" : ""}`}
-              >
-                <select
-                  {...register("database")}
-                  style={{ minWidth: 290, maxWidth: 290 }}
-                  className={`${
-                    theme === "dark"
-                      ? "dark has-background-grey is-dark has-text-light"
-                      : ""
-                  }`}
-                >
-                  {dbOptions &&
-                    dbOptions.map((db) => (
-                      <option key={db} value={db}>
-                        {`${DB_NAMES.get(db)} (${db})`}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="field is-horizontal">
-        <div className="field-label is-small">
-          <label className="label">Organism</label>
-        </div>
-        <div className="field-body">
-          <div className="field">
-            <div className="control">
-              <TaxonomySelect
-                control={control}
-                register={register}
-                theme={theme}
-              />
-            </div>
-            <p className="help">
+          <Field>
+            <FieldLabel>Organism</FieldLabel>
+            <TaxonomySelect control={control} />
+            <FieldDescription>
               Select one or more taxonomy levels to limit or exclude
-            </p>
-          </div>
-        </div>
-      </div>
-    </fieldset>
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
   );
 }
 
 function ProgramSelection({
   blastFlavour,
-  register,
-  setValue,
   watch,
-  theme,
 }: {
   blastFlavour: BlastFlavour;
-  register: UseFormRegister<BlastParameters>;
-  setValue: Function;
-  watch: Function;
-  theme: Theme;
+  watch: BlastWatch;
 }) {
   if (blastFlavour !== "blastn") return null;
   const selectedProgram = watch("program");
   return (
-    <fieldset
-      className={`box ${theme === "dark" ? "has-background-grey-dark" : ""}`}
-    >
-      <legend className="label has-text-centered">Program Selection</legend>
-      <div className="field is-horizontal">
-        <div className="field-label is-small">
-          <label className="label">Optimize for</label>
-        </div>
-        <div className="field-body">
-          <div className="field">
-            <div className="control">
-              {PROGRAMS.get(blastFlavour)?.map((program: string) => {
-                return (
-                  <React.Fragment key={program}>
-                    <label className="radio is-small">
-                      <input
-                        disabled
-                        type="radio"
-                        checked={program === selectedProgram}
-                        value={program}
-                        {...register("program", {
-                          onChange: ({ target: { value } }) => {
-                            setValue("program", value);
-                          },
-                        })}
-                      />
-                      &nbsp;
-                      {program}
-                    </label>
-                    <br />
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </fieldset>
+    <Card>
+      <CardHeader>
+        <CardTitle>Program Selection</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Field>
+          <FieldLabel>Optimize for</FieldLabel>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={selectedProgram}
+            disabled
+            className="flex-wrap justify-start"
+          >
+            {PROGRAMS.get(blastFlavour)?.map((program) => (
+              <ToggleGroupItem key={program} value={program}>
+                {program}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </Field>
+      </CardContent>
+    </Card>
   );
 }
 
-function SubmitButton({
-  getValues,
-  watch,
-  theme,
-}: {
-  getValues: Function;
-  watch: Function;
-  theme: Theme;
-}) {
+function SubmitButton({ watch }: { watch: BlastWatch }) {
   const db = watch("database");
-  const program = getValues("program");
+  const program = watch("program");
   return (
-    <div
-      className={`box ${
-        theme === "dark" ? "has-background-grey has-text-light " : ""
-      }`}
-    >
-      <div className="columns is-vcentered">
-        <div className="column is-2">
-          <div className="field">
-            <div className="control">
-              <button type="submit" className="button is-info is-pulled-right">
-                BLAST
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="column">
-          <p>
-            Search database{" "}
-            <em>
-              <u>{db}</u>
-            </em>{" "}
-            using{" "}
-            <em>
-              <u>{program}</u>
-            </em>
-          </p>
-        </div>
-      </div>
-    </div>
+    <Card>
+      <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <Button type="submit" size="lg">
+          BLAST
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          Search database <em className="font-medium text-foreground">{db}</em>{" "}
+          using <em className="font-medium text-foreground">{program}</em>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DisabledCheckboxField({
+  label,
+  description,
+  checked,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+}) {
+  return (
+    <Label className="flex items-start gap-2 font-normal text-muted-foreground">
+      <Checkbox checked={checked} disabled className="mt-0.5" />
+      <span>
+        <span className="block">{label}</span>
+        <span className="block text-xs">{description}</span>
+      </span>
+    </Label>
   );
 }
 
 function AlgorithmParameters({
+  control,
   register,
-  formDescription,
+  watch,
+  fieldOptions,
   blastFlavour,
-  theme,
 }: {
-  register: UseFormRegister<BlastParameters>;
-  formDescription: Yup.SchemaObjectDescription;
+  control: BlastControl;
+  register: BlastRegister;
+  watch: BlastWatch;
+  fieldOptions: FieldOptions;
   blastFlavour: BlastFlavour;
-  theme: Theme;
 }) {
-  const { fields } = formDescription;
+  const isProteinScoring =
+    blastFlavour === "blastp" || blastFlavour === "tblastn";
+  const isNucleotideScoring = blastFlavour === "blastn";
 
   return (
-    <div className="panel is-info">
-      <p className="panel-heading">Algorithm parameters</p>
-      <div className="panel-block algorithm-parameters">
-        <fieldset
-          className={`box ${
-            theme === "dark" ? "has-background-grey-dark" : ""
-          }`}
+    <Card>
+      <CardHeader>
+        <CardTitle>Algorithm parameters</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Accordion
+          type="multiple"
+          defaultValue={["general", "scoring", "filters"]}
         >
-          <legend className="label has-text-centered">
-            General Parameters
-          </legend>
+          <AccordionItem value="general">
+            <AccordionTrigger>General parameters</AccordionTrigger>
+            <AccordionContent>
+              <FieldGroup>
+                <Field orientation="responsive">
+                  <FieldLabel>Max target sequences</FieldLabel>
+                  <FormSelect
+                    control={control}
+                    name="maxTargetSeqs"
+                    options={fieldOptions.maxTargetSeqs}
+                    className="w-24"
+                  />
+                </Field>
 
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label className="label">Max target sequences</label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <div className="select is-small">
-                    <select
-                      className={
-                        theme === "dark"
-                          ? "has-background-grey has-text-light"
-                          : ""
-                      }
-                      style={{ width: 80 }}
-                      {...register("maxTargetSeqs")}
-                    >
-                      {
-                        //@ts-ignore
-                        fields.maxTargetSeqs.oneOf.map((n_targets) => (
-                          <option key={n_targets}>{n_targets}</option>
-                        ))
-                      }
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                <Field orientation="responsive">
+                  <FieldLabel>Short queries</FieldLabel>
+                  <DisabledCheckboxField
+                    label="Short queries"
+                    description="Automatically adjust parameters for short input sequences"
+                    checked={Boolean(watch("shortQueries"))}
+                  />
+                </Field>
 
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label className="label">Short queries</label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <label className="checkbox">
-                    <input
-                      disabled
-                      type="checkbox"
-                      {...register("shortQueries")}
-                    />
-                    Automatically adjust parameters for short input sequences
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Expect threshold
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <input
-                    className={`input is-small ${
-                      theme === "dark"
-                        ? "has-background-grey is-dark has-text-light"
-                        : ""
-                    }`}
-                    type="text"
-                    style={{ width: 80 }}
+                <Field orientation="responsive">
+                  <FieldLabel htmlFor="expectThreshold">
+                    Expect threshold
+                  </FieldLabel>
+                  <Input
+                    id="expectThreshold"
+                    className="max-w-24"
                     {...register("expectThreshold")}
                   />
-                </div>
-              </div>
-            </div>
-          </div>
+                </Field>
 
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Word size
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <div
-                    className={`select is-small ${
-                      theme === "dark" ? "is-dark" : ""
-                    }`}
-                  >
-                    <select
-                      {...register("wordSize")}
-                      style={{ width: 80 }}
-                      className={
-                        theme === "dark"
-                          ? "has-background-grey has-text-light"
-                          : ""
-                      }
-                    >
-                      {
-                        //@ts-ignore
-                        fields.wordSize.oneOf.map((wordSize) => (
-                          <option key={wordSize}>{wordSize}</option>
-                        ))
-                      }
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Max. matches in a query range
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <input
-                    className={`input is-small ${
-                      theme === "dark"
-                        ? "has-background-grey is-dark has-text-light"
-                        : ""
-                    }`}
-                    type="text"
-                    style={{ width: 80 }}
-                    {...register("maxMatchesInQueryRange")}
-                    defaultValue={0}
+                <Field orientation="responsive">
+                  <FieldLabel>Word size</FieldLabel>
+                  <FormSelect
+                    control={control}
+                    name="wordSize"
+                    options={fieldOptions.wordSize}
+                    className="w-24"
                   />
-                </div>
-              </div>
-            </div>
-          </div>
-        </fieldset>
+                </Field>
 
-        <fieldset
-          className={`box ${
-            theme === "dark" ? "has-background-grey-dark" : ""
-          }`}
-        >
-          <legend
-            className={`label has-text-centered ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
-            Scoring Parameters
-          </legend>
+                <Field orientation="responsive">
+                  <FieldLabel htmlFor="maxMatchesInQueryRange">
+                    Max. matches in a query range
+                  </FieldLabel>
+                  <Input
+                    id="maxMatchesInQueryRange"
+                    className="max-w-24"
+                    {...register("maxMatchesInQueryRange")}
+                  />
+                </Field>
+              </FieldGroup>
+            </AccordionContent>
+          </AccordionItem>
 
-          {["blastp", "tblastn"].indexOf(blastFlavour) >= 0 && (
-            <div className="field is-horizontal">
-              <div className="field-label is-small">
-                <label
-                  className={`label ${
-                    theme === "dark" ? "has-text-light" : ""
-                  }`}
-                >
-                  Matrix
-                </label>
-              </div>
-              <div className="field-body">
-                <div className="field">
-                  <div className="control">
-                    <div
-                      className={`select is-small ${
-                        theme === "dark" ? "is-dark" : ""
-                      }`}
-                    >
-                      <select
-                        className={
-                          theme === "dark"
-                            ? "has-background-grey has-text-light"
-                            : ""
-                        }
-                        style={{ width: 140 }}
-                        {...register("matrix")}
-                      >
-                        {
-                          //@ts-ignore
-                          fields.matrix.oneOf.map((wordSize) => (
-                            <option key={wordSize}>{wordSize}</option>
-                          ))
-                        }
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {["blastn"].indexOf(blastFlavour) >= 0 && (
-            <div className="field is-horizontal">
-              <div className="field-label is-small">
-                <label
-                  className={`label ${
-                    theme === "dark" ? "has-text-light" : ""
-                  }`}
-                >
-                  Match/Mismatch Scores
-                </label>
-              </div>
-              <div className="field-body">
-                <div className="field">
-                  <div className="control">
-                    <div
-                      className={`select is-small ${
-                        theme === "dark" ? "is-dark" : ""
-                      }`}
-                    >
-                      <select
-                        className={
-                          theme === "dark"
-                            ? "has-background-grey has-text-light"
-                            : ""
-                        }
-                        style={{ width: 140 }}
-                        {...register("matchMismatch")}
-                      >
-                        {
-                          //@ts-ignore
-                          fields.matchMismatch.oneOf.map((match) => (
-                            <option key={match}>{match}</option>
-                          ))
-                        }
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Gap costs
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <div
-                    className={`select is-small ${
-                      theme === "dark" ? "is-dark" : ""
-                    }`}
-                  >
-                    <select
-                      className={
-                        theme === "dark"
-                          ? "has-background-grey has-text-light"
-                          : ""
-                      }
-                      style={{ width: 140 }}
-                      {...register("gapCosts")}
-                    >
-                      {
-                        //@ts-ignore
-                        fields["gapCosts"].oneOf.map((gapCost) => {
-                          //const [gapOpen, gapExtend] = gapCost.split(",");
-                          return <option key={gapCost}>{gapCost}</option>;
-                        })
-                      }
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {["blastp", "tblastn"].indexOf(blastFlavour) >= 0 && (
-            <div className="field is-horizontal">
-              <div className="field-label is-small">
-                <label
-                  className={`label ${
-                    theme === "dark" ? "has-text-light" : ""
-                  }`}
-                >
-                  Compositional adjustment
-                </label>
-              </div>
-              <div className="field-body">
-                <div className="field">
-                  <div className="control">
-                    <div
-                      className={`select is-small ${
-                        theme === "dark" ? "is-dark" : ""
-                      }`}
-                    >
-                      <select
-                        disabled
-                        className={
-                          theme === "dark"
-                            ? "has-background-grey has-text-light"
-                            : ""
-                        }
-                        {...register("compositionalAdjustment")}
-                      >
-                        {
-                          //@ts-ignore
-                          fields["compositionalAdjustment"].oneOf.map(
-                            (adjustment: String) => (
-                              <option key={adjustment as React.Key}>
-                                {adjustment}
-                              </option>
-                            )
-                          )
-                        }
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </fieldset>
-
-        <fieldset
-          className={`box ${
-            theme === "dark" ? "has-background-grey-dark" : ""
-          }`}
-        >
-          <legend
-            className={`label has-text-centered ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
-            Filters and masking
-          </legend>
-
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Filter
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <label className="checkbox">
-                    <input
-                      disabled
-                      type="checkbox"
-                      {...register("filterLowComplexity")}
+          <AccordionItem value="scoring">
+            <AccordionTrigger>Scoring parameters</AccordionTrigger>
+            <AccordionContent>
+              <FieldGroup>
+                {isProteinScoring && (
+                  <Field orientation="responsive">
+                    <FieldLabel>Matrix</FieldLabel>
+                    <FormSelect
+                      control={control}
+                      name="matrix"
+                      options={fieldOptions.matrix}
+                      className="w-40"
                     />
-                    Low complexity regions
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label
-                className={`label ${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                Mask
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <label className="checkbox">
-                    <input type="checkbox" disabled />
-                    Mask for lookup table only
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="field is-horizontal">
-            <div className="field-label is-small">
-              <label className="label" />
-            </div>
-            <div className="field-body">
-              <div className="field">
-                <div className="control">
-                  <label className="checkbox">
-                    <input
-                      type="checkbox"
-                      disabled
-                      {...register("lcaseMasking")}
+                  </Field>
+                )}
+                {isNucleotideScoring && (
+                  <Field orientation="responsive">
+                    <FieldLabel>Match/Mismatch scores</FieldLabel>
+                    <FormSelect
+                      control={control}
+                      name="matchMismatch"
+                      options={fieldOptions.matchMismatch}
+                      className="w-40"
                     />
-                    Mask lower case letters
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </fieldset>
-      </div>
-    </div>
+                  </Field>
+                )}
+                <Field orientation="responsive">
+                  <FieldLabel>Gap costs</FieldLabel>
+                  <FormSelect
+                    control={control}
+                    name="gapCosts"
+                    options={fieldOptions.gapCosts}
+                    className="w-40"
+                  />
+                </Field>
+                {isProteinScoring && (
+                  <Field orientation="responsive">
+                    <FieldLabel>Compositional adjustment</FieldLabel>
+                    <FormSelect
+                      control={control}
+                      name="compositionalAdjustment"
+                      options={fieldOptions.compositionalAdjustment}
+                      disabled
+                      className="w-full max-w-[360px]"
+                    />
+                  </Field>
+                )}
+              </FieldGroup>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="filters">
+            <AccordionTrigger>Filters and masking</AccordionTrigger>
+            <AccordionContent>
+              <FieldGroup>
+                <DisabledCheckboxField
+                  label="Filter"
+                  description="Low complexity regions"
+                  checked={Boolean(watch("filterLowComplexity"))}
+                />
+                <DisabledCheckboxField
+                  label="Mask"
+                  description="Mask for lookup table only"
+                  checked={false}
+                />
+                <DisabledCheckboxField
+                  label="Mask lower case letters"
+                  description="Mask lower case letters"
+                  checked={Boolean(watch("lcaseMasking"))}
+                />
+              </FieldGroup>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }
 
 export default function BlastFlavourPage() {
-  const { theme } = useContext(ThemeContext);
   const { blastFlavour } = useParams<{ blastFlavour: BlastFlavour }>();
+  const router = useRouter();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
   if (ALLOWED_FLAVOURS.indexOf(blastFlavour) < 0) {
     notFound();
   }
 
   const blastForm = BLASTFLAVOUR_FORMS.get(blastFlavour)!;
-
-  const formDescription = blastForm.describe();
+  const fieldOptions = getFieldOptions(blastFlavour);
+  const defaults = BLASTFLAVOUR_DEFAULTS[blastFlavour];
 
   const {
     register,
     handleSubmit,
-    getValues,
-    setValue,
     formState: { errors },
     control,
     watch,
   } = useForm<BlastParameters>({
+    //@ts-ignore - per-flavour schema resolves to a member of the union
+    resolver: zodResolver(blastForm),
     //@ts-ignore
-    resolver: yupResolver(blastForm),
+    defaultValues: defaults,
     //@ts-ignore
-    defaultValues: blastForm.default(),
-    //@ts-ignore
-    values: blastForm.default(),
+    values: defaults,
   });
 
-  const router = useRouter();
-
-  //async function onSubmit(formData: BlastParameters) {
   const onSubmit: SubmitHandler<any> = (formData: BlastParameters) => {
     fetch(`${basePath}/api/submit`, {
       body: JSON.stringify(formData),
@@ -823,47 +502,32 @@ export default function BlastFlavourPage() {
     })
       .then((res) => res.json())
       .then((data) => {
-        const { jobId }: { jobId: String } = data;
+        const { jobId }: { jobId: string } = data;
         router.push(`results/${jobId}` as Route);
       });
   };
-  const onError: SubmitErrorHandler<BlastParameters> = (errors) =>
-    console.log(errors)
+  const onError: SubmitErrorHandler<any> = (errors) => console.log(errors);
+
   return (
-    <section
-      className={`section ${
-        theme === "dark" ? "has-background-dark has-text-light" : ""
-      }`}
-    >
-      <div className="container is-fullhd">
-        <form onSubmit={handleSubmit(onSubmit, onError)}>
-          <h1 className={`title ${theme === "dark" ? "has-text-light" : ""}`}>
-            {blastFlavour}
-          </h1>
-          <EnterQuery register={register} errors={errors} theme={theme} />
-          <ChooseSearchSet
-            register={register}
-            errors={errors}
-            blastFlavour={blastFlavour}
-            control={control}
-            theme={theme}
-          />
-          <ProgramSelection
-            register={register}
-            setValue={setValue}
-            watch={watch}
-            blastFlavour={blastFlavour}
-            theme={theme}
-          />
-          <SubmitButton getValues={getValues} watch={watch} theme={theme} />
+    <section className="container mx-auto px-4 py-8">
+      <form onSubmit={handleSubmit(onSubmit, onError)}>
+        <h1 className="mb-6 text-3xl font-bold capitalize tracking-tight">
+          {blastFlavour}
+        </h1>
+        <div className="flex flex-col gap-6">
+          <EnterQuery register={register} errors={errors} />
+          <ChooseSearchSet control={control} blastFlavour={blastFlavour} />
+          <ProgramSelection blastFlavour={blastFlavour} watch={watch} />
+          <SubmitButton watch={watch} />
           <AlgorithmParameters
+            control={control}
             register={register}
-            formDescription={formDescription}
+            watch={watch}
+            fieldOptions={fieldOptions}
             blastFlavour={blastFlavour}
-            theme={theme}
           />
-        </form>
-      </div>
+        </div>
+      </form>
     </section>
   );
 }

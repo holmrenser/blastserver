@@ -1,38 +1,33 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# BLAST@WUR
 
-## Getting Started
+A web front-end and job runner for [NCBI BLAST+](https://blast.ncbi.nlm.nih.gov/), built for the WUR Bioinformatics Group. Users submit sequence-alignment jobs (`blastp`, `blastn`, `blastx`, `tblastn`, `tblastx`) through the browser; jobs are queued, executed against local BLAST databases by worker processes, and the results are rendered as sortable tables, a D3 hit-distribution plot, pairwise alignments, and a taxonomy tree.
 
-First, run the development server:
+## Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+```
+Browser ──▶ Next.js app ──▶ Redis (BullMQ queues) ──▶ blastworker  ──▶ blastp/blastn/… binaries
+              │  (App Router,        │                   downloadworker ─▶ blastdbcmd
+              │   API routes)        │
+              └──────────────────────┴──▶ PostgreSQL (Prisma): blastjob, download, taxonomy
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **App** (`src/app`) — Next.js 15 / React 19 App Router. UI is built with **Tailwind CSS v4 + shadcn/ui**; client state (theme) uses **zustand**; data fetching/polling uses **SWR**; forms use **react-hook-form** with a shared **zod** schema.
+- **Workers** (`worker/`) — two BullMQ workers. `blastworker` runs the BLAST+ binary for a job; `downloadworker` extracts selected hit sequences with `blastdbcmd` and gzips them. Compiled separately via `tsconfig.worker.json`.
+- **Validation** — a single zod schema in [`src/lib/blast/schema.ts`](src/lib/blast/schema.ts) drives both the client form (`zodResolver`) and server-side validation in the API routes. Allowlists in [`src/lib/blast/constants.ts`](src/lib/blast/constants.ts) are re-checked in the workers before any binary is run (defense in depth against command injection / path traversal).
+- **Database** — PostgreSQL via Prisma ([`prisma/schema.prisma`](prisma/schema.prisma)): `blastjob` (parameters + raw XML results), `download` (gzipped FASTA), `taxonomy` (NCBI taxonomy for the organism filter).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick start
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+The fastest way to see it running is the full container stack:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```bash
+docker compose up --build      # → http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+This brings up Postgres, Redis, a one-shot migrate/seed job, then the app, `blastworker` and `downloadworker` — the same images that ship to production. A small `landmark` protein DB ships in [`blastdb/`](blastdb/) so it works out of the box; point it at your own databases with `BLAST_DB_PATH=/path/to/blastdb`.
 
-## Learn More
+> **Apple Silicon:** enable Docker Desktop's Rosetta emulation (*Settings → General → Use Rosetta for x86/amd64 emulation*). The images are `linux/amd64` because the BLAST+ binaries are x86_64 and Prisma's `binaryTargets` are x64; Compose sets `platform` for you.
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Local hot-reload setup, dev scripts, environment variables, and how to submit changes are in **[CONTRIBUTING.md](CONTRIBUTING.md)**.

@@ -1,16 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import React from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 
 import Descriptions from "./descriptions";
 import GraphicSummary from "./graphicSummary";
 import Alignments from "./alignments";
 import Taxonomy from "./taxonomy";
 
-import styles from "./resultspage.module.scss";
-import { ThemeContext } from "@/app/themecontext";
-import React, { useContext } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BlastJobResults } from "@/app/api/[...jobId]/route";
 import type { BlastHit } from "@/app/api/[...jobId]/formatResults";
 import type { BlastParameters } from "@/app/[blastFlavour]/parameters";
@@ -38,65 +37,48 @@ function formatPanelName(panelName: string): string {
 
 export default function ResultsPage({ data }: { data: BlastJobResults }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const { theme } = useContext(ThemeContext);
 
   const { results, err, parameters } = data;
   const { database } = parameters as BlastParameters;
 
-  if (err) return <p>{err}</p>;
+  if (err) return <p className="text-destructive">{err}</p>;
   if (!results)
-    return <p>This page will automatically update once your job is ready</p>;
+    return (
+      <p className="text-muted-foreground">
+        This page will automatically update once your job is ready
+      </p>
+    );
 
   const activePanel = searchParams.get("panel") || "descriptions";
   const PanelComponent = PANEL_COMPONENTS[activePanel];
   const { queryLen, hits, taxonomyTrees, message } = results;
 
+  if (message) return <>{message}</>;
+
   return (
-    <>
-      {message}
-      {!message && (
-        <div
-          className={`${
-            theme === "dark" ? "has-background-grey" : "has-background-light"
-          }`}
-          style={{ marginLeft: -12, marginRight: -12 }}
-        >
-          <div
-            className={`tabs is-boxed panel-nav ${
-              theme === "dark" ? "has-background-dark" : "has-background-white"
-            } ${styles.navPanel}`}
-          >
-            <ul>
-              {Object.keys(PANEL_COMPONENTS).map((panel) => {
-                return (
-                  <li
-                    key={panel}
-                    className={`${panel === activePanel ? "is-active" : ""}`}
-                  >
-                    <Link
-                      className={`${
-                        theme === "dark"
-                          ? styles.darkTabLink
-                          : styles.lightTabLink
-                      } ${panel === activePanel ? styles.isActive : ""}`}
-                      href={{ pathname, query: { panel } }}
-                    >
-                      {formatPanelName(panel)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          <PanelComponent
-            hits={hits || []}
-            queryLength={Number(queryLen)}
-            taxonomyTrees={taxonomyTrees}
-            database={database}
-          />
-        </div>
-      )}
-    </>
+    <div className="flex flex-col gap-4">
+      <Tabs
+        value={activePanel}
+        onValueChange={(panel) =>
+          router.push(`${pathname}?panel=${panel}` as Route)
+        }
+      >
+        <TabsList>
+          {Object.keys(PANEL_COMPONENTS).map((panel) => (
+            <TabsTrigger key={panel} value={panel}>
+              {formatPanelName(panel)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <PanelComponent
+        hits={hits || []}
+        queryLength={Number(queryLen)}
+        taxonomyTrees={taxonomyTrees}
+        database={database}
+      />
+    </div>
   );
 }

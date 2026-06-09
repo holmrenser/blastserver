@@ -7,7 +7,12 @@ import { tmpdir } from "os";
 import Path from "path";
 import fs from "fs";
 
-import type { BlastParameters } from "../src/app/[blastFlavour]/parameters.ts";
+import type { BlastParameters } from "../src/lib/blast/schema";
+import {
+  isAllowedDatabase,
+  isAllowedFlavour,
+} from "../src/lib/blast/constants.js";
+import { setupWorkerRuntime, MAX_BUFFER, LOCK_DURATION } from "./runtime.js";
 
 const prisma = new PrismaClient();
 
@@ -24,7 +29,6 @@ async function blastJobProcessor(job: Job) {
       maxTargetSeqs,
       queryTo,
       queryFrom,
-      // eslint-disable-next-line no-unused-vars
       taxids,
       excludeTaxids,
       //filterLowComplexity,
@@ -37,9 +41,19 @@ async function blastJobProcessor(job: Job) {
   if (typeof query !== "string" || query.length === 0) {
     throw new Error("No query provided");
   }
+  // Defense in depth: the submit route validates parameters, but the worker
+  // must never run an arbitrary binary or read an arbitrary path even if a job
+  // reaches the queue directly.
+  if (!isAllowedFlavour(flavour)) {
+    throw new Error(`Refusing to run unknown BLAST flavour: ${flavour}`);
+  }
+  if (!isAllowedDatabase(flavour, database)) {
+    throw new Error(`Refusing to use unknown database: ${database}`);
+  }
 
   const [gapOpen, gapExtend] = gapCosts.split(",");
   const dbPath = path.join(process.env.APP_BLAST_DB_PATH || "", database);
+  let tmpFile: string | null = null;
   const numThreads = process.env.NUM_BLAST_THREADS || "4";
   const args: string[] = [
     "-db",
@@ -65,7 +79,6 @@ async function blastJobProcessor(job: Job) {
   }
 
   if (flavour === "blastp" || flavour === "blastx" || flavour === "tblastn") {
-    // eslint-disable-next-line no-unused-vars
     const {
       data: { matrix, wordSize /*compositionalAdjustment*/ },
     } = job;
@@ -79,7 +92,7 @@ async function blastJobProcessor(job: Job) {
         select: { id: true },
       })
     ).map(({ id }) => id);
-    const tmpFile = Path.join(
+    tmpFile = Path.join(
       tmpdir(),
       `blastserver.${Crypto.randomBytes(16).toString("hex")}.tmp`
     );
@@ -97,27 +110,46 @@ async function blastJobProcessor(job: Job) {
     }
   }
 
-  // Very large max buffer so we capture all BLAST output
-  const options = { input: query, maxBuffer: 1_000_000_000_000 };
+  // Bounded output buffer (configurable via BLAST_MAX_BUFFER) so a single job
+  // can't try to buffer unbounded output into memory.
+  const options = { input: query, maxBuffer: MAX_BUFFER };
 
   console.log(`Running '${program} ${args.join(" ")}'`);
 
-  const result = spawnSync(flavour, args, options);
+  try {
+    const result = spawnSync(flavour, args, options);
 
-  const stderr = result.stderr.toString("utf8");
-  if (stderr) throw new Error(stderr);
-  const stdout = result.stdout
-    .toString("utf8")
-    .replace('encoding="US-ASCII"', 'encoding="UTF8"');
+    if (result.error) {
+      throw result.error;
+    }
+    if (result.status !== 0) {
+      throw new Error(
+        result.stderr?.toString("utf8") ||
+          `BLAST exited with status ${result.status}`
+      );
+    }
+    // BLAST writes non-fatal warnings to stderr while exiting 0; log, don't fail.
+    const stderr = result.stderr.toString("utf8");
+    if (stderr) {
+      console.warn(`BLAST job ${job.id} stderr: ${stderr}`);
+    }
+    const stdout = result.stdout
+      .toString("utf8")
+      .replace('encoding="US-ASCII"', 'encoding="UTF8"');
 
-  await prisma.blastjob.update({
-    where: { id: job.id },
-    data: {
-      results: stdout,
-      finished: new Date(),
-    },
-  });
-  return "finished";
+    await prisma.blastjob.update({
+      where: { id: job.id },
+      data: {
+        results: stdout,
+        finished: new Date(),
+      },
+    });
+    return "finished";
+  } finally {
+    if (tmpFile) {
+      await fs.promises.unlink(tmpFile).catch(() => {});
+    }
+  }
 }
 
 const blastWorker = new Worker("blastQueue", blastJobProcessor, {
@@ -125,7 +157,9 @@ const blastWorker = new Worker("blastQueue", blastJobProcessor, {
     host: process.env.JOBQUEUE_HOST,
     port: Number(process.env.JOBQUEUE_PORT),
   },
-  lockDuration: 7_200_000, // HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job
+  // BullMQ auto-renews the lock while the worker is alive, so this only bounds
+  // how long a crashed/stalled job stays locked before it can be retried.
+  lockDuration: LOCK_DURATION,
 });
 
 console.log("BLAST worker started");
@@ -149,6 +183,5 @@ blastWorker.on("failed", async (job, err) => {
   });
 });
 
-blastWorker.on("error", (err) => {
-  console.warn(`BLAST job error: ${err}`);
-});
+// Error logging + health probes + graceful drain on SIGTERM/SIGINT.
+setupWorkerRuntime(blastWorker, prisma, "BLAST");

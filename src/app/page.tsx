@@ -1,163 +1,133 @@
-"use client";
-
-import React, { useContext } from "react";
+import React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 
-import { ThemeContext } from "./themecontext";
-import type { Theme } from "./themecontext";
-
-import "./page.scss";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card";
 
 type Moltype = "nucleotide" | "protein";
 
-function QueryTargetTags({
-  query,
-  target,
-  theme,
-}: {
-  query: Moltype;
-  target: Moltype;
-  theme: Theme;
-}): React.JSX.Element {
+function MoltypePair({ label, value }: { label: string; value: Moltype }) {
   return (
-    <div className="field is-grouped is-grouped-multiline">
-      <div className="control">
-        <div className="tags has-addons">
-          <span className={`tag ${theme === "dark" ? "is-dark" : "is-white"}`}>
-            Query
-          </span>
-          <span
-            className={`tag ${
-              query === "nucleotide" ? "is-primary" : "is-info"
-            }`}
-          >
-            {query}
-          </span>
-        </div>
-      </div>
-      <div className="control">
-        <div className="tags has-addons">
-          <span className={`tag ${theme === "dark" ? "is-dark" : "is-white"}`}>
-            Target
-          </span>
-          <span
-            className={`tag ${
-              target === "nucleotide" ? "is-primary" : "is-info"
-            }`}
-          >
-            {target}
-          </span>
-        </div>
-      </div>
+    <div className="flex items-center">
+      <Badge variant="outline" className="rounded-r-none">
+        {label}
+      </Badge>
+      <Badge
+        variant={value === "nucleotide" ? "purple" : "green"}
+        className="rounded-l-none"
+      >
+        {value}
+      </Badge>
     </div>
   );
 }
 
-export default function HomePage() {
-  const { theme } = useContext(ThemeContext);
+function QueryTargetTags({
+  query,
+  target,
+}: {
+  query: Moltype;
+  target: Moltype;
+}) {
   return (
-    <section className="section">
-      <div className="container is-fullhd">
-        <section className="hero is-fullheight">
-          <div className="hero-body" style={{ display: "unset" }}>
-            <p className="title">BLAST SERVER</p>
-            <p className="subtitle">WUR Bioinformatics Group</p>
-            <div className="columns">
-              <div
-                className={`column ${
-                  theme === "dark"
-                    ? "has-background-grey-dark"
-                    : "has-background-light"
-                }`}
-              >
-                <QueryTargetTags
-                  query="protein"
-                  target="protein"
-                  theme={theme}
-                />
-                <Link
-                  prefetch
-                  className="button is-large is-fullwidth"
-                  href="/blastp"
-                  title="Search a protein database with a protein query"
-                >
-                  blastp
-                </Link>
-              </div>
-              <div
-                className={`column ${
-                  theme === "dark"
-                    ? "has-background-grey-dark"
-                    : "has-background-light"
-                }`}
-              >
-                <QueryTargetTags
-                  query="nucleotide"
-                  target="nucleotide"
-                  theme={theme}
-                />
-                <Link
-                  prefetch
-                  className="button is-large is-fullwidth"
-                  href="/blastn"
-                  title="Search a nucleotide database with a nucleotide query"
-                >
-                  blastn
-                </Link>
-                <Link
-                  prefetch
-                  className="button is-large is-fullwidth"
-                  href="/tblastx"
-                  title="Search a translated nucleotide database with a translated nucleotide query"
-                >
-                  tblastx
-                </Link>
-              </div>
-              <div
-                className={`column ${
-                  theme === "dark"
-                    ? "has-background-grey-dark"
-                    : "has-background-light"
-                }`}
-              >
-                <QueryTargetTags
-                  query="nucleotide"
-                  target="protein"
-                  theme={theme}
-                />
-                <Link
-                  prefetch
-                  className="button is-large is-fullwidth"
-                  href="/blastx"
-                  title="Search a protein database with a translated nucleotide query"
-                >
-                  blastx
-                </Link>
-              </div>
-              <div
-                className={`column ${
-                  theme === "dark"
-                    ? "has-background-grey-dark"
-                    : "has-background-light"
-                }`}
-              >
-                <QueryTargetTags
-                  query="protein"
-                  target="nucleotide"
-                  theme={theme}
-                />
-                <Link
-                  prefetch
-                  className="button is-large is-fullwidth"
-                  href="/tblastn"
-                  title="Search a translated nucleotide database with a protein query"
-                >
-                  tblastn
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="flex flex-wrap gap-2">
+      <MoltypePair label="Query" value={query} />
+      <MoltypePair label="Target" value={target} />
+    </div>
+  );
+}
+
+function FlavourCard({
+  query,
+  target,
+  children,
+}: {
+  query: Moltype;
+  target: Moltype;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <QueryTargetTags query={query} target={target} />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">{children}</CardContent>
+    </Card>
+  );
+}
+
+function FlavourButton({
+  href,
+  title,
+  children,
+}: {
+  href: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button asChild size="lg" className="w-full">
+      <Link prefetch href={href as Route} title={title}>
+        {children}
+      </Link>
+    </Button>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <section className="container mx-auto px-4 py-10">
+      <h1 className="text-3xl font-bold tracking-tight">BLAST SERVER</h1>
+      <p className="mt-1 text-muted-foreground">WUR Bioinformatics Group</p>
+
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <FlavourCard query="protein" target="protein">
+          <FlavourButton
+            href="/blastp"
+            title="Search a protein database with a protein query"
+          >
+            blastp
+          </FlavourButton>
+        </FlavourCard>
+
+        <FlavourCard query="nucleotide" target="nucleotide">
+          <FlavourButton
+            href="/blastn"
+            title="Search a nucleotide database with a nucleotide query"
+          >
+            blastn
+          </FlavourButton>
+          <FlavourButton
+            href="/tblastx"
+            title="Search a translated nucleotide database with a translated nucleotide query"
+          >
+            tblastx
+          </FlavourButton>
+        </FlavourCard>
+
+        <FlavourCard query="nucleotide" target="protein">
+          <FlavourButton
+            href="/blastx"
+            title="Search a protein database with a translated nucleotide query"
+          >
+            blastx
+          </FlavourButton>
+        </FlavourCard>
+
+        <FlavourCard query="protein" target="nucleotide">
+          <FlavourButton
+            href="/tblastn"
+            title="Search a translated nucleotide database with a protein query"
+          >
+            tblastn
+          </FlavourButton>
+        </FlavourCard>
       </div>
     </section>
   );

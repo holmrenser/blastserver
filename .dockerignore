@@ -1,3 +1,14 @@
 node_modules
+.next
+worker/build
+.git
+.github
+.vscode
+.claude
 data
 blastdb
+taxonomy
+experiments
+*.md
+.env*
+npm-debug.log*

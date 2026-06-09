@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
-import styles from "./descriptions.module.scss";
-import { ThemeContext } from "@/app/themecontext";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function truncate(string: string, limit = 20) {
   if (string.length <= limit) return string;
@@ -41,6 +51,18 @@ function useSelectionSet<T>(): [Set<T>, Function, Function, Function] {
   return [selectionSet, toggleItemSelection, clearSelection, addItem];
 }
 
+const COLUMNS = [
+  "Description",
+  "Scientific Name",
+  "Max Score",
+  "Total Score",
+  "Query Cover",
+  "E value",
+  "Per. Ident.",
+  "Acc. Len.",
+  "Accession",
+];
+
 export default function Descriptions({
   hits,
   database,
@@ -50,7 +72,6 @@ export default function Descriptions({
 }): React.JSX.Element {
   const pathname = usePathname();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const { theme } = useContext(ThemeContext);
   const router = useRouter();
 
   const [selectionSet, toggleSelection, clearSelection, addItem] =
@@ -96,83 +117,46 @@ export default function Descriptions({
     })
       .then((res) => res.json())
       .then((data) => {
-        const { jobId }: { jobId: String } = data;
+        const { jobId }: { jobId: string } = data;
         router.push(`/download/${jobId}` as Route);
       });
   }
 
   return (
-    <div className={styles.descriptionContainer}>
-      <nav
-        className={`navbar ${
-          theme === "dark" ? "has-background-info" : "has-background-info-light"
-        }`}
-        role="navigation"
-      >
-        <div className="navbar-brand">
-          <b
-            className={`navbar-item ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
-            <span className="tag is-small is-success">{hits.length}</span>
-            &nbsp;Significant alignments
-          </b>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2">
+        <span className="flex items-center gap-2 font-semibold">
+          <Badge variant="secondary">{hits.length}</Badge>
+          Significant alignments
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={submitSelection}
+          disabled={selectionSet.size === 0}
+        >
+          Download
+        </Button>
+      </div>
 
-        <div className="navbar-menu">
-          <div className="navbar-end">
-            <p className="navbar-item">
-              <button
-                className="button navbar-item is-small is-light"
-                onClick={submitSelection}
-                disabled={selectionSet.size === 0}
-              >
-                Download
-              </button>
-            </p>
-          </div>
-        </div>
-      </nav>
-      <label className={`checkbox select-all ${styles.selectAll}`}>
-        <input
-          type="checkbox"
+      <Label className="flex w-fit items-center gap-2 font-normal">
+        <Checkbox
           checked={selectAll}
-          onChange={() => toggleSelectAll()}
+          onCheckedChange={() => toggleSelectAll()}
         />
         Select all
-      </label>
-      <table
-        className={`table is-size-7 is-narrow is-hoverable is-fullwidth ${
-          theme === "dark"
-            ? "is-dark has-background-grey-dark has-text-light"
-            : ""
-        }`}
-      >
-        <thead>
-          <tr>
-            <th></th>
-            {[
-              "Description",
-              "Scientific Name",
-              "Max Score",
-              "Total Score",
-              "Query Cover",
-              "E value",
-              "Per. Ident.",
-              "Acc. Len.",
-              "Accession",
-            ].map((header) => (
-              <th
-                key={header}
-                className={`${theme === "dark" ? "has-text-light" : ""}`}
-              >
-                {header}
-              </th>
+      </Label>
+
+      <Table className="text-xs">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-8" />
+            {COLUMNS.map((header) => (
+              <TableHead key={header}>{header}</TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {hits.map(
             ({
               accession,
@@ -195,61 +179,61 @@ export default function Descriptions({
               const formattedEvalue =
                 evalue === 0 ? evalue : evalue.toExponential(0);
               return (
-                <tr key={num}>
-                  <td data-label="Select">
-                    <input
-                      type="checkbox"
+                <TableRow key={num}>
+                  <TableCell>
+                    <Checkbox
                       checked={selectionSet.has(accession)}
-                      onChange={() => {
+                      onCheckedChange={() => {
                         toggleSelection(accession);
                         checkSelectAll();
                       }}
                     />
-                  </td>
-                  <td data-label="Description">
+                  </TableCell>
+                  <TableCell>
                     <Link
+                      className="text-primary hover:underline"
                       href={{
                         pathname,
-                        query: {
-                          panel: "alignments",
-                        },
+                        query: { panel: "alignments" },
                         hash: accession,
                       }}
                     >
                       {title.slice(0, 100)}
                     </Link>
-                  </td>
-                  <td data-label="Scientific Name">
+                  </TableCell>
+                  <TableCell>
                     <a
+                      className="text-primary hover:underline"
                       href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${taxid}`}
                       target="_blank"
+                      rel="noreferrer"
                       title={name}
                     >
                       {truncate(name)}
                     </a>
-                  </td>
-                  <td data-label="Max Score">{maxScore}</td>
-                  <td data-label="Total Score">{totalScore}</td>
-                  <td data-label="Query Cover">{queryCover}%</td>
-                  <td data-label="E value">{formattedEvalue}</td>
-                  <td data-label="Perc. Ident.">
-                    {percentIdentity.toFixed(2)}%
-                  </td>
-                  <td data-label="Acc. Len.">{len}</td>
-                  <td data-label="Accession">
+                  </TableCell>
+                  <TableCell>{maxScore}</TableCell>
+                  <TableCell>{totalScore}</TableCell>
+                  <TableCell>{queryCover}%</TableCell>
+                  <TableCell>{formattedEvalue}</TableCell>
+                  <TableCell>{percentIdentity.toFixed(2)}%</TableCell>
+                  <TableCell>{len}</TableCell>
+                  <TableCell>
                     <a
+                      className="text-primary hover:underline"
                       href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`}
                       target="_blank"
+                      rel="noreferrer"
                     >
                       {accession}
                     </a>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             }
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

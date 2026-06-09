@@ -50,7 +50,8 @@ data/*
 
 experiments/*
 
-# env files
+# env files (local, never committed) — but keep the documented template
 .env*
+!.env.example
 
 xmas

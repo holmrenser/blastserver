@@ -17,10 +17,15 @@ export async function GET(
   const { downloadId } = await params;
   console.log(`Checking download status ${downloadId}`);
 
+  const id = downloadId?.[0];
+  if (!id) {
+    return new NextResponse("Missing download id", { status: 400 });
+  }
+
   let rawDownload: downloadschema | null;
   try {
     rawDownload = await prisma.download.findFirst({
-      where: { id: downloadId[0] },
+      where: { id },
     });
   } catch (err) {
     console.error((err as Error).message);

@@ -1,9 +1,21 @@
-import { ThemeContext } from "@/app/themecontext";
-import React, { useContext } from "react";
+import React from "react";
 
 import { BlastHit, Hsp } from "../../api/[...jobId]/formatResults";
-
-import styles from "./alignments.module.scss";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function padAligmentStrings(hsp: Hsp) {
   const { qseq, midline, hseq, queryFrom, queryTo, hitFrom, hitTo } = hsp;
@@ -18,7 +30,6 @@ function padAligmentStrings(hsp: Hsp) {
 }
 
 function HspBlock({ hsp }: { hsp: Hsp }): React.JSX.Element {
-  const { theme } = useContext(ThemeContext);
   const { score, evalue: _evalue, midline, bitScore } = hsp;
   const evalue = Number(_evalue);
   const formattedEvalue = evalue === 0 ? evalue : evalue.toExponential(0);
@@ -28,88 +39,77 @@ function HspBlock({ hsp }: { hsp: Hsp }): React.JSX.Element {
   const identities = alignLen - positives - gaps;
   const [paddedQseq, paddedMidline, paddedHseq] = padAligmentStrings(hsp);
   return (
-    <>
-      <table className={`${styles.hspTable} table is-bordered`}>
-        <thead>
-          <tr className="">
-            <th>Score</th>
-            <th>Expect</th>
-            <th>Identities</th>
-            <th>Positives</th>
-            <th>Gaps</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
+    <div className="flex flex-col gap-2">
+      <Table className="w-auto text-xs">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Score</TableHead>
+            <TableHead>Expect</TableHead>
+            <TableHead>Identities</TableHead>
+            <TableHead>Positives</TableHead>
+            <TableHead>Gaps</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>
               {Math.floor(Number(bitScore))} bits ({score})
-            </td>
-            <td>{formattedEvalue}</td>
-            <td>
+            </TableCell>
+            <TableCell>{formattedEvalue}</TableCell>
+            <TableCell>
               {identities}/{alignLen}(
               {Math.floor((identities / alignLen) * 100)}%)
-            </td>
-            <td>
-              {positives}/{alignLen}({Math.floor((positives / alignLen) * 100)}
-              %)
-            </td>
-            <td>
+            </TableCell>
+            <TableCell>
+              {positives}/{alignLen}(
+              {Math.floor((positives / alignLen) * 100)}%)
+            </TableCell>
+            <TableCell>
               {gaps}/{alignLen}({Math.floor((gaps / alignLen) * 100)}%)
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <blockquote className={styles.alignmentBlock}>
-        <pre
-          className={
-            theme === "dark" ? "has-background-grey has-text-light" : ""
-          }
-        >
-          {paddedQseq}
-          <br />
-          {paddedMidline}
-          <br />
-          {paddedHseq}
-        </pre>
-      </blockquote>
-    </>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">
+        {paddedQseq}
+        <br />
+        {paddedMidline}
+        <br />
+        {paddedHseq}
+      </pre>
+    </div>
   );
 }
 
 function HitPanel({ hit }: { hit: BlastHit }): React.JSX.Element {
-  const { theme } = useContext(ThemeContext);
   const { accession, title, len, hsps } = hit;
   return (
-    <div
-      className={`${styles.alignmentCard} card ${
-        theme === "dark" ? "has-background-grey-dark has-text-light" : ""
-      }`}
-      id={accession}
-    >
-      <header className="card-header is-size-6">
-        <b style={{ paddingLeft: "4px" }}>{title}</b>
-      </header>
-      <div className={`${styles.alignmentCardContent} card-content`}>
+    <Card id={accession} className="scroll-mt-20">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 text-sm">
         <p>
-          Sequence ID:&nbsp;
+          Sequence ID:{" "}
           <a
+            className="text-primary hover:underline"
             href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`}
             target="_blank"
+            rel="noreferrer"
           >
             {accession}
-          </a>
-          &nbsp;Length: <b>{len}</b>
-          &nbsp;Number of hits: <b>{hsps.length}</b>
+          </a>{" "}
+          Length: <b>{len}</b> Number of hits: <b>{hsps.length}</b>
         </p>
-        <ul>
+        <ul className="flex flex-col gap-6">
           {hsps.map((hsp) => (
             <li key={hsp.num}>
               <HspBlock hsp={hsp} />
             </li>
           ))}
         </ul>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -118,37 +118,15 @@ export default function Alignments({
 }: {
   hits: BlastHit[];
 }): React.JSX.Element {
-  const { theme } = useContext(ThemeContext);
   return (
-    <div
-      className={`${theme === "dark" ? "has-background-grey" : ""} ${
-        styles.alignmentContainer
-      }`}
-    >
-      <nav
-        className={`navbar ${
-          theme === "dark" ? "has-background-info" : "has-background-info-light"
-        }`}
-        role="navigation"
-      >
-        <div className="navbar-brand">
-          <p
-            className={`navbar-item ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
-            Alignment view
-          </p>
-          <div className="select is-small" style={{ marginTop: 12 }}>
-            <select disabled>
-              <option>Pairwise</option>
-            </select>
-          </div>
-        </div>
-      </nav>
-      <ul className="is-size-7">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/50 px-3 py-2">
+        <span className="font-semibold">Alignment view</span>
+        <Badge variant="outline">Pairwise</Badge>
+      </div>
+      <ul className="flex flex-col gap-3">
         {hits.map((hit) => (
-          <li key={hit.accession} style={{ paddingTop: "2px" }}>
+          <li key={hit.accession}>
             <HitPanel hit={hit} />
           </li>
         ))}

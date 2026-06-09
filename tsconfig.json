@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "lib": ["dom", "dom.iterable", "esnext", "es7"],
-    "types": [ "@types/wicg-file-system-access"],
+    "types": ["@types/wicg-file-system-access", "jest", "@testing-library/jest-dom"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,

@@ -7,14 +7,8 @@ import { saveAs } from "file-saver";
 import type { download } from "@/app/api/download/[...downloadId]/route"; //"@prisma/client";
 
 import ErrorComponent from "../error";
-
-function Status({ message }: { message: string }) {
-  return (
-    <section className="hero is-fullheight">
-      <h1 className="title">{message}</h1>
-    </section>
-  );
-}
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 class DataFetchError extends Error {
   info: string | undefined = undefined;
@@ -39,6 +33,15 @@ async function fetcher(url: string) {
     throw error;
   }
   return res.json();
+}
+
+function PreparingDownload({ message }: { message: string }) {
+  return (
+    <div className="container mx-auto flex max-w-xl flex-col gap-3 px-4 py-10">
+      <h1 className="text-xl font-semibold">{message}</h1>
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
 }
 
 export default function DownloadPage({
@@ -81,24 +84,26 @@ export default function DownloadPage({
   }, [data, downloadId]);
 
   if (error) return <ErrorComponent statusCode={500} />;
-  if (isLoading) return <Status message="loading" />;
-  if (!data) return <Status message={`Preparing download ${downloadId}`} />;
+  if (isLoading) return <PreparingDownload message="Loading" />;
+  if (!data) return <PreparingDownload message={`Preparing download ${downloadId}`} />;
 
   return (
-    <>
-      <h1>Preparing download {downloadId} complete</h1>
-      <p>
+    <div className="container mx-auto flex max-w-xl flex-col gap-3 px-4 py-10">
+      <h1 className="text-xl font-semibold">
+        Download {downloadId} complete
+      </h1>
+      <p className="text-muted-foreground">
         If the download does not automatically start, click the button below:
       </p>
-      <button
-        className="button"
+      <Button
         type="button"
+        className="w-fit"
         onClick={() => {
           save.current();
         }}
       >
         Download
-      </button>
-    </>
+      </Button>
+    </div>
   );
 }

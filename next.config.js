@@ -1,15 +1,5 @@
 // @ts-check
 
-import { config } from "dotenv";
-config({ path: process.env.ENV_FILE });
-
-// this is only logged during building
-const { env } = process;
-console.log(
-  "Printing environment variables only happens during development/building"
-);
-console.log("ENVIRONMENT VARIABLES:", env);
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -17,7 +7,11 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
-  basePath: process.env.BASE_PATH,
+  // basePath is baked into the client bundle at build time. Supply BASE_PATH
+  // (e.g. via a --build-arg) only when serving the app under a sub-path;
+  // unset/empty means it is served at the root. Next.js auto-loads .env* files
+  // for dev/build, so no manual dotenv bootstrap is needed here.
+  basePath: process.env.BASE_PATH || undefined,
 };
 
 export default nextConfig;

@@ -1,113 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useState } from "react";
+import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
-import { ThemeContext } from "./themecontext";
-
+import { useThemeStore } from "@/lib/stores/theme";
 import { QueueStatus } from "./queuestatus";
-
 import { ALLOWED_FLAVOURS } from "./[blastFlavour]/parameters";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Nav() {
-  const { theme, toggleTheme } = useContext(ThemeContext);
-  const [showNav, setShowNav] = useState(false);
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+
+  // Avoid a hydration mismatch on the theme control: the persisted theme is
+  // only known on the client. Page colors are already correct pre-paint via the
+  // anti-FOUC script in the root layout.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && theme === "dark";
+
   return (
-    <nav
-      className={`navbar ${theme === "dark" ? "is-dark" : "is-light"}`}
-      role="navigation"
-      aria-label="main navigation"
-    >
-      <div className="navbar-brand">
-        <Link className="navbar-item" href="/">
-          BLAST
-        </Link>
-
-        <a
-          role="button"
-          className="navbar-burger"
-          aria-label="menu"
-          aria-expanded="false"
-          data-target="blast-navbar"
-          onClick={() => {
-            setShowNav(!showNav);
-          }}
-        >
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-          <span aria-hidden="true"></span>
-        </a>
-      </div>
-
-      <div
-        id="blast-navbar"
-        className={`navbar-menu ${showNav ? "is-active" : ""} ${
-          theme === "dark" ? "has-background-grey-dark" : ""
-        }`}
+    <header className="sticky top-0 z-40 border-b bg-background">
+      <nav
+        className="mx-auto flex h-14 max-w-(--breakpoint-2xl) flex-wrap items-center gap-2 px-4"
+        aria-label="main navigation"
       >
-        <div className="navbar-start">
-          <div className="navbar-item has-dropdown is-hoverable">
-            <a
-              className={`${
-                theme === "dark" ? "has-text-light" : ""
-              } navbar-link`}
-            >
-              Flavours
-            </a>
+        <Button asChild variant="ghost" className="text-base font-bold">
+          <Link href="/">BLAST</Link>
+        </Button>
 
-            <div
-              className={`navbar-dropdown ${
-                theme === "dark" ? "has-background-grey-dark" : ""
-              }`}
-            >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost">Flavours</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuGroup>
               {ALLOWED_FLAVOURS.map((flavour) => (
-                <Link
-                  prefetch
-                  className={`navbar-item ${
-                    theme === "dark"
-                      ? "has-background-grey-dark has-text-light"
-                      : ""
-                  }`}
-                  href={`/${flavour}`}
-                  key={flavour}
-                >
-                  {flavour}
-                </Link>
+                <DropdownMenuItem key={flavour} asChild>
+                  <Link href={`/${flavour}`} prefetch>
+                    {flavour}
+                  </Link>
+                </DropdownMenuItem>
               ))}
-            </div>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="ml-auto flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            {isDark ? (
+              <Moon className="size-4" />
+            ) : (
+              <Sun className="size-4" />
+            )}
+            <Switch
+              id="theme-switch"
+              checked={isDark}
+              onCheckedChange={toggleTheme}
+              aria-label="Toggle theme"
+            />
+            <Label htmlFor="theme-switch" className="cursor-pointer">
+              {isDark ? "Dark" : "Light"}
+            </Label>
           </div>
-        </div>
-        <div className="navbar-end">
-          <div className="navbar-item">
-            <div className="field">
-              <input
-                id="theme-switch"
-                type="checkbox"
-                className="switch is-rtl is-rounded is-outlined is-warning is-small"
-                checked={theme === "light"}
-                onChange={toggleTheme}
-              />
-              <label
-                className={theme === "dark" ? "has-text-light" : ""}
-                htmlFor="theme-switch"
-                style={{ fontSize: "1rem" }}
-              >
-                Toggle theme
-              </label>
-            </div>
-          </div>
-          <p
-            className={`navbar-item ${
-              theme === "dark" ? "has-text-light" : ""
-            }`}
-          >
-            Queue
-          </p>
-          <div className="navbar-item">
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Queue</span>
             <QueueStatus />
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

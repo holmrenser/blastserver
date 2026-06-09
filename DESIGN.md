@@ -28,20 +28,24 @@
 
 # Implementation
 
+> See [README.md](README.md) for the current architecture and setup. Summary below.
+
 ## Frontend
 
-- React / Typescript
-- ReactRouter for handling browser routing
-- Similar user interface to NCBI
+- Next.js 15 (App Router) / React 19 / TypeScript
+- Tailwind CSS v4 + shadcn/ui components; zustand for client state; SWR for polling
+- react-hook-form + a shared zod schema for the BLAST parameter forms
+- User interface modelled on NCBI BLAST
 
 ## Backend
 
-- Node w/ express API
-- BullMQ for redis jobqueue (https://docs.bullmq.io/guide/connections)
-- BLAST/diamond
-- NCBI databases
+- Next.js API routes (App Router) — no separate Express server
+- BullMQ on Redis for the job queue (https://docs.bullmq.io/guide/connections)
+- Two BullMQ workers: `blastworker` (runs BLAST+ binaries) and `downloadworker` (`blastdbcmd`)
+- PostgreSQL via Prisma; NCBI BLAST databases on disk
+- Diamond support: not yet implemented
 
 ## Deployment / scaling
 
-- Docker compose with nginx load balancer (https://pspdfkit.com/blog/2018/how-to-use-docker-compose-to-run-multiple-instances-of-a-service-in-development/)
-- Multiple worker instances
+- Docker Compose (`docker-compose.yml`): app + redis + postgres + multiple worker replicas
+- Horizontal scaling via additional `blastworker` / `downloadworker` replicas

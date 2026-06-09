@@ -249,8 +249,7 @@ async function buildTaxTrees(hits: BlastHit[]) {
     }, {});
 
   const filteredancestorIdCounts: Record<string, number> = Object.entries(ancestorIdCounts)
-    // eslint-disable-next-line no-unused-vars
-    .filter(([_,value]) => value !== hits.length)
+    .filter(([_key, value]) => value !== hits.length)
     .reduce((obj, [key,value]) => {
       return {
         ...obj,

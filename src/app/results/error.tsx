@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { AlertCircleIcon } from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export default function ErrorComponent({
   statusCode,
@@ -16,19 +20,24 @@ export default function ErrorComponent({
   }, [error]);
 
   return (
-    <div>
-      <h1>{statusCode}</h1>
-      <h2>Something went wrong!</h2>
-      {reset && (
-        <button
-          onClick={
-            // Attempt to recover by trying to re-render the segment
-            () => reset()
-          }
-        >
-          Try again
-        </button>
-      )}
+    <div className="container mx-auto max-w-xl px-4 py-10">
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Something went wrong! ({statusCode})</AlertTitle>
+        <AlertDescription>
+          An error occurred while processing your request.
+          {reset && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => reset()}
+            >
+              Try again
+            </Button>
+          )}
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }

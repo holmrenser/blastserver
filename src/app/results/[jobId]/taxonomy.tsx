@@ -2,7 +2,15 @@ import React from "react";
 import { flattenDeep } from "lodash";
 
 import { TaxonomyNode, BlastHit } from "../../api/[...jobId]/formatResults";
-import styles from "./taxonomy.module.scss";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type FormattedTaxonomyNode = TaxonomyNode & {
   isLast: boolean;
@@ -29,13 +37,7 @@ function* depthFirst(
       if (hasSiblings && !isLast) {
         siblingLevels.push(depth);
       }
-      yield* depthFirst(
-        childTree,
-        depth + 1,
-        siblingLevels,
-        isLast,
-        hasSiblings
-      );
+      yield* depthFirst(childTree, depth + 1, siblingLevels, isLast, hasSiblings);
     }
   }
 }
@@ -44,23 +46,21 @@ function getTreePrefix({
   depth,
   isLast,
   siblingLevels,
-  // eslint-disable-next-line no-unused-vars
-  name,
 }: {
   depth: number;
   isLast: boolean;
   siblingLevels: number[];
   name: string;
 }): string {
-  const prefix = Array(depth).fill("\u00A0"); // \u00A0
+  const prefix = Array(depth).fill(" "); //
   if (isLast) {
-    prefix[prefix.length - 1] = "\u2514\u2500";
+    prefix[prefix.length - 1] = "└─";
   } else {
-    prefix[prefix.length - 1] = "\u251C\u2500";
+    prefix[prefix.length - 1] = "├─";
   }
   siblingLevels.forEach((level) => {
     if (level < depth - 1) {
-      prefix[level] = "\u2502";
+      prefix[level] = "│";
     }
   });
   return prefix.join("");
@@ -73,69 +73,66 @@ export default function Taxonomy({
   taxonomyTrees: TaxonomyNode[];
 }): React.JSX.Element {
   if (!taxonomyTrees.length) {
-    return <h2>No taxonomy info found</h2>;
+    return <h2 className="text-muted-foreground">No taxonomy info found</h2>;
   }
   const flatTrees = taxonomyTrees.map((taxonomyTree) =>
     Array.from(depthFirst(taxonomyTree))
   );
   const flatTree = flattenDeep(flatTrees);
   return (
-    <div className={styles.taxonomyResults}>
-      <nav className="navbar has-background-info-light" role="navigation">
-        <div className="navbar-brand">
-          <b className="navbar-item">Reports</b>
-        </div>
-        <div className="navbar-menu">
-          <div className="navbar-start">
-            <p className="navbar-item is-disabled">Lineage</p>
-            <p className="navbar-item">Organism</p>
-          </div>
-        </div>
-      </nav>
-      <div className="has-background-light">
-        <div className={`columns is-centered ${styles.centerTable}`}>
-          <table className="table is-size-6 is-narrow is-hoverable">
-            <thead>
-              <tr>
-                <th>Taxonomy</th>
-                <th>Number of Hits</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flatTree.map(
-                ({
-                  name,
-                  count,
-                  id,
-                  depth = 0,
-                  isLast,
-                  children,
-                  siblingLevels = [],
-                }) => (
-                  <tr key={id}>
-                    <td>
-                      <span style={{ fontFamily: "monospace" }}>
-                        {getTreePrefix({ depth, isLast, siblingLevels, name })}
-                      </span>
-                      <a
-                        href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${id}`}
-                        target="_blank"
-                        title={`Show taxonomy information for ${name} (taxid ${id})`}
-                        style={{ marginLeft: ".2rem" }}
-                      >
-                        {name}
-                      </a>
-                    </td>
-                    <td>{count}</td>
-                    <td>{!children?.length && name}</td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/50 px-3 py-2">
+        <span className="font-semibold">Reports</span>
+        <Tabs value="organism">
+          <TabsList>
+            <TabsTrigger value="lineage" disabled>
+              Lineage
+            </TabsTrigger>
+            <TabsTrigger value="organism">Organism</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+      <Table className="text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Taxonomy</TableHead>
+            <TableHead>Number of Hits</TableHead>
+            <TableHead>Description</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {flatTree.map(
+            ({
+              name,
+              count,
+              id,
+              depth = 0,
+              isLast,
+              children,
+              siblingLevels = [],
+            }) => (
+              <TableRow key={id}>
+                <TableCell>
+                  <span className="font-mono">
+                    {getTreePrefix({ depth, isLast, siblingLevels, name })}
+                  </span>
+                  <a
+                    className="ml-1 text-primary hover:underline"
+                    href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={`Show taxonomy information for ${name} (taxid ${id})`}
+                  >
+                    {name}
+                  </a>
+                </TableCell>
+                <TableCell>{count}</TableCell>
+                <TableCell>{!children?.length && name}</TableCell>
+              </TableRow>
+            )
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

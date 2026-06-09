@@ -1,12 +1,10 @@
-import React, { useContext } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { scaleLinear, ScaleLinear, scaleThreshold } from "d3";
 import { useWindowSize } from "@react-hook/window-size";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
-import styles from "./graphicSummary.module.scss";
-import { ThemeContext } from "@/app/themecontext";
 
 function XAxis({
   scale,
@@ -32,13 +30,7 @@ function XAxis({
   return (
     <g className="x-axis" transform="translate(0,0)">
       {/* backbone line */}
-      <rect
-        x={0}
-        y={-16}
-        width={width}
-        height={16}
-        style={{ fill: "#58c7c7" }}
-      />
+      <rect x={0} y={-16} width={width} height={16} style={{ fill: "#58c7c7" }} />
       <line x1="0" x2={width} y1="0" y2="0" stroke="black" />
       <text
         x={width / 2}
@@ -107,9 +99,7 @@ function HitPlotLine({
         x2={xScale(hspMax)}
         y1={height / 4}
         y2={height / 4}
-        style={{
-          stroke: "black",
-        }}
+        style={{ stroke: "black" }}
       />
       {hsps.map(({ queryFrom, queryTo, bitScore }) => {
         const width = Number(queryTo) - Number(queryFrom);
@@ -123,14 +113,13 @@ function HitPlotLine({
             }}
           >
             <rect
-              className={styles.blastHitRect}
+              className="cursor-pointer stroke-transparent hover:stroke-foreground"
+              strokeWidth={1}
               x={xScale(Number(queryFrom))}
               y={0}
               width={xScale(width)}
               height={height / 2}
-              style={{
-                fill: colorMap(Number(bitScore)),
-              }}
+              style={{ fill: colorMap(Number(bitScore)) }}
             >
               <title>{title}</title>
             </rect>
@@ -143,7 +132,6 @@ function HitPlotLine({
 
 export default function GraphicSummary({
   hits,
-  //_width = 300,
   queryLength,
   lineHeight = 6,
 }: {
@@ -152,7 +140,6 @@ export default function GraphicSummary({
   queryLength: number;
   lineHeight?: number;
 }): React.JSX.Element {
-  const { theme } = useContext(ThemeContext);
   const [windowWidth] = useWindowSize();
   const width = windowWidth > 1344 ? 600 : 0.85 * windowWidth;
   const padding = {
@@ -163,9 +150,7 @@ export default function GraphicSummary({
   };
   const titleHeight = 30;
   const axisHeight = 30;
-  // Only show first 100 hits in this plot
-  const subset = hits; //hits.length > 100 ? hits.slice(0, 100) : hits;
-  // Take care of padding
+  const subset = hits;
   const paddedWidth = width - padding.left - padding.right;
   const paddedHeight =
     lineHeight * subset.length +
@@ -177,67 +162,36 @@ export default function GraphicSummary({
   const xScale = scaleLinear().domain([0, queryLength]).range([0, paddedWidth]);
 
   return (
-    <div
-      className={`${
-        theme === "dark" ? "has-background-grey" : "has-background-light"
-      } ${styles.graphicSummaryContainer}`}
-    >
-      <nav
-        className={`navbar ${
-          theme === "dark" ? "has-background-info" : "has-background-info-light"
-        }`}
-        role="navigation"
-      >
-        <div className="navbar-brand">
-          <em
-            className={`is-size-7 ${
-              theme === "dark" ? "has-text-light" : ""
-            } navbar-item`}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-4 rounded-md border bg-muted/50 px-3 py-2 text-xs italic text-muted-foreground">
+        <span>Hover to show title</span>
+        <span>Click to show alignments</span>
+      </div>
+      <div className="flex justify-center rounded-md border bg-white p-2">
+        <svg width={width} height={paddedHeight}>
+          <g
+            className="blast-hit-plot"
+            transform={`translate(${padding.left},${padding.top})`}
           >
-            Hover to show title
-          </em>
-          <em
-            className={`is-size-7 ${
-              theme === "dark" ? "has-text-light" : ""
-            } navbar-item`}
-          >
-            Click to show alignments
-          </em>
-        </div>
-      </nav>
-      <div>
-        <div className={`columns is-centered ${styles.figureBox}`}>
-          <svg
-            width={width}
-            height={paddedHeight}
-            style={{
-              backgroundColor: theme === "dark" ? "lightgrey" : "white",
-            }}
-          >
-            <g
-              className="blast-hit-plot"
-              transform={`translate(${padding.left},${padding.top})`}
-            >
-              <text x={0} y={4} fontSize="14" fontWeight="bold">
-                Distribution of BLAST hits on subject sequences
-              </text>
-              <g transform={`translate(0,${titleHeight})`}>
-                <XAxis scale={xScale} numTicks={10} />
-                <g className="hits" transform={`translate(0,${axisHeight})`}>
-                  {subset.map((hit, index) => (
-                    <HitPlotLine
-                      key={hit.accession}
-                      hit={hit}
-                      index={index}
-                      xScale={xScale}
-                      height={lineHeight}
-                    />
-                  ))}
-                </g>
+            <text x={0} y={4} fontSize="14" fontWeight="bold">
+              Distribution of BLAST hits on subject sequences
+            </text>
+            <g transform={`translate(0,${titleHeight})`}>
+              <XAxis scale={xScale} numTicks={10} />
+              <g className="hits" transform={`translate(0,${axisHeight})`}>
+                {subset.map((hit, index) => (
+                  <HitPlotLine
+                    key={hit.accession}
+                    hit={hit}
+                    index={index}
+                    xScale={xScale}
+                    height={lineHeight}
+                  />
+                ))}
               </g>
             </g>
-          </svg>
-        </div>
+          </g>
+        </svg>
       </div>
     </div>
   );

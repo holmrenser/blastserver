@@ -8,6 +8,9 @@ import Path from "path";
 import fs from "fs";
 import { gzipSync } from "zlib";
 
+import { DB_NAMES } from "../src/lib/blast/constants.js";
+import { setupWorkerRuntime, MAX_BUFFER, LOCK_DURATION } from "./runtime.js";
+
 const prisma = new PrismaClient();
 
 const connection = {
@@ -21,47 +24,68 @@ async function downloadJobProcessor(job: Job) {
     data: { sequenceIds, database },
   }: { data: { sequenceIds: string[]; database: string } } = job;
 
+  // Defense in depth: never read an arbitrary path even if a job reaches the
+  // queue directly.
+  if (!DB_NAMES.has(database)) {
+    throw new Error(`Refusing to use unknown database: ${database}`);
+  }
+
   const tmpFile = Path.join(
     tmpdir(),
     `blastserver.${Crypto.randomBytes(16).toString("hex")}.tmp`
   );
-  const seqidString = sequenceIds.join("\n");
+
   try {
-    await fs.promises.writeFile(tmpFile, seqidString);
-  } catch (err) {
-    throw new Error(`Writing tmp file failed: ${err}`);
+    const seqidString = sequenceIds.join("\n");
+    try {
+      await fs.promises.writeFile(tmpFile, seqidString);
+    } catch (err) {
+      throw new Error(`Writing tmp file failed: ${err}`);
+    }
+
+    const dbPath = path.join(process.env.APP_BLAST_DB_PATH || "", database);
+    const args = ["-db", dbPath, "-entry_batch", tmpFile];
+
+    // Bounded output buffer (configurable via BLAST_MAX_BUFFER).
+    const options = { maxBuffer: MAX_BUFFER };
+
+    console.log(`Running 'blastdbcmd ${args.join(" ")}'`);
+
+    const result = spawnSync("blastdbcmd", args, options);
+    if (result.error) {
+      throw result.error;
+    }
+    if (result.status !== 0) {
+      throw new Error(
+        result.stderr?.toString("utf8") ||
+          `blastdbcmd exited with status ${result.status}`
+      );
+    }
+    const stderr = result.stderr.toString("utf8");
+    if (stderr) {
+      console.warn(`Download job ${job.id} stderr: ${stderr}`);
+    }
+    const stdout = result.stdout.toString("utf8");
+    const compressedOutput = gzipSync(stdout);
+
+    await prisma.download.update({
+      where: { id: job.id },
+      data: {
+        results: compressedOutput,
+        finished: new Date(),
+      },
+    });
+    return "finished";
+  } finally {
+    await fs.promises.unlink(tmpFile).catch(() => {});
   }
-
-  const dbPath = path.join(process.env.APP_BLAST_DB_PATH || "", database);
-
-  const args = ["-db", dbPath, "-entry_batch", tmpFile];
-
-  // Very large max buffer so we capture all BLAST output
-  const options = { maxBuffer: 1_000_000_000_000 };
-
-  console.log(`Running 'blastdmcmd ${args.join(" ")}'`);
-
-  const result = spawnSync("blastdbcmd", args, options);
-  const stderr = result.stderr.toString("utf8");
-  if (stderr) throw new Error(stderr);
-  const stdout = result.stdout.toString("utf8");
-
-  const compressedOutput = gzipSync(stdout);
-
-  await prisma.download.update({
-    where: { id: job.id },
-    data: {
-      results: compressedOutput,
-      finished: new Date(),
-    },
-  });
-  return "finished";
 }
 
-// HACK: extreme lock duration (2 hours) to prevent multiple workers picking up the same job
 const downloadWorker = new Worker("downloadQueue", downloadJobProcessor, {
   connection,
-  lockDuration: 7_200_000,
+  // BullMQ auto-renews the lock while the worker is alive, so this only bounds
+  // how long a crashed/stalled job stays locked before it can be retried.
+  lockDuration: LOCK_DURATION,
 });
 
 console.log("Download worker started");
@@ -85,6 +109,5 @@ downloadWorker.on("failed", async (job, err) => {
   });
 });
 
-downloadWorker.on("error", (err) => {
-  console.warn(`Download job error: ${err}`);
-});
+// Error logging + health probes + graceful drain on SIGTERM/SIGINT.
+setupWorkerRuntime(downloadWorker, prisma, "Download");

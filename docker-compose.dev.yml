@@ -1,0 +1,17 @@
+# Dev-only overlay. Publishes the Postgres/Redis ports to the host so a
+# host-run `next dev` (and the host worker scripts) can reach them — the base
+# compose file only `expose`s these network-internally. Use with:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#     up postgres redis migrate blastworker downloadworker
+#
+# i.e. bring up everything EXCEPT `app`, then run `npm run dev:app` on the host
+# for hot reloading at http://localhost:3000.
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

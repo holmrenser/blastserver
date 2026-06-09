@@ -19,9 +19,14 @@ export async function GET(
   const { jobId } = await params;
   console.log(`Requested BLAST job ${jobId}`);
 
+  const id = jobId?.[0];
+  if (!id) {
+    return new NextResponse("Missing job id", { status: 400 });
+  }
+
   let job: blastjob | null;
   try {
-    job = await prisma.blastjob.findFirst({ where: { id: jobId[0] } });
+    job = await prisma.blastjob.findFirst({ where: { id } });
   } catch (err) {
     console.error((err as Error).message);
     return new NextResponse((err as Error).message, { status: 500 });

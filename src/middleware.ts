@@ -2,21 +2,37 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Captures all api requests and inserts CORS headers
- * @param request any incomming html request
- * @returns modified response with CORS headers injected for api requests
+ * Adds CORS headers to API responses, but only for origins explicitly listed in
+ * the CORS_ALLOW_ORIGIN env var (comma-separated). Same-origin requests from the
+ * app itself need no CORS headers, so the default is to allow none rather than
+ * the previous wildcard "*".
  */
 export async function middleware(request: NextRequest) {
-    const response = NextResponse.next()
-    const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
+  const { pathname } = request.nextUrl;
 
-    if (pathname.startsWith("/api")) {
-        response.headers.append("Access-Control-Allow-Origin", "*")
-        response.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
-        response.headers.append(
-            'Access-Control-Allow-Headers',
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-        )
-    }
-    return response
+  if (!pathname.startsWith("/api")) {
+    return response;
+  }
+
+  const allowedOrigins = (process.env.CORS_ALLOW_ORIGIN || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const origin = request.headers.get("origin");
+
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Vary", "Origin");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET,DELETE,PATCH,POST,PUT"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+    );
+  }
+
+  return response;
 }

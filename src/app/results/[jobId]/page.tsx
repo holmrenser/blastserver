@@ -12,9 +12,16 @@ import type {
   BlastpParameters,
 } from "@/app/[blastFlavour]/parameters";
 import type { BlastJobResults } from "@/app/api/[...jobId]/route";
-import { useContext } from "react";
-import { ThemeContext } from "@/app/themecontext";
-// import { FormattedBlastResults } from "@/app/api/[...jobId]/formatResults";
+
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 
 class DataFetchError extends Error {
   info: string | undefined = undefined;
@@ -48,18 +55,13 @@ function InfoCard({
   header: ReactNode;
   children: ReactNode;
 }): React.JSX.Element {
-  const { theme } = useContext(ThemeContext);
   return (
-    <div
-      className={`card ${theme === "dark" ? "has-background-grey-dark" : ""}`}
-    >
-      <header className="card-header">
-        <p className="card-header-title">{header}</p>
-      </header>
-      <div className="card-content" style={{ padding: "8px" }}>
-        {children}
-      </div>
-    </div>
+    <Card className="gap-0 py-0">
+      <CardHeader className="border-b py-3">
+        <CardTitle className="text-sm">{header}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-2">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -76,8 +78,6 @@ function UsedParameters({ data }: { data: BlastJobResults }) {
     expectThreshold,
     lcaseMasking,
   } = parameters as BlastParameters;
-
-  const { theme } = useContext(ThemeContext);
 
   let additionalParams: { [key: string]: string } = {};
   if (flavour === "blastp") {
@@ -97,123 +97,107 @@ function UsedParameters({ data }: { data: BlastJobResults }) {
 
   return (
     <InfoCard header="Used parameters">
-      <table
-        className={`table is-small is-size-7 ${
-          theme === "dark" ? "has-background-grey-dark has-text-light" : ""
-        }`}
-      >
-        <tbody>
-          <tr>
-            <td>Gap costs</td>
-            <td>{gapCosts}</td>
-          </tr>
-          <tr>
-            <td>Max. target seqs</td>
-            <td>{maxTargetSeqs}</td>
-          </tr>
-          <tr>
-            <td>E-value threshold</td>
-            <td>{expectThreshold}</td>
-          </tr>
-          {taxids && (
-            <tr>
-              <td>{excludeTaxids ? "Excluded tax. IDs" : "Tax. IDs"}</td>
-              <td>
+      <Table className="text-xs">
+        <TableBody>
+          <TableRow>
+            <TableCell>Gap costs</TableCell>
+            <TableCell>{gapCosts}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Max. target seqs</TableCell>
+            <TableCell>{maxTargetSeqs}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>E-value threshold</TableCell>
+            <TableCell>{expectThreshold}</TableCell>
+          </TableRow>
+          {taxids && taxids.length > 0 && (
+            <TableRow>
+              <TableCell>
+                {excludeTaxids ? "Excluded tax. IDs" : "Tax. IDs"}
+              </TableCell>
+              <TableCell>
                 <ul>
                   {taxids.map((taxid) => (
                     <li key={taxid}>{taxid}</li>
                   ))}
                 </ul>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
           {Object.entries(additionalParams).map(([name, value]) => (
-            <tr key={name}>
-              <td>{name}</td>
-              <td>{value}</td>
-            </tr>
+            <TableRow key={name}>
+              <TableCell>{name}</TableCell>
+              <TableCell>{value}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </InfoCard>
   );
 }
 
 function JobStatus({ jobId, data }: { jobId: string; data: BlastJobResults }) {
-  const { theme } = useContext(ThemeContext);
   const { parameters, submitted, finished, results, err } = data;
   const { jobTitle, program, database } = parameters as BlastParameters;
-  // Job&nbsp;ID <span style={{marginLeft: '8px'}} className='tag is-info is-light'>{jobId}</span>
   return (
     <InfoCard
       header={
-        <>
-          Job&nbsp;ID{" "}
-          <span style={{ marginLeft: "8px" }} className="tag is-info is-light">
-            {jobId}
-          </span>
-        </>
+        <span className="flex items-center gap-2">
+          Job ID
+          <Badge variant="secondary">{jobId}</Badge>
+        </span>
       }
     >
-      <table
-        className={`table is-small is-size-7 ${
-          theme === "dark" ? "has-background-grey-dark has-text-light" : ""
-        }`}
-      >
-        <tbody>
-          <tr>
-            <td>Job Title</td>
-            <td>{jobTitle || "Protein Sequence"}</td>
-          </tr>
-          <tr>
-            <td>Program</td>
-            <td>{program.toUpperCase()}</td>
-          </tr>
-          <tr>
-            <td>Database</td>
-            <td>{database}</td>
-          </tr>
-          <tr>
-            <td>Submitted</td>
-            <td>{new Date(submitted)?.toLocaleString("en-GB")}</td>
-          </tr>
-          <tr>
-            <td>Status</td>
-            <td>
+      <Table className="text-xs">
+        <TableBody>
+          <TableRow>
+            <TableCell>Job Title</TableCell>
+            <TableCell>{jobTitle || "Protein Sequence"}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Program</TableCell>
+            <TableCell>{program.toUpperCase()}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Database</TableCell>
+            <TableCell>{database}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Submitted</TableCell>
+            <TableCell>
+              {new Date(submitted)?.toLocaleString("en-GB")}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Status</TableCell>
+            <TableCell>
               {results || err
                 ? `Finished at ${new Date(finished || "")?.toLocaleString(
                     "en-GB"
                   )}`
                 : "In progress"}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
           {results && (
             <>
-              <tr>
-                <td>Query ID</td>
-                <td>{results.queryId}</td>
-              </tr>
-              <tr>
-                <td>Description</td>
-                <td>{results.queryTitle}</td>
-              </tr>
-              <tr>
-                <td>Query length</td>
-                <td>{results.queryLen}</td>
-              </tr>
+              <TableRow>
+                <TableCell>Query ID</TableCell>
+                <TableCell>{results.queryId}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Description</TableCell>
+                <TableCell>{results.queryTitle}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Query length</TableCell>
+                <TableCell>{results.queryLen}</TableCell>
+              </TableRow>
             </>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </InfoCard>
-  );
-}
-
-function Status({ message }: { message: string }) {
-  return (
-    <section className="hero is-fullheight">
-      <h1 className="title">{message}</h1>
-    </section>
   );
 }
 
@@ -240,24 +224,28 @@ export default function ResultsWrapper({
   );
 
   if (error) return <ErrorComponent statusCode={500} />;
-  if (isLoading) return <Status message="loading" />;
-  if (!data) return <Status message="fetching" />;
-
-  return (
-    <div className="container is-fullhd">
-      <h2 className="subtitle">Results</h2>
-      <div className="grid">
-        <div
-          className="cell"
-          style={{ flexBasis: "25%", flexGrow: 0, paddingBottom: "4px" }}
-        >
-          <JobStatus jobId={jobId} data={data} />
-        </div>
-        <div className="cell" style={{ paddingBottom: "4px" }}>
-          <UsedParameters data={data} />
+  if (isLoading || !data) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <Skeleton className="h-8 w-32" />
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr]">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
         </div>
       </div>
-      <ResultsPage data={data} />
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <h2 className="mb-4 text-xl font-semibold">Results</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr]">
+        <JobStatus jobId={jobId} data={data} />
+        <UsedParameters data={data} />
+      </div>
+      <div className="mt-6">
+        <ResultsPage data={data} />
+      </div>
     </div>
   );
 }
