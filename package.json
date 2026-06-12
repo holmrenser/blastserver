@@ -7,12 +7,13 @@
     "node": ">= v24.4.1"
   },
   "scripts": {
-    "dev:app": "ENV_FILE='./.env.development' next dev --turbopack",
+    "generate": "prisma generate",
+    "dev:app": "prisma generate && ENV_FILE='./.env.development' next dev --webpack",
     "dev:infra": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres migrate blastworker downloadworker --build",
     "dev:infra:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
-    "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build --webpack && ls -lah .next && cp -r .next/static .next/standalone/.next/static",
-    "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build --webpack && cp -r .next/static .next/standalone/.next/static",
-    "build:worker": "rm -rf worker/build && npx tsc -p tsconfig.worker.json",
+    "build:app:dev": "prisma generate && rm -rf .next && ENV_FILE='./.env.development' next build --webpack && ls -lah .next && cp -r .next/static .next/standalone/.next/static",
+    "build:app:prod": "prisma generate && rm -rf .next && ENV_FILE='./.env.production' next build --webpack && cp -r .next/static .next/standalone/.next/static",
+    "build:worker": "prisma generate && rm -rf worker/build && npx tsc -p tsconfig.worker.json",
     "migrate:deploy": "node scripts/migrate-and-seed.js",
     "start:app": "node -r dotenv/config app.js",
     "dev:worker": "run-p dev:blastworker dev:downloadworker",
@@ -22,13 +23,14 @@
     "start:blastworker": "node -r dotenv/config worker/build/worker/blastworker.js",
     "start:downloadworker": "node -r dotenv/config worker/build/worker/downloadworker.js",
     "lint": "eslint .",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:integration": "jest --config jest.integration.config.mjs --runInBand"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
-    "@prisma/client": "6.13.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@react-hook/window-size": "^3.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -40,6 +42,7 @@
     "next": "^16.2.9",
     "next-themes": "^0.4.6",
     "object-hash": "^3.0.0",
+    "pg": "^8.21.0",
     "pg-boss": "^12.18.2",
     "radix-ui": "^1.4.3",
     "react": "^19.2.7",
@@ -62,7 +65,6 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/d3": "^7.4.3",
     "@types/file-saver": "^2.0.7",
-    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
     "@types/object-hash": "^3.0.6",
@@ -72,13 +74,13 @@
     "eslint": "^9.33.0",
     "eslint-config-next": "^16.2.9",
     "file-saver": "^2.0.5",
-    "jest": "^30.4.2",
-    "jest-environment-jsdom": "^30.4.1",
+    "jsdom": "^29.1.1",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.5.15",
-    "prisma": "6.13.0",
+    "prisma": "^7.8.0",
     "supports-color": "^10.1.0",
     "tailwindcss": "^4.3.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.8"
   }
 }

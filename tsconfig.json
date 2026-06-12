@@ -9,7 +9,7 @@
     ],
     "types": [
       "@types/wicg-file-system-access",
-      "jest",
+      "vitest/globals",
       "@testing-library/jest-dom"
     ],
     "allowJs": true,

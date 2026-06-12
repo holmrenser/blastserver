@@ -14,7 +14,8 @@ ARG BLAST_VERSION=2.17.0
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN node ./node_modules/.bin/prisma generate
+# build:worker runs `prisma generate` itself, then tsc compiles the generated
+# client into worker/build alongside the worker sources.
 RUN npm run build:worker
 
 RUN wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BLAST_VERSION/ncbi-blast-$BLAST_VERSION+-x64-linux.tar.gz && \

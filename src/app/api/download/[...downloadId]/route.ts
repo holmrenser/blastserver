@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { download as downloadschema } from "@prisma/client";
+import type { download as downloadschema } from "@/generated/prisma/client";
 
 import prisma from "@/app/api/database";
 

@@ -31,8 +31,8 @@ services:
   # One-shot: applies migrations and seeds taxonomy, then exits. Everything else
   # waits for it to complete so no replica races on the schema.
   migrate:
-    # Pin to amd64 so dev (Rosetta on Apple Silicon) matches amd64 prod nodes,
-    # and Prisma's x64 binaryTargets / `native` engine line up. See README.
+    # Pin to amd64 so dev (Rosetta on Apple Silicon) matches amd64 prod nodes.
+    # (Prisma 7 is Rust-free — no engine binaryTargets to line up anymore.)
     platform: linux/amd64
     build:
       context: .

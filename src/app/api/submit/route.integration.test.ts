@@ -1,10 +1,11 @@
+import { vi, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
 
 // Stub the queue so no real pg-boss connection is needed; `send` is a stable
 // mock shared across getBoss() calls (closure), so we can assert on it.
-jest.mock("../queue", () => {
-  const send = jest.fn().mockResolvedValue("queued");
-  return { getBoss: jest.fn(async () => ({ send })) };
+vi.mock("../queue", () => {
+  const send = vi.fn().mockResolvedValue("queued");
+  return { getBoss: vi.fn(async () => ({ send })) };
 });
 
 import { POST } from "./route";
@@ -27,7 +28,7 @@ afterAll(async () => {
 describe("POST /api/submit (integration, real Postgres)", () => {
   it("creates the job + enqueues once, and dedupes a repeat submit", async () => {
     const boss = await getBoss();
-    const send = boss.send as jest.Mock;
+    const send = boss.send as Mock;
     send.mockClear();
 
     let jobId: string | undefined;

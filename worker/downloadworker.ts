@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
+import { PrismaClient } from "../src/generated/prisma/client.js";
 import { DOWNLOAD_QUEUE } from "../src/lib/queue.js";
 import { runDownloadJob } from "./processors/download.js";
 import { setupWorkerRuntime, startWorkerBoss } from "./runtime.js";
@@ -10,7 +11,8 @@ type DownloadJobData = {
   database: string;
 };
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const boss = await startWorkerBoss(DOWNLOAD_QUEUE);

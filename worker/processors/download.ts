@@ -4,7 +4,7 @@ import Crypto from "crypto";
 import { tmpdir } from "os";
 import fs from "fs";
 import { gzipSync } from "zlib";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../../src/generated/prisma/client.js";
 
 import { DB_NAMES } from "../../src/lib/blast/constants.js";
 import { MAX_BUFFER } from "../limits.js";
@@ -71,7 +71,9 @@ export async function runDownloadJob(
       console.warn(`Download job ${jobId} stderr: ${stderr}`);
     }
     const stdout = result.stdout.toString("utf8");
-    const compressedOutput = gzipSync(stdout);
+    // Prisma 7 types `Bytes` columns as Uint8Array<ArrayBuffer>; gzipSync returns
+    // a Node Buffer (ArrayBufferLike), so copy into a plain Uint8Array.
+    const compressedOutput = new Uint8Array(gzipSync(stdout));
 
     await prisma.download.update({
       where: { id: jobId },

@@ -16,6 +16,9 @@
 /build
 /worker/build*
 
+# generated Prisma client (run `npm run generate`; build/dev scripts do it too)
+/src/generated
+
 # misc
 .DS_Store
 *.pem

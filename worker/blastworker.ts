@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
+import { PrismaClient } from "../src/generated/prisma/client.js";
 import type { BlastParameters } from "../src/lib/blast/schema";
 import { BLAST_QUEUE } from "../src/lib/queue.js";
 import { runBlastJob } from "./processors/blast.js";
@@ -7,7 +8,8 @@ import { setupWorkerRuntime, startWorkerBoss } from "./runtime.js";
 
 type BlastJobData = { jobId: string; parameters: BlastParameters };
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const boss = await startWorkerBoss(BLAST_QUEUE);

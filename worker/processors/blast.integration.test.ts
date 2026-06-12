@@ -1,20 +1,23 @@
 import { randomBytes } from "crypto";
-import { PrismaClient } from "@prisma/client";
+import { vi, type Mock } from "vitest";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 
 // Mock only the BLAST binary call so the test is deterministic and needs no
 // blast+ / database on disk. Keep the rest of child_process real — Prisma's
-// platform detection uses it. Hoisted above the imports by Jest.
-jest.mock("child_process", () => ({
-  ...jest.requireActual("child_process"),
-  spawnSync: jest.fn(),
+// platform detection uses it. Hoisted above the imports by Vitest.
+vi.mock("child_process", async () => ({
+  ...(await vi.importActual<typeof import("child_process")>("child_process")),
+  spawnSync: vi.fn(),
 }));
 
 import { spawnSync } from "child_process";
 import { runBlastJob } from "./blast";
 import { BLASTFLAVOUR_DEFAULTS } from "@/lib/blast/schema";
 
-const mockSpawn = spawnSync as unknown as jest.Mock;
-const prisma = new PrismaClient();
+const mockSpawn = spawnSync as unknown as Mock;
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 // A valid blastp request against a real database name (landmark), with a query
 // long enough to pass validation.

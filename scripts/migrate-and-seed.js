@@ -4,7 +4,7 @@
 // schema and the app/worker containers need no write-schema privileges.
 
 import { spawnSync } from "child_process";
-import { PrismaClient } from "@prisma/client";
+import pg from "pg";
 
 function runMigrations() {
   console.log("Applying database migrations (prisma migrate deploy)...");
@@ -19,9 +19,16 @@ function runMigrations() {
 }
 
 async function seedTaxonomy() {
-  const prisma = new PrismaClient();
+  // Prisma 7's client is generated TypeScript meant for the app bundle / worker
+  // build, so this plain-Node bootstrap talks to Postgres with `pg` directly
+  // (a count + a server-side COPY — no models needed).
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
   try {
-    const count = await prisma.taxonomy.count();
+    const { rows } = await client.query(
+      "SELECT count(*)::int AS count FROM taxonomy"
+    );
+    const count = rows[0].count;
     if (count > 0) {
       console.log(`Taxonomy already seeded (${count} entries); skipping.`);
       return;
@@ -35,16 +42,16 @@ async function seedTaxonomy() {
     console.log(`Seeding taxonomy from ${taxonomyFile} ...`);
     // COPY runs server-side, so this path must exist on the Postgres host
     // (mounted into the Postgres container in Compose).
-    const inserted = await prisma.$executeRawUnsafe(`
+    const result = await client.query(`
     COPY taxonomy(id, name, ancestors)
     FROM '${taxonomyFile}'
     DELIMITER E'\t'
     QUOTE E'\b'
     CSV HEADER;
     `);
-    console.log(`Inserted ${inserted} taxonomy rows.`);
+    console.log(`Inserted ${result.rowCount} taxonomy rows.`);
   } finally {
-    await prisma.$disconnect();
+    await client.end();
   }
 }
 

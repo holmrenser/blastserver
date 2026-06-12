@@ -17,7 +17,7 @@ ENV BASE_PATH=$BASE_PATH
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN node ./node_modules/.bin/prisma generate
+# build:app:prod runs `prisma generate` itself (Prisma 7, Rust-free client).
 RUN npm run build:app:prod
 
 # final runner
@@ -33,6 +33,9 @@ COPY --from=builder /app/.next/standalone ./.next/standalone
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/prisma ./prisma
+# prisma.config.ts is needed by `prisma migrate deploy` (run by the migrate
+# service via scripts/migrate-and-seed.js).
+COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public ./public
 

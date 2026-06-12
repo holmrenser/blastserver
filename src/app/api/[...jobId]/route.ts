@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { blastjob } from "@prisma/client";
+import type { blastjob } from "@/generated/prisma/client";
 
 import prisma from "@/app/api/database";
 import formatResults from "./formatResults";

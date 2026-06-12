@@ -3,7 +3,7 @@ import path from "path";
 import Crypto from "crypto";
 import { tmpdir } from "os";
 import fs from "fs";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../../src/generated/prisma/client.js";
 
 import type { BlastParameters } from "../../src/lib/blast/schema";
 import {

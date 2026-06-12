@@ -4,7 +4,7 @@
 // updates / scale-down.
 
 import http from "http";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../src/generated/prisma/client.js";
 import { PgBoss } from "pg-boss";
 
 import { PGBOSS_MAX_CONNECTIONS } from "../src/lib/queue.js";

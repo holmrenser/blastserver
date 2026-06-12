@@ -2,14 +2,20 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
-  binaryTargets   = ["native", "darwin-arm64", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  // Emit explicit .js extensions on the generated client's internal imports so
+  // the worker (compiled by tsc and run as raw Node ESM) can resolve them; Next
+  // bundles the same files for the app without issue.
+  importFileExtension = "js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Prisma 7: the connection URL lives in prisma.config.ts; the runtime client
+  // connects via the @prisma/adapter-pg driver adapter (see src/app/api/database.ts).
 }
 
 model blastjob {

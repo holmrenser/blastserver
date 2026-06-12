@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "outDir": "./worker/build",
-    "target": "es6",
+    "target": "es2022",
     "lib": ["esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "module": "es6",
+    // esnext module (was es6) so the Prisma 7 ESM client's `import.meta`
+    // compiles; node resolution stays lenient about the generated imports.
+    "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": false,

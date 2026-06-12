@@ -27,7 +27,7 @@ docker compose up --build      # → http://localhost:3000
 
 This brings up Postgres, a one-shot migrate/seed job, then the app, `blastworker` and `downloadworker` — the same images that ship to production. A small `landmark` protein DB ships in [`blastdb/`](blastdb/) so it works out of the box; point it at your own databases with `BLAST_DB_PATH=/path/to/blastdb`.
 
-> **Apple Silicon:** enable Docker Desktop's Rosetta emulation (*Settings → General → Use Rosetta for x86/amd64 emulation*). The images are `linux/amd64` because the BLAST+ binaries are x86_64 and Prisma's `binaryTargets` are x64; Compose sets `platform` for you.
+> **Apple Silicon:** enable Docker Desktop's Rosetta emulation (*Settings → General → Use Rosetta for x86/amd64 emulation*). The images are `linux/amd64` because the BLAST+ binaries are x86_64; Compose sets `platform` for you. (Prisma 7 is Rust-free, so it no longer pins a CPU architecture.)
 
 ## Development
 
