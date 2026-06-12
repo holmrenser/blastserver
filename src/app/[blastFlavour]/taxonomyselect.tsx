@@ -102,7 +102,7 @@ function TaxonomyCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full max-w-[320px] justify-between font-normal"
+            className="w-full justify-between font-normal"
           >
             <span className="truncate">
               {value.length > 0
@@ -112,7 +112,10 @@ function TaxonomyCombobox({
             <ChevronsUpDown className="opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
+        <PopoverContent
+          className="w-(--radix-popover-trigger-width) p-0"
+          align="start"
+        >
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search taxonomy..."

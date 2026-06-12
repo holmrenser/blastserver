@@ -50,17 +50,77 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
 
-    /* Brand accent colors (ported from the old Bulma theme) */
-    --color-brand-turquoise: #27f1c2;
-    --color-brand-green: #26c080;
-    --color-brand-cyan: #6cafce;
-
     /* BLAST hit bit-score colors (d3 scaleThreshold over [40,50,80,200]) */
     --color-blast-score-none: black;
     --color-blast-score-low: blue;
     --color-blast-score-mid: green;
     --color-blast-score-high: magenta;
     --color-blast-score-top: red;
+}
+
+/* App palette — raw color scales. Each var emits a utility (bg-/text-/border-…)
+   and is addressable as var(--color-<hue>-<shade>). The semantic tokens below
+   (--primary, --ring, --accent-*) are wired to these. */
+@theme {
+    --color-lavender-purple-50: oklch(95.56% 0.013 310.53);
+    --color-lavender-purple-100: oklch(90.97% 0.025 309.36);
+    --color-lavender-purple-200: oklch(81.71% 0.054 310.05);
+    --color-lavender-purple-300: oklch(72.40% 0.082 309.26);
+    --color-lavender-purple-400: oklch(62.95% 0.114 308.95);
+    --color-lavender-purple-500: oklch(53.58% 0.142 307.73);
+    --color-lavender-purple-600: oklch(45.79% 0.120 308.02);
+    --color-lavender-purple-700: oklch(37.66% 0.093 307.80);
+    --color-lavender-purple-800: oklch(29.06% 0.068 308.37);
+    --color-lavender-purple-900: oklch(19.82% 0.036 307.76);
+    --color-lavender-purple-950: oklch(16.86% 0.026 306.70);
+
+    --color-mint-leaf-50: oklch(96.91% 0.014 174.17);
+    --color-mint-leaf-100: oklch(94.04% 0.029 172.05);
+    --color-mint-leaf-200: oklch(88.20% 0.057 170.93);
+    --color-mint-leaf-300: oklch(82.52% 0.085 168.71);
+    --color-mint-leaf-400: oklch(77.12% 0.109 167.07);
+    --color-mint-leaf-500: oklch(72.06% 0.129 164.75);
+    --color-mint-leaf-600: oklch(61.17% 0.109 164.81);
+    --color-mint-leaf-700: oklch(49.77% 0.087 164.89);
+    --color-mint-leaf-800: oklch(37.70% 0.062 166.22);
+    --color-mint-leaf-900: oklch(24.54% 0.036 167.40);
+    --color-mint-leaf-950: oklch(20.39% 0.028 166.29);
+
+    --color-carrot-orange-50: oklch(97.01% 0.018 78.24);
+    --color-carrot-orange-100: oklch(93.94% 0.036 74.06);
+    --color-carrot-orange-200: oklch(88.03% 0.072 73.46);
+    --color-carrot-orange-300: oklch(82.51% 0.107 73.15);
+    --color-carrot-orange-400: oklch(77.10% 0.136 70.37);
+    --color-carrot-orange-500: oklch(72.07% 0.156 65);
+    --color-carrot-orange-600: oklch(61.21% 0.131 65.60);
+    --color-carrot-orange-700: oklch(49.85% 0.105 66.52);
+    --color-carrot-orange-800: oklch(37.59% 0.077 66.75);
+    --color-carrot-orange-900: oklch(24.46% 0.046 69.98);
+    --color-carrot-orange-950: oklch(20.28% 0.035 73.82);
+
+    --color-cool-sky-50: oklch(96.13% 0.016 239.10);
+    --color-cool-sky-100: oklch(92.04% 0.031 240.66);
+    --color-cool-sky-200: oklch(84.13% 0.065 241.55);
+    --color-cool-sky-300: oklch(76.44% 0.096 242.52);
+    --color-cool-sky-400: oklch(69.08% 0.126 244.28);
+    --color-cool-sky-500: oklch(62.32% 0.154 247.64);
+    --color-cool-sky-600: oklch(53% 0.128 247.24);
+    --color-cool-sky-700: oklch(43.29% 0.102 246.90);
+    --color-cool-sky-800: oklch(33.02% 0.074 246.32);
+    --color-cool-sky-900: oklch(21.85% 0.041 244.16);
+    --color-cool-sky-950: oklch(18.38% 0.031 241.31);
+
+    --color-deep-space-blue-50: oklch(95.91% 0.010 252.81);
+    --color-deep-space-blue-100: oklch(91.56% 0.019 255.54);
+    --color-deep-space-blue-200: oklch(83.20% 0.038 253.25);
+    --color-deep-space-blue-300: oklch(74.49% 0.061 254.04);
+    --color-deep-space-blue-400: oklch(65.96% 0.083 253.57);
+    --color-deep-space-blue-500: oklch(57.20% 0.106 254.43);
+    --color-deep-space-blue-600: oklch(48.91% 0.088 253.98);
+    --color-deep-space-blue-700: oklch(40.01% 0.071 254.56);
+    --color-deep-space-blue-800: oklch(30.84% 0.049 253.89);
+    --color-deep-space-blue-900: oklch(20.65% 0.028 255.84);
+    --color-deep-space-blue-950: oklch(17.47% 0.020 252.27);
 }
 
 :root {
@@ -70,7 +130,7 @@
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: #058aff;
+    --primary: var(--color-lavender-purple-500);
     --primary-foreground: #ffffff;
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
@@ -81,7 +141,7 @@
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --ring: var(--color-lavender-purple-400);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -98,10 +158,10 @@
     --sidebar-ring: oklch(0.708 0 0);
 
     /* Semantic accent palette (used by soft Badge variants + status dots) */
-    --accent-green: oklch(0.62 0.15 150);
-    --accent-purple: oklch(0.58 0.18 300);
-    --accent-amber: oklch(0.7 0.15 70);
-    --accent-blue: oklch(0.6 0.16 250);
+    --accent-green: var(--color-mint-leaf-600);
+    --accent-purple: var(--color-lavender-purple-600);
+    --accent-amber: var(--color-carrot-orange-600);
+    --accent-blue: var(--color-cool-sky-600);
 }
 
 .dark {
@@ -111,7 +171,7 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: #2a9dff;
+    --primary: var(--color-lavender-purple-400);
     --primary-foreground: #ffffff;
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -122,7 +182,7 @@
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --ring: var(--color-lavender-purple-400);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -138,10 +198,10 @@
     --sidebar-ring: oklch(0.556 0 0);
 
     /* Semantic accent palette — lighter so it pops on dark backgrounds */
-    --accent-green: oklch(0.72 0.15 150);
-    --accent-purple: oklch(0.7 0.16 300);
-    --accent-amber: oklch(0.78 0.14 70);
-    --accent-blue: oklch(0.7 0.15 250);
+    --accent-green: var(--color-mint-leaf-400);
+    --accent-purple: var(--color-lavender-purple-400);
+    --accent-amber: var(--color-carrot-orange-400);
+    --accent-blue: var(--color-cool-sky-400);
 }
 
 @layer base {

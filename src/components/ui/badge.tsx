@@ -18,6 +18,9 @@ const badgeVariants = cva(
           "bg-accent-green/10 text-accent-green dark:bg-accent-green/20 [a]:hover:bg-accent-green/20",
         purple:
           "bg-accent-purple/10 text-accent-purple dark:bg-accent-purple/20 [a]:hover:bg-accent-purple/20",
+        blue: "bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/20 [a]:hover:bg-accent-blue/20",
+        amber:
+          "bg-accent-amber/10 text-accent-amber dark:bg-accent-amber/20 [a]:hover:bg-accent-amber/20",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:

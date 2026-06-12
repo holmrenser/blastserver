@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
+  // Block-level (not flex): the native <legend> only straddles the top border
+  // when the fieldset generates a block box — flex/grid suppresses that rendering.
   return (
     <fieldset
       data-slot="field-set"
       className={cn(
-        "flex flex-col gap-4 has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
+        "block rounded-xl border border-input px-4 pt-1 pb-4",
         className
       )}
       {...props}
@@ -30,7 +32,7 @@ function FieldLegend({
       data-slot="field-legend"
       data-variant={variant}
       className={cn(
-        "mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base",
+        "mb-1.5 ml-1 px-1.5 font-semibold tracking-tight data-[variant=label]:text-sm data-[variant=legend]:text-base",
         className
       )}
       {...props}

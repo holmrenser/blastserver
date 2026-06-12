@@ -7,8 +7,8 @@
     "node": ">= v24.4.1"
   },
   "scripts": {
-    "dev:app": "ENV_FILE='./.env.development' next dev",
-    "dev:infra": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres migrate blastworker downloadworker",
+    "dev:app": "ENV_FILE='./.env.development' next dev --turbopack",
+    "dev:infra": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres migrate blastworker downloadworker --build",
     "dev:infra:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
     "build:app:dev": "rm -rf .next && ENV_FILE='./.env.development' next build && ls -lah .next && cp -r .next/static .next/standalone/.next/static",
     "build:app:prod": "rm -rf .next && ENV_FILE='./.env.production' next build && cp -r .next/static .next/standalone/.next/static",

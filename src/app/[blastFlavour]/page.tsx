@@ -15,6 +15,7 @@ import type {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { cn } from "@/lib/utils";
 import { TaxonomySelect } from "./taxonomyselect";
 import {
   ALLOWED_FLAVOURS,
@@ -28,7 +29,6 @@ import {
 import type { BlastParameters, BlastFlavour, FieldOptions } from "./parameters";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -36,6 +36,8 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +61,9 @@ import {
 type BlastControl = Control<BlastParameters, any, unknown>;
 type BlastRegister = UseFormRegister<BlastParameters>;
 type BlastWatch = UseFormWatch<BlastParameters>;
+
+/** Compact field groups stack on mobile and pair two-per-row on wider screens. */
+const FIELD_GRID = "grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2";
 
 /** A shadcn Select wired to react-hook-form via Controller. */
 function FormSelect({
@@ -112,77 +117,77 @@ function EnterQuery({
   errors: FieldErrors<BlastParameters>;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Enter Query Sequence</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <FieldGroup>
-          <Field data-invalid={!!errors.query}>
-            <FieldLabel htmlFor="query">
-              Enter (single) FASTA sequence
-            </FieldLabel>
-            <Textarea
-              id="query"
-              placeholder="QUERY SEQUENCE"
-              className="font-mono"
-              rows={6}
-              aria-invalid={!!errors.query}
-              {...register("query")}
+    <FieldSet>
+      <FieldLegend>Enter Query Sequence</FieldLegend>
+      <FieldGroup className={FIELD_GRID}>
+        <Field data-invalid={!!errors.query} className="sm:col-span-2">
+          <FieldLabel htmlFor="query">
+            Enter (single) FASTA sequence
+          </FieldLabel>
+          <Textarea
+            id="query"
+            placeholder="QUERY SEQUENCE"
+            className="font-mono"
+            rows={6}
+            aria-invalid={!!errors.query}
+            {...register("query")}
+          />
+          {errors.query && (
+            <FieldError
+              errors={[{ message: String(errors.query.message) }]}
             />
-            {errors.query && (
-              <FieldError
-                errors={[{ message: String(errors.query.message) }]}
-              />
-            )}
-          </Field>
+          )}
+        </Field>
 
-          <Field orientation="responsive">
-            <FieldLabel htmlFor="queryFrom">Query subrange (from)</FieldLabel>
-            <Input
-              id="queryFrom"
-              placeholder="FROM"
-              className="max-w-32"
-              aria-invalid={!!errors.queryFrom}
-              {...register("queryFrom")}
-            />
-          </Field>
+        <Field>
+          <FieldLabel htmlFor="queryFrom">Query subrange (from)</FieldLabel>
+          <Input
+            id="queryFrom"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            placeholder="FROM"
+            aria-invalid={!!errors.queryFrom}
+            {...register("queryFrom")}
+          />
+        </Field>
 
-          <Field orientation="responsive">
-            <FieldLabel htmlFor="queryTo">Query subrange (to)</FieldLabel>
-            <Input
-              id="queryTo"
-              placeholder="TO"
-              className="max-w-32"
-              aria-invalid={!!errors.queryTo}
-              {...register("queryTo")}
-            />
-          </Field>
+        <Field>
+          <FieldLabel htmlFor="queryTo">Query subrange (to)</FieldLabel>
+          <Input
+            id="queryTo"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            placeholder="TO"
+            aria-invalid={!!errors.queryTo}
+            {...register("queryTo")}
+          />
+        </Field>
 
-          <Field orientation="responsive">
-            <FieldLabel htmlFor="jobTitle">Job Title</FieldLabel>
-            <Input
-              id="jobTitle"
-              placeholder="JOBTITLE"
-              className="max-w-60"
-              disabled
-              {...register("jobTitle")}
-            />
-          </Field>
+        <Field>
+          <FieldLabel htmlFor="jobTitle">Job Title</FieldLabel>
+          <Input
+            id="jobTitle"
+            placeholder="JOBTITLE"
+            disabled
+            {...register("jobTitle")}
+          />
+        </Field>
 
-          <Field orientation="responsive">
-            <FieldLabel htmlFor="email">E-mail address</FieldLabel>
-            <Input
-              id="email"
-              placeholder="JOHN@DOE.COM"
-              className="max-w-60"
-              disabled
-              {...register("email")}
-            />
-          </Field>
-        </FieldGroup>
-      </CardContent>
-    </Card>
+        <Field>
+          <FieldLabel htmlFor="email">E-mail address</FieldLabel>
+          <Input
+            id="email"
+            placeholder="JOHN@DOE.COM"
+            disabled
+            {...register("email")}
+          />
+        </Field>
+      </FieldGroup>
+    </FieldSet>
   );
 }
 
@@ -195,33 +200,29 @@ function ChooseSearchSet({
 }) {
   const dbOptions = BLAST_DBS.get(blastFlavour) ?? [];
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Choose Search Set</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <FieldGroup>
-          <Field orientation="responsive">
-            <FieldLabel>Database</FieldLabel>
-            <FormSelect
-              control={control}
-              name="database"
-              options={dbOptions}
-              getLabel={(db) => `${DB_NAMES.get(String(db))} (${db})`}
-              className="w-full max-w-[320px]"
-            />
-          </Field>
+    <FieldSet>
+      <FieldLegend>Choose Search Set</FieldLegend>
+      <FieldGroup className={FIELD_GRID}>
+        <Field>
+          <FieldLabel>Database</FieldLabel>
+          <FormSelect
+            control={control}
+            name="database"
+            options={dbOptions}
+            getLabel={(db) => `${DB_NAMES.get(String(db))} (${db})`}
+            className="w-full"
+          />
+        </Field>
 
-          <Field>
-            <FieldLabel>Organism</FieldLabel>
-            <TaxonomySelect control={control} />
-            <FieldDescription>
-              Select one or more taxonomy levels to limit or exclude
-            </FieldDescription>
-          </Field>
-        </FieldGroup>
-      </CardContent>
-    </Card>
+        <Field>
+          <FieldLabel>Organism</FieldLabel>
+          <TaxonomySelect control={control} />
+          <FieldDescription>
+            Select one or more taxonomy levels to limit or exclude
+          </FieldDescription>
+        </Field>
+      </FieldGroup>
+    </FieldSet>
   );
 }
 
@@ -235,29 +236,25 @@ function ProgramSelection({
   if (blastFlavour !== "blastn") return null;
   const selectedProgram = watch("program");
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Program Selection</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Field>
-          <FieldLabel>Optimize for</FieldLabel>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            value={selectedProgram}
-            disabled
-            className="flex-wrap justify-start"
-          >
-            {PROGRAMS.get(blastFlavour)?.map((program) => (
-              <ToggleGroupItem key={program} value={program}>
-                {program}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </Field>
-      </CardContent>
-    </Card>
+    <FieldSet>
+      <FieldLegend>Program Selection</FieldLegend>
+      <Field>
+        <FieldLabel>Optimize for</FieldLabel>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={selectedProgram}
+          disabled
+          className="flex-wrap justify-start"
+        >
+          {PROGRAMS.get(blastFlavour)?.map((program) => (
+            <ToggleGroupItem key={program} value={program}>
+              {program}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </Field>
+    </FieldSet>
   );
 }
 
@@ -265,17 +262,15 @@ function SubmitButton({ watch }: { watch: BlastWatch }) {
   const db = watch("database");
   const program = watch("program");
   return (
-    <Card>
-      <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <Button type="submit" size="lg">
-          BLAST
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          Search database <em className="font-medium text-foreground">{db}</em>{" "}
-          using <em className="font-medium text-foreground">{program}</em>
-        </p>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-start gap-4 rounded-xl border border-input px-4 py-4 sm:flex-row sm:items-center">
+      <Button type="submit" size="lg">
+        BLAST
+      </Button>
+      <p className="text-sm text-muted-foreground">
+        Search database <em className="font-medium text-foreground">{db}</em>{" "}
+        using <em className="font-medium text-foreground">{program}</em>
+      </p>
+    </div>
   );
 }
 
@@ -283,13 +278,20 @@ function DisabledCheckboxField({
   label,
   description,
   checked,
+  className,
 }: {
   label: string;
   description: string;
   checked: boolean;
+  className?: string;
 }) {
   return (
-    <Label className="flex items-start gap-2 font-normal text-muted-foreground">
+    <Label
+      className={cn(
+        "flex items-start gap-2 font-normal text-muted-foreground",
+        className
+      )}
+    >
       <Checkbox checked={checked} disabled className="mt-0.5" />
       <span>
         <span className="block">{label}</span>
@@ -317,149 +319,153 @@ function AlgorithmParameters({
   const isNucleotideScoring = blastFlavour === "blastn";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Algorithm parameters</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Accordion
-          type="multiple"
-          defaultValue={["general", "scoring", "filters"]}
-        >
-          <AccordionItem value="general">
-            <AccordionTrigger>General parameters</AccordionTrigger>
-            <AccordionContent>
-              <FieldGroup>
-                <Field orientation="responsive">
-                  <FieldLabel>Max target sequences</FieldLabel>
+    <FieldSet>
+      <FieldLegend>Algorithm parameters</FieldLegend>
+      <Accordion
+        type="multiple"
+        defaultValue={["general", "scoring", "filters"]}
+      >
+        <AccordionItem value="general">
+          <AccordionTrigger>General parameters</AccordionTrigger>
+          <AccordionContent>
+            <FieldGroup className={FIELD_GRID}>
+              <Field>
+                <FieldLabel>Max target sequences</FieldLabel>
+                <FormSelect
+                  control={control}
+                  name="maxTargetSeqs"
+                  options={fieldOptions.maxTargetSeqs}
+                  className="w-full"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="expectThreshold">
+                  Expect threshold
+                </FieldLabel>
+                <Input
+                  id="expectThreshold"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  {...register("expectThreshold")}
+                />
+                <FieldDescription>
+                  Lower values return only the strongest matches (e.g. 1e-5).
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>Word size</FieldLabel>
+                <FormSelect
+                  control={control}
+                  name="wordSize"
+                  options={fieldOptions.wordSize}
+                  className="w-full"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="maxMatchesInQueryRange">
+                  Max. matches in a query range
+                </FieldLabel>
+                <Input
+                  id="maxMatchesInQueryRange"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  {...register("maxMatchesInQueryRange")}
+                />
+                <FieldDescription>0 means no limit.</FieldDescription>
+              </Field>
+
+              <DisabledCheckboxField
+                label="Short queries"
+                description="Automatically adjust parameters for short input sequences"
+                checked={Boolean(watch("shortQueries"))}
+                className="sm:col-span-2"
+              />
+            </FieldGroup>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="scoring">
+          <AccordionTrigger>Scoring parameters</AccordionTrigger>
+          <AccordionContent>
+            <FieldGroup className={FIELD_GRID}>
+              {isProteinScoring && (
+                <Field>
+                  <FieldLabel>Matrix</FieldLabel>
                   <FormSelect
                     control={control}
-                    name="maxTargetSeqs"
-                    options={fieldOptions.maxTargetSeqs}
-                    className="w-24"
+                    name="matrix"
+                    options={fieldOptions.matrix}
+                    className="w-full"
                   />
                 </Field>
-
-                <Field orientation="responsive">
-                  <FieldLabel>Short queries</FieldLabel>
-                  <DisabledCheckboxField
-                    label="Short queries"
-                    description="Automatically adjust parameters for short input sequences"
-                    checked={Boolean(watch("shortQueries"))}
-                  />
-                </Field>
-
-                <Field orientation="responsive">
-                  <FieldLabel htmlFor="expectThreshold">
-                    Expect threshold
-                  </FieldLabel>
-                  <Input
-                    id="expectThreshold"
-                    className="max-w-24"
-                    {...register("expectThreshold")}
-                  />
-                </Field>
-
-                <Field orientation="responsive">
-                  <FieldLabel>Word size</FieldLabel>
+              )}
+              {isNucleotideScoring && (
+                <Field>
+                  <FieldLabel>Match/Mismatch scores</FieldLabel>
                   <FormSelect
                     control={control}
-                    name="wordSize"
-                    options={fieldOptions.wordSize}
-                    className="w-24"
+                    name="matchMismatch"
+                    options={fieldOptions.matchMismatch}
+                    className="w-full"
                   />
                 </Field>
-
-                <Field orientation="responsive">
-                  <FieldLabel htmlFor="maxMatchesInQueryRange">
-                    Max. matches in a query range
-                  </FieldLabel>
-                  <Input
-                    id="maxMatchesInQueryRange"
-                    className="max-w-24"
-                    {...register("maxMatchesInQueryRange")}
-                  />
-                </Field>
-              </FieldGroup>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="scoring">
-            <AccordionTrigger>Scoring parameters</AccordionTrigger>
-            <AccordionContent>
-              <FieldGroup>
-                {isProteinScoring && (
-                  <Field orientation="responsive">
-                    <FieldLabel>Matrix</FieldLabel>
-                    <FormSelect
-                      control={control}
-                      name="matrix"
-                      options={fieldOptions.matrix}
-                      className="w-40"
-                    />
-                  </Field>
-                )}
-                {isNucleotideScoring && (
-                  <Field orientation="responsive">
-                    <FieldLabel>Match/Mismatch scores</FieldLabel>
-                    <FormSelect
-                      control={control}
-                      name="matchMismatch"
-                      options={fieldOptions.matchMismatch}
-                      className="w-40"
-                    />
-                  </Field>
-                )}
-                <Field orientation="responsive">
-                  <FieldLabel>Gap costs</FieldLabel>
+              )}
+              <Field>
+                <FieldLabel>Gap costs</FieldLabel>
+                <FormSelect
+                  control={control}
+                  name="gapCosts"
+                  options={fieldOptions.gapCosts}
+                  className="w-full"
+                />
+              </Field>
+              {isProteinScoring && (
+                <Field>
+                  <FieldLabel>Compositional adjustment</FieldLabel>
                   <FormSelect
                     control={control}
-                    name="gapCosts"
-                    options={fieldOptions.gapCosts}
-                    className="w-40"
+                    name="compositionalAdjustment"
+                    options={fieldOptions.compositionalAdjustment}
+                    disabled
+                    className="w-full"
                   />
                 </Field>
-                {isProteinScoring && (
-                  <Field orientation="responsive">
-                    <FieldLabel>Compositional adjustment</FieldLabel>
-                    <FormSelect
-                      control={control}
-                      name="compositionalAdjustment"
-                      options={fieldOptions.compositionalAdjustment}
-                      disabled
-                      className="w-full max-w-[360px]"
-                    />
-                  </Field>
-                )}
-              </FieldGroup>
-            </AccordionContent>
-          </AccordionItem>
+              )}
+            </FieldGroup>
+          </AccordionContent>
+        </AccordionItem>
 
-          <AccordionItem value="filters">
-            <AccordionTrigger>Filters and masking</AccordionTrigger>
-            <AccordionContent>
-              <FieldGroup>
-                <DisabledCheckboxField
-                  label="Filter"
-                  description="Low complexity regions"
-                  checked={Boolean(watch("filterLowComplexity"))}
-                />
-                <DisabledCheckboxField
-                  label="Mask"
-                  description="Mask for lookup table only"
-                  checked={false}
-                />
-                <DisabledCheckboxField
-                  label="Mask lower case letters"
-                  description="Mask lower case letters"
-                  checked={Boolean(watch("lcaseMasking"))}
-                />
-              </FieldGroup>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
-    </Card>
+        <AccordionItem value="filters">
+          <AccordionTrigger>Filters and masking</AccordionTrigger>
+          <AccordionContent>
+            <FieldGroup>
+              <DisabledCheckboxField
+                label="Filter"
+                description="Low complexity regions"
+                checked={Boolean(watch("filterLowComplexity"))}
+              />
+              <DisabledCheckboxField
+                label="Mask"
+                description="Mask for lookup table only"
+                checked={false}
+              />
+              <DisabledCheckboxField
+                label="Mask lower case letters"
+                description="Mask lower case letters"
+                checked={Boolean(watch("lcaseMasking"))}
+              />
+            </FieldGroup>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </FieldSet>
   );
 }
 
@@ -510,7 +516,10 @@ export default function BlastFlavourPage() {
 
   return (
     <section className="container mx-auto px-4 py-8">
-      <form onSubmit={handleSubmit(onSubmit, onError)}>
+      <form
+        onSubmit={handleSubmit(onSubmit, onError)}
+        className="mx-auto w-full max-w-2xl"
+      >
         <h1 className="mb-6 text-3xl font-bold capitalize tracking-tight">
           {blastFlavour}
         </h1>

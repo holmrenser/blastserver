@@ -1,4 +1,4 @@
-FROM node:24.5.0-trixie AS base
+FROM node:26.3.0-trixie AS base
 
 # install dependencies
 FROM base AS deps
