@@ -6,8 +6,10 @@ import type { NextRequest } from "next/server";
  * the CORS_ALLOW_ORIGIN env var (comma-separated). Same-origin requests from the
  * app itself need no CORS headers, so the default is to allow none rather than
  * the previous wildcard "*".
+ *
+ * Next 16 renamed the `middleware` convention to `proxy` (nodejs runtime only).
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 

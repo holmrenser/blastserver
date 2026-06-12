@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import { Check, ChevronsUpDown, X } from "lucide-react";
@@ -55,35 +55,39 @@ function TaxonomyCombobox({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [options, setOptions] = useState<Option[]>([]);
-  const [loading, setLoading] = useState(false);
   // Remember labels for selected ids so badges stay readable across searches.
   const [labels, setLabels] = useState<Record<string, string>>({});
-  // Cache results per query so retyping / backtracking doesn't refetch.
-  const cache = useRef<Map<string, Option[]>>(new Map());
+  // Per-query result cache: retyping / backtracking doesn't refetch, and it
+  // doubles as the source for the rendered options + loading state below.
+  const [results, setResults] = useState<Map<string, Option[]>>(
+    () => new Map()
+  );
 
+  const query = search.trim();
+  const tooShort = query.length < MIN_QUERY_LENGTH;
+  const cached = results.get(query);
+  // Derived during render — no setState in the effect body. A query is still
+  // loading while it's long enough but hasn't landed in the cache yet.
+  const options = tooShort ? [] : cached ?? [];
+  const loading = !tooShort && cached === undefined;
+
+  // The effect only schedules the async fetch; state is set in its callback
+  // (an allowed place for setState), keeping the synchronous body side-effect
+  // free.
   useEffect(() => {
-    const query = search.trim();
-    if (query.length < MIN_QUERY_LENGTH) {
-      setOptions([]);
-      setLoading(false);
-      return;
-    }
-    const cached = cache.current.get(query);
-    if (cached) {
-      setOptions(cached);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+    if (tooShort || results.has(query)) return;
+    let cancelled = false;
     const handle = setTimeout(async () => {
       const opts = await fetchTaxonomy(query);
-      cache.current.set(query, opts);
-      setOptions(opts);
-      setLoading(false);
+      if (!cancelled) {
+        setResults((prev) => new Map(prev).set(query, opts));
+      }
     }, 250);
-    return () => clearTimeout(handle);
-  }, [search]);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [query, tooShort, results]);
 
   function toggle(opt: Option) {
     if (value.includes(opt.value)) {

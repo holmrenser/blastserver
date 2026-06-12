@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -76,32 +76,20 @@ export default function Descriptions({
 
   const [selectionSet, toggleSelection, clearSelection, addItem] =
     useSelectionSet<string>();
-  const [selectAll, setSelectAll] = useState(false);
+  // "Select all" is fully derived from the selection: checked iff every hit is
+  // currently selected (vacuously true when there are no hits, matching the
+  // previous effect-synced behavior).
+  const allSelected = hits.every(({ accession }) =>
+    selectionSet.has(accession)
+  );
 
   function toggleSelectAll(): void {
-    setSelectAll(!selectAll);
-    if (!selectAll) {
+    if (!allSelected) {
       hits.forEach(({ accession }) => addItem(accession));
     } else {
       clearSelection();
     }
   }
-
-  function checkSelectAll(): void {
-    const allSelected =
-      hits.filter(({ accession }) => selectionSet.has(accession)).length ===
-      hits.length;
-    setSelectAll(allSelected);
-  }
-
-  const cachedCheckSelectAll = useCallback(checkSelectAll, [
-    selectionSet,
-    hits,
-  ]);
-
-  useEffect(() => {
-    cachedCheckSelectAll();
-  }, [cachedCheckSelectAll]);
 
   function submitSelection() {
     fetch(`${basePath}/api/download`, {
@@ -141,7 +129,7 @@ export default function Descriptions({
 
       <Label className="flex w-fit items-center gap-2 font-normal">
         <Checkbox
-          checked={selectAll}
+          checked={allSelected}
           onCheckedChange={() => toggleSelectAll()}
         />
         Select all
@@ -183,10 +171,7 @@ export default function Descriptions({
                   <TableCell>
                     <Checkbox
                       checked={selectionSet.has(accession)}
-                      onCheckedChange={() => {
-                        toggleSelection(accession);
-                        checkSelectAll();
-                      }}
+                      onCheckedChange={() => toggleSelection(accession)}
                     />
                   </TableCell>
                   <TableCell>

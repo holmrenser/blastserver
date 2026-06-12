@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 
 import { useThemeStore } from "@/lib/stores/theme";
@@ -24,9 +24,14 @@ export default function Nav() {
 
   // Avoid a hydration mismatch on the theme control: the persisted theme is
   // only known on the client. Page colors are already correct pre-paint via the
-  // anti-FOUC script in the root layout.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // anti-FOUC script in the root layout. useSyncExternalStore returns false on
+  // the server and during hydration, then true once mounted — the hydration-safe
+  // way to gate client-only UI without a setState-in-effect mount flag.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const isDark = mounted && theme === "dark";
 
   return (

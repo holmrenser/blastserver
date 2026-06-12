@@ -1,19 +1,13 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
+// Next 16's eslint-config-next ships native flat config, so we consume it
+// directly instead of bridging the legacy shareable config through FlatCompat.
+// The base config already registers the @typescript-eslint plugin + parser for
+// TS files, so we only layer our custom unused-vars rule on top.
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  ...nextCoreWebVitals,
   {
-    plugins: { "@typescript-eslint": tsPlugin },
+    files: ["**/*.ts", "**/*.tsx"],
     rules: {
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
