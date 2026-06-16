@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 
-import { useThemeStore } from "@/lib/stores/theme";
 import { QueueStatus } from "./queuestatus";
 import { ALLOWED_FLAVOURS } from "./[blastFlavour]/parameters";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Nav() {
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const { theme, setTheme } = useTheme();
 
-  // Avoid a hydration mismatch on the theme control: the persisted theme is
-  // only known on the client. Page colors are already correct pre-paint via the
-  // anti-FOUC script in the root layout. useSyncExternalStore returns false on
+  // Avoid a hydration mismatch on the theme control: the resolved theme is only
+  // known on the client. Page colors are already correct pre-paint via the
+  // anti-FOUC script next-themes injects. useSyncExternalStore returns false on
   // the server and during hydration, then true once mounted — the hydration-safe
   // way to gate client-only UI without a setState-in-effect mount flag.
   const mounted = useSyncExternalStore(
@@ -71,7 +70,7 @@ export default function Nav() {
             <Switch
               id="theme-switch"
               checked={isDark}
-              onCheckedChange={toggleTheme}
+              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
               aria-label="Toggle theme"
             />
             <Label htmlFor="theme-switch" className="cursor-pointer">

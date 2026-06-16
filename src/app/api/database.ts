@@ -1,22 +1,11 @@
-import { PrismaPg } from "@prisma/adapter-pg";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { createPrismaClient } from "@/lib/prisma";
 
-import { PrismaClient } from "@/generated/prisma/client";
-
-// Prisma 7 is "Rust-free": the client talks to Postgres through a driver
-// adapter instead of a bundled query engine, so the connection string is passed
-// to the adapter rather than the datasource. The dev singleton avoids exhausting
-// connections across hot reloads.
+// The shared factory (src/lib/prisma.ts) builds the Prisma 7 "Rust-free" client
+// via the pg driver adapter. Here we add the dev singleton that avoids
+// exhausting connections across Next hot reloads.
 declare global {
   var prisma: PrismaClient | undefined;
-}
-
-function createPrismaClient(): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-  return new PrismaClient({
-    adapter,
-    errorFormat: "pretty",
-    log: ["info", "warn", "error"],
-  });
 }
 
 const prisma = global.prisma ?? createPrismaClient();

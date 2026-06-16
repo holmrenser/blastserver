@@ -1,34 +1,15 @@
-// Shared lifecycle helpers for the pg-boss worker processes: a tiny health
-// server for health probes and graceful shutdown so in-flight BLAST jobs drain
-// (rather than being killed and left for the expiry to retry) on rolling
-// updates / scale-down.
+// The pg-boss worker runtime. `WorkerRuntime` owns a worker process end to end:
+// it creates the Prisma client and the pg-boss connection, registers a
+// retry-aware job handler, and drains in-flight jobs on SIGTERM/SIGINT (rather
+// than letting them be killed and left for the expiry to retry) on rolling
+// updates / scale-down. A worker file just describes its queue and how to
+// process a job, then calls `run()`.
 
-import http from "http";
 import type { PrismaClient } from "../src/generated/prisma/client.js";
 import { PgBoss } from "pg-boss";
 
+import { createPrismaClient } from "../src/lib/prisma.js";
 import { PGBOSS_MAX_CONNECTIONS } from "../src/lib/queue.js";
-
-/**
- * Starts a minimal HTTP server for liveness/readiness probes.
- *   GET /healthz -> 200 while the process is alive (liveness)
- *   GET /readyz  -> 200 when `isReady()`, else 503 (readiness)
- */
-export function startHealthServer(isReady: () => boolean): http.Server {
-  const port = Number(process.env.HEALTH_PORT) || 8080;
-  const server = http.createServer((req, res) => {
-    if (req.url === "/healthz") {
-      res.writeHead(200).end("ok");
-    } else if (req.url === "/readyz") {
-      const ready = isReady();
-      res.writeHead(ready ? 200 : 503).end(ready ? "ready" : "not ready");
-    } else {
-      res.writeHead(404).end();
-    }
-  });
-  server.listen(port, () => console.log(`Health server listening on :${port}`));
-  return server;
-}
 
 /** Error codes that mean "couldn't reach Postgres", not a job failure. */
 const CONN_CODES = new Set(["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT"]);
@@ -58,7 +39,7 @@ function describeError(err: unknown): string {
  * a Postgres advisory lock, so concurrent replicas are safe) and `createQueue`
  * is idempotent.
  */
-export async function startWorkerBoss(queue: string): Promise<PgBoss> {
+async function startWorkerBoss(queue: string): Promise<PgBoss> {
   const boss = new PgBoss({
     connectionString: process.env.DATABASE_URL,
     max: PGBOSS_MAX_CONNECTIONS,
@@ -68,52 +49,138 @@ export async function startWorkerBoss(queue: string): Promise<PgBoss> {
   return boss;
 }
 
+/** A pg-boss job plus the retry metadata enabled by `includeMetadata: true`. */
+type JobWithRetries<T> = { data: T; retryCount: number; retryLimit: number };
+
 /**
- * Logs pg-boss `error` events with their real cause. A Postgres-unreachable
- * error is collapsed to a single actionable hint until it recovers, instead of
- * spamming an opaque error on every reconnect attempt.
+ * Everything a worker process needs to describe itself. The job payload `T` must
+ * carry the `jobId` used to address its row in Postgres.
  */
-function attachErrorLogging(boss: PgBoss, name: string): void {
-  let connHintShown = false;
-  boss.on("error", (err) => {
-    if (isConnectionError(err)) {
-      if (!connHintShown) {
-        console.error(
-          `[${name}] Cannot reach Postgres — is DATABASE_URL correct and the ` +
-            "database running? Suppressing further connection errors until recovery."
-        );
-        connHintShown = true;
-      }
-      return;
-    }
-    console.warn(`[${name}] pg-boss error: ${describeError(err)}`, err);
-  });
+export interface WorkerConfig<T extends { jobId: string }> {
+  /** pg-boss queue this worker consumes. */
+  queue: string;
+  /** Human-readable label used in logs (e.g. "BLAST"). */
+  name: string;
+  /** Runs one job. Throw to fail the attempt — pg-boss retries until exhausted. */
+  process: (prisma: PrismaClient, data: T) => Promise<void>;
+  /**
+   * Marks the job's row terminally failed (e.g. set `err` + `finished`). Called
+   * only once retries are exhausted; only the target table differs per worker.
+   */
+  recordFailure: (
+    prisma: PrismaClient,
+    jobId: string,
+    message: string
+  ) => Promise<void>;
+  /**
+   * Test seam: override how the Prisma client / pg-boss connection are created.
+   * Production workers omit this and get the real implementations.
+   */
+  deps?: {
+    createPrisma?: () => PrismaClient;
+    startBoss?: (queue: string) => Promise<PgBoss>;
+  };
 }
 
 /**
- * Wires error logging + health probes + SIGTERM/SIGINT handling for a worker. On
- * a signal it stops accepting new jobs and waits for the in-flight job to finish
- * (`boss.stop({ graceful: true })`), then closes the health server and the DB
- * connection.
+ * Owns a worker process end to end: it creates the Prisma client and the pg-boss
+ * connection, registers a retry-aware job handler, and drains in-flight work on
+ * SIGTERM/SIGINT. A worker file describes its queue and how to process a job,
+ * then calls `run()`:
+ *
+ *   new WorkerRuntime<BlastJobData>({ queue, name, process, recordFailure }).run();
+ *
+ * `shutdown()` is split out from the signal handler (it drains without calling
+ * `process.exit`), and the previously closure-captured `draining` state is
+ * inspectable instance state — both so the runtime is directly unit-testable.
  */
-export function setupWorkerRuntime(
-  boss: PgBoss,
-  prisma: PrismaClient,
-  name: string
-): void {
-  attachErrorLogging(boss, name);
+export class WorkerRuntime<T extends { jobId: string }> {
+  private readonly prisma: PrismaClient;
+  private boss?: PgBoss;
+  private draining = false;
 
-  let shuttingDown = false;
-  const healthServer = startHealthServer(() => !shuttingDown);
+  constructor(private readonly config: WorkerConfig<T>) {
+    this.prisma = (config.deps?.createPrisma ?? createPrismaClient)();
+  }
 
-  const shutdown = async (signal: NodeJS.Signals) => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`Received ${signal}; draining worker before exit...`);
+  /** Whether a graceful drain is in progress; lets tests/callers observe it. */
+  get isDraining(): boolean {
+    return this.draining;
+  }
+
+  /**
+   * Boots the worker: opens the pg-boss connection, registers the job handler,
+   * then wires error logging + graceful SIGTERM/SIGINT draining. The single
+   * entrypoint a worker process calls.
+   */
+  async run(): Promise<void> {
+    const startBoss = this.config.deps?.startBoss ?? startWorkerBoss;
+    this.boss = await startBoss(this.config.queue);
+
+    await this.boss.work<T>(
+      this.config.queue,
+      { includeMetadata: true },
+      async ([job]) => this.handleJob(job)
+    );
+
+    console.log(`${this.config.name} worker started`);
+    this.installLifecycle();
+  }
+
+  /**
+   * Graceful drain: stop accepting new jobs and wait for the in-flight job to
+   * finish (`boss.stop({ graceful: true })`), then close the DB connection.
+   * Idempotent. Does NOT exit the process, so it is safe to call from a unit
+   * test.
+   */
+  async shutdown(): Promise<void> {
+    if (this.draining) return;
+    this.draining = true;
+    if (this.boss) await this.boss.stop({ graceful: true }); // once active jobs finish
+    await this.prisma.$disconnect();
+  }
+
+  /**
+   * Runs one job with the retry-aware error handling shared by every worker: log
+   * success, and on failure persist the error only once retries are exhausted
+   * (so a job that will still be retried isn't prematurely shown as failed in the
+   * UI), then rethrow so pg-boss records the failed attempt.
+   */
+  private async handleJob(job: JobWithRetries<T>): Promise<void> {
+    const { name } = this.config;
+    const { jobId } = job.data;
     try {
-      await boss.stop({ graceful: true }); // resolves once active jobs finish
-      await new Promise<void>((resolve) => healthServer.close(() => resolve()));
-      await prisma.$disconnect();
+      await this.config.process(this.prisma, job.data);
+      console.log(`Completed ${name} job ${jobId}`);
+    } catch (err) {
+      if (job.retryCount >= job.retryLimit) {
+        console.warn(`Failed ${name} job ${jobId} (final attempt): ${err}`);
+        const message = err instanceof Error ? err.message : String(err);
+        await this.config.recordFailure(this.prisma, jobId, message);
+      } else {
+        console.warn(
+          `${name} job ${jobId} attempt ${job.retryCount + 1} failed, will retry: ${err}`
+        );
+      }
+      throw err; // let pg-boss record the failed attempt and retry if any remain
+    }
+  }
+
+  /** Side-effecting setup: error logging + signal handlers. */
+  private installLifecycle(): void {
+    this.attachErrorLogging();
+    process.on("SIGTERM", this.handleSignal);
+    process.on("SIGINT", this.handleSignal);
+  }
+
+  // Bound field so it can be registered as a listener with `this` intact.
+  private handleSignal = async (signal: NodeJS.Signals): Promise<void> => {
+    if (this.draining) return; // a second signal is a no-op while draining
+    console.log(
+      `Received ${signal}; draining ${this.config.name} worker before exit...`
+    );
+    try {
+      await this.shutdown();
     } catch (err) {
       console.error("Error during graceful shutdown:", err);
     } finally {
@@ -121,6 +188,26 @@ export function setupWorkerRuntime(
     }
   };
 
-  process.on("SIGTERM", shutdown);
-  process.on("SIGINT", shutdown);
+  /**
+   * Logs pg-boss `error` events with their real cause. A Postgres-unreachable
+   * error is collapsed to a single actionable hint until it recovers, instead of
+   * spamming an opaque error on every reconnect attempt.
+   */
+  private attachErrorLogging(): void {
+    const { name } = this.config;
+    let connHintShown = false;
+    this.boss?.on("error", (err) => {
+      if (isConnectionError(err)) {
+        if (!connHintShown) {
+          console.error(
+            `[${name}] Cannot reach Postgres — is DATABASE_URL correct and the ` +
+              "database running? Suppressing further connection errors until recovery."
+          );
+          connHintShown = true;
+        }
+        return;
+      }
+      console.warn(`[${name}] pg-boss error: ${describeError(err)}`, err);
+    });
+  }
 }

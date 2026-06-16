@@ -1,17 +1,16 @@
-"use client";
-
-import useSWR from "swr";
-import React, { use } from "react";
+import React from "react";
 import type { ReactNode } from "react";
+import { notFound } from "next/navigation";
 
-import ErrorComponent from "@/app/results/error";
 import ResultsPage from "./resultspage";
+import ResultsPoller from "./results-poller";
 
 import type {
   BlastParameters,
   BlastpParameters,
 } from "@/app/[blastFlavour]/parameters";
-import type { BlastJobResults } from "@/app/api/[...jobId]/route";
+import { getBlastJob } from "@/lib/blastJob";
+import type { BlastJobResults } from "@/lib/blastJob";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,33 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-
-class DataFetchError extends Error {
-  info: string | undefined = undefined;
-  status: number | undefined = undefined;
-}
-
-async function fetcher(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    method: "GET",
-  });
-
-  if (!res.ok) {
-    const error = new DataFetchError(
-      "An error occured while fetching the data."
-    );
-    error.info = await res.json();
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
-}
 
 function InfoCard({
   header,
@@ -201,40 +174,23 @@ function JobStatus({ jobId, data }: { jobId: string; data: BlastJobResults }) {
   );
 }
 
-export default function ResultsWrapper({
+export default async function ResultsWrapper({
   params,
+  searchParams,
 }: {
-  params: Promise<{
-    jobId: string;
-  }>;
-}): React.JSX.Element {
-  const { jobId } = use(params);
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  params: Promise<{ jobId: string }>;
+  searchParams: Promise<{ panel?: string }>;
+}): Promise<React.JSX.Element> {
+  const { jobId } = await params;
+  const { panel } = await searchParams;
 
-  const { data, isLoading, error } = useSWR<BlastJobResults, Error>(
-    `${basePath}/api/${jobId}`,
-    fetcher,
-    {
-      refreshInterval: (data) => {
-        // check whether blast is finished every 4 seconds, stop checking when done
-        return data?.results || data?.err ? 0 : 4_000;
-      },
-      revalidateOnMount: true,
-    }
-  );
+  const data = await getBlastJob(jobId);
+  if (!data) notFound();
 
-  if (error) return <ErrorComponent statusCode={500} />;
-  if (isLoading || !data) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <Skeleton className="h-8 w-32" />
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr]">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-      </div>
-    );
-  }
+  // The job is async: until the worker writes results (or an error), poll for
+  // completion from a tiny client island while everything else stays server-rendered.
+  const finished = Boolean(data.results || data.err);
+  const activePanel = panel || "descriptions";
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -244,7 +200,11 @@ export default function ResultsWrapper({
         <UsedParameters data={data} />
       </div>
       <div className="mt-6">
-        <ResultsPage data={data} />
+        {finished ? (
+          <ResultsPage data={data} jobId={jobId} activePanel={activePanel} />
+        ) : (
+          <ResultsPoller />
+        )}
       </div>
     </div>
   );

@@ -135,7 +135,6 @@ Copy [`.env.example`](.env.example) as the reference for every key.
 | `APP_BLAST_DB_PATH` | workers | directory containing BLAST databases |
 | `NUM_BLAST_THREADS` | blastworker | `-num_threads` passed to BLAST (default `4`) |
 | `BLAST_MAX_BUFFER` | workers | cap (bytes) on spawnSync output buffer (default 1 GiB) |
-| `HEALTH_PORT` | workers | port for the worker `/healthz` `/readyz` server (default 8080) |
 | `TAXONOMY_FILE` | migrate | taxonomy TSV path **on the Postgres host** (seed COPY is server-side) |
 | `BASE_PATH` / `NEXT_PUBLIC_BASE_PATH` | app (build arg) | base path when served under a sub-path |
 | `CORS_ALLOW_ORIGIN` | app | comma-separated origin allowlist for `/api` CORS (empty = same-origin only) |
@@ -146,5 +145,7 @@ Copy [`.env.example`](.env.example) as the reference for every key.
 
 - App: `GET /api/health` (liveness) and `GET /api/ready` (readiness — checks
   Postgres, which also backs the queue).
-- Workers: `GET /healthz` (liveness) and `GET /readyz` (readiness) on
-  `HEALTH_PORT`.
+- Workers: none. They are headless background processes (no inbound traffic), so
+  liveness is the process itself (a crash exits the container and the restart
+  policy restarts it) and rollout safety is the SIGTERM graceful drain in
+  `worker/runtime.ts`.

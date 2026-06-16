@@ -1,24 +1,36 @@
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { scaleLinear, ScaleLinear, scaleThreshold } from "d3";
-import { useWindowSize } from "@react-hook/window-size";
+import type { Route } from "next";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
 
+// Logical drawing width. The SVG is rendered at this fixed coordinate size and
+// scaled responsively to its container via viewBox + width:100% (capped here),
+// so no client-side window measurement is needed.
+const LOGICAL_WIDTH = 600;
+
+type Scale = (value: number) => number;
+
+// scaleThreshold([40, 50, 80, 200]) over ["black","blue","green","magenta","red"].
+function colorForScore(score: number): string {
+  if (score < 40) return "black";
+  if (score < 50) return "blue";
+  if (score < 80) return "green";
+  if (score < 200) return "magenta";
+  return "red";
+}
+
 function XAxis({
-  scale,
+  width,
+  queryLength,
+  xScale,
   numTicks,
 }: {
-  scale: ScaleLinear<number, number>;
+  width: number;
+  queryLength: number;
+  xScale: Scale;
   numTicks: number;
 }) {
-  const range = scale.range();
-  const width = range[1];
-
-  const domain = scale.domain();
-  const queryLength = domain[1];
-
   // https://heyjavascript.com/how-to-round-numbers-to-arbitrary-values/
   const roundTo = 10;
   const stepSize = Math.floor(queryLength / numTicks / roundTo + 0.5) * roundTo;
@@ -48,7 +60,7 @@ function XAxis({
       </text>
       {/* middle ticks */}
       {ticks.map((tick) => {
-        const pos = scale(tick);
+        const pos = xScale(tick);
         return (
           <React.Fragment key={tick}>
             <line x1={pos} x2={pos} y1="0" y2="5" stroke="black" />
@@ -72,23 +84,19 @@ function HitPlotLine({
   index,
   height,
   xScale,
+  jobId,
 }: {
   hit: BlastHit;
   index: number;
   height: number;
-  xScale: ScaleLinear<number, number>;
+  xScale: Scale;
+  jobId: string;
 }) {
-  const pathname = usePathname();
-
-  // Next doesn't properly handle basepath in usePathname, so we have to trim manually
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const linkPath = pathname.slice(basePath.length);
-
   const { hsps, accession, title } = hit;
 
-  const colorMap = scaleThreshold<number, string>()
-    .domain([40, 50, 80, 200])
-    .range(["black", "blue", "green", "magenta", "red"]);
+  const alignmentsHref =
+    `/results/${jobId}?panel=alignments#${accession}` as Route;
+
   const hspMin = Math.min(...hsps.map(({ queryFrom }) => Number(queryFrom)));
   const hspMax = Math.max(...hsps.map(({ queryTo }) => Number(queryTo)));
 
@@ -104,14 +112,7 @@ function HitPlotLine({
       {hsps.map(({ queryFrom, queryTo, bitScore }) => {
         const width = Number(queryTo) - Number(queryFrom);
         return (
-          <Link
-            key={`${queryFrom}_${queryTo}_${bitScore}`}
-            href={{
-              pathname: linkPath,
-              query: { panel: "alignments" },
-              hash: accession,
-            }}
-          >
+          <Link key={`${queryFrom}_${queryTo}_${bitScore}`} href={alignmentsHref}>
             <rect
               className="cursor-pointer stroke-transparent hover:stroke-foreground"
               strokeWidth={1}
@@ -119,7 +120,7 @@ function HitPlotLine({
               y={0}
               width={xScale(width)}
               height={height / 2}
-              style={{ fill: colorMap(Number(bitScore)) }}
+              style={{ fill: colorForScore(Number(bitScore)) }}
             >
               <title>{title}</title>
             </rect>
@@ -133,15 +134,14 @@ function HitPlotLine({
 export default function GraphicSummary({
   hits,
   queryLength,
+  jobId,
   lineHeight = 6,
 }: {
   hits: Array<any>;
-  _width?: number;
   queryLength: number;
+  jobId: string;
   lineHeight?: number;
 }): React.JSX.Element {
-  const [windowWidth] = useWindowSize();
-  const width = windowWidth > 1344 ? 600 : 0.85 * windowWidth;
   const padding = {
     top: 20,
     bottom: 10,
@@ -151,7 +151,7 @@ export default function GraphicSummary({
   const titleHeight = 30;
   const axisHeight = 30;
   const subset = hits;
-  const paddedWidth = width - padding.left - padding.right;
+  const paddedWidth = LOGICAL_WIDTH - padding.left - padding.right;
   const paddedHeight =
     lineHeight * subset.length +
     padding.top +
@@ -159,7 +159,7 @@ export default function GraphicSummary({
     axisHeight +
     titleHeight;
   // Scale to map between query coordinates and screen coordinates
-  const xScale = scaleLinear().domain([0, queryLength]).range([0, paddedWidth]);
+  const xScale: Scale = (value) => (value / queryLength) * paddedWidth;
 
   return (
     <div className="flex flex-col gap-3">
@@ -168,7 +168,11 @@ export default function GraphicSummary({
         <span>Click to show alignments</span>
       </div>
       <div className="flex justify-center rounded-md border bg-white p-2">
-        <svg width={width} height={paddedHeight}>
+        <svg
+          className="h-auto w-full"
+          style={{ maxWidth: LOGICAL_WIDTH }}
+          viewBox={`0 0 ${LOGICAL_WIDTH} ${paddedHeight}`}
+        >
           <g
             className="blast-hit-plot"
             transform={`translate(${padding.left},${padding.top})`}
@@ -177,7 +181,12 @@ export default function GraphicSummary({
               Distribution of BLAST hits on subject sequences
             </text>
             <g transform={`translate(0,${titleHeight})`}>
-              <XAxis scale={xScale} numTicks={10} />
+              <XAxis
+                width={paddedWidth}
+                queryLength={queryLength}
+                xScale={xScale}
+                numTicks={10}
+              />
               <g className="hits" transform={`translate(0,${axisHeight})`}>
                 {subset.map((hit, index) => (
                   <HitPlotLine
@@ -186,6 +195,7 @@ export default function GraphicSummary({
                     index={index}
                     xScale={xScale}
                     height={lineHeight}
+                    jobId={jobId}
                   />
                 ))}
               </g>

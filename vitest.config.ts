@@ -10,8 +10,18 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
-    exclude: ["**/*.integration.test.*", "node_modules/**", ".next/**"],
+    // src/** runs in jsdom; worker/** unit tests opt into the node environment
+    // per-file via a `// @vitest-environment node` docblock (they drive Node-only
+    // resources). Integration tests (real Postgres) are excluded below.
+    include: ["src/**/*.test.{ts,tsx}", "worker/**/*.test.{ts,tsx}"],
+    // `*.smoke.test.*` needs a real blast+ binary + DB on disk, so it is its own
+    // suite (vitest.smoke.config.ts), never part of the default unit run.
+    exclude: [
+      "**/*.integration.test.*",
+      "**/*.smoke.test.*",
+      "node_modules/**",
+      ".next/**",
+    ],
   },
   resolve: {
     alias: [

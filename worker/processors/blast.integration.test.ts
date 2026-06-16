@@ -1,7 +1,6 @@
 import { randomBytes } from "crypto";
 import { vi, type Mock } from "vitest";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
+import { createPrismaClient } from "@/lib/prisma";
 
 // Mock only the BLAST binary call so the test is deterministic and needs no
 // blast+ / database on disk. Keep the rest of child_process real — Prisma's
@@ -16,8 +15,7 @@ import { runBlastJob } from "./blast";
 import { BLASTFLAVOUR_DEFAULTS } from "@/lib/blast/schema";
 
 const mockSpawn = spawnSync as unknown as Mock;
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const prisma = createPrismaClient();
 
 // A valid blastp request against a real database name (landmark), with a query
 // long enough to pass validation.

@@ -1,8 +1,6 @@
 import React from "react";
-import { flattenDeep } from "lodash";
 
 import { TaxonomyNode, BlastHit } from "../../api/[...jobId]/formatResults";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -75,22 +73,21 @@ export default function Taxonomy({
   if (!taxonomyTrees.length) {
     return <h2 className="text-muted-foreground">No taxonomy info found</h2>;
   }
-  const flatTrees = taxonomyTrees.map((taxonomyTree) =>
+  const flatTree = taxonomyTrees.flatMap((taxonomyTree) =>
     Array.from(depthFirst(taxonomyTree))
   );
-  const flatTree = flattenDeep(flatTrees);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/50 px-3 py-2">
         <span className="font-semibold">Reports</span>
-        <Tabs value="organism">
-          <TabsList>
-            <TabsTrigger value="lineage" disabled>
-              Lineage
-            </TabsTrigger>
-            <TabsTrigger value="organism">Organism</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="inline-flex h-8 w-fit items-center justify-center gap-0.5 rounded-lg bg-muted p-[3px] text-muted-foreground">
+          <span className="inline-flex h-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent px-2 py-0.5 text-sm font-medium whitespace-nowrap opacity-50">
+            Lineage
+          </span>
+          <span className="inline-flex h-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent bg-background px-2 py-0.5 text-sm font-medium whitespace-nowrap text-foreground shadow-sm dark:border-input dark:bg-input/30">
+            Organism
+          </span>
+        </div>
       </div>
       <Table className="text-sm">
         <TableHeader>

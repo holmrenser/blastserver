@@ -36,8 +36,6 @@ COPY --from=builder /app/node_modules ./node_modules/
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
 
-# Worker health server (see worker/health.ts); health probes hit this port.
-EXPOSE 8080
 # Migrations run as a separate one-shot step (see scripts/migrate-and-seed.ts).
 # Compose overrides this to run a single worker process so SIGTERM reaches it.
 CMD ["npm", "run", "start:worker"]

@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { blastjob } from "@/generated/prisma/client";
 
-import prisma from "@/app/api/database";
-import formatResults from "./formatResults";
-import type { FormattedBlastResults } from "./formatResults";
+import { getBlastJob } from "@/lib/blastJob";
+import type { BlastJobResults } from "@/lib/blastJob";
+
+export type { BlastJobResults };
 
 export const dynamic = "force-dynamic";
-
-export type BlastJobResults = Omit<blastjob, "results"> & {
-  results: FormattedBlastResults | null;
-};
 
 export async function GET(
   _: NextRequest,
@@ -24,9 +20,9 @@ export async function GET(
     return new NextResponse("Missing job id", { status: 400 });
   }
 
-  let job: blastjob | null;
+  let job: BlastJobResults | null;
   try {
-    job = await prisma.blastjob.findFirst({ where: { id } });
+    job = await getBlastJob(id);
   } catch (err) {
     console.error((err as Error).message);
     return new NextResponse((err as Error).message, { status: 500 });
@@ -34,8 +30,5 @@ export async function GET(
   if (!job) {
     return new NextResponse("Job not found", { status: 404 });
   }
-  const formattedResults = job?.results
-    ? await formatResults(job.results)
-    : null;
-  return NextResponse.json({ ...job, results: formattedResults });
+  return NextResponse.json(job);
 }

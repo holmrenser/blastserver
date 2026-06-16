@@ -12,6 +12,11 @@ const nextConfig = {
     "pg",
   ],
   typedRoutes: true,
+  // Tree-shake barrel imports from icon/util packages still used by client
+  // components (nav, submission form) so only the referenced exports ship.
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
   // basePath is baked into the client bundle at build time. Supply BASE_PATH
   // (e.g. via a --build-arg) only when serving the app under a sub-path;
   // unset/empty means it is served at the root. Next.js auto-loads .env* files

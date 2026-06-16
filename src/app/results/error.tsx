@@ -11,7 +11,9 @@ export default function ErrorComponent({
   error,
   reset,
 }: {
-  statusCode: number | string;
+  // Optional: Next passes only { error, reset } when this file is used as the
+  // route's automatic error boundary; statusCode is set only on manual renders.
+  statusCode?: number | string;
   error?: Error;
   reset?: () => void;
 }) {
@@ -23,7 +25,9 @@ export default function ErrorComponent({
     <div className="container mx-auto max-w-xl px-4 py-10">
       <Alert variant="destructive">
         <AlertCircleIcon />
-        <AlertTitle>Something went wrong! ({statusCode})</AlertTitle>
+        <AlertTitle>
+          Something went wrong!{statusCode ? ` (${statusCode})` : ""}
+        </AlertTitle>
         <AlertDescription>
           An error occurred while processing your request.
           {reset && (

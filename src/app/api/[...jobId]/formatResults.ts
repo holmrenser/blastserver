@@ -25,7 +25,7 @@ export type Hsp = {
   alignLen: string,
 }
 
-type RawBlastHit = {
+export type RawBlastHit = {
   description: {
     HitDescr: HitDescription | HitDescription[]
   },
@@ -120,7 +120,7 @@ function add(total: number, element: number): number {
   return total + element
 }
 
-function mergeIntervals(intervals: Interval[]): Interval[] {
+export function mergeIntervals(intervals: Interval[]): Interval[] {
   if (intervals.length <= 1) return intervals;
   const sortedIntervals = [...intervals].sort((a,b) => (a[0] - b[0]))
   const mergedIntervals = [sortedIntervals.shift()!]; // create stack and insert first sorted element
@@ -135,7 +135,7 @@ function mergeIntervals(intervals: Interval[]): Interval[] {
   return mergedIntervals
 }
 
-function processRawHit({ description, hsps, len, num, queryLen }: RawBlastHit): BlastHitNoTaxInfo {
+export function processRawHit({ description, hsps, len, num, queryLen }: RawBlastHit): BlastHitNoTaxInfo {
   // extract descriptions
   const hitDescription = Array.isArray(description.HitDescr)
     ? description.HitDescr 
@@ -283,11 +283,31 @@ export type FormattedBlastResults = {
   message: string,
 }
 
-export default async function formatResults(blastResults: string): Promise<FormattedBlastResults> {
+/** The XML-derived fields of a BLAST report, before any taxonomy enrichment. */
+export type ParsedBlastXml = {
+  params: any,
+  program: string,
+  version: string,
+  queryId: string,
+  queryLen: string,
+  queryTitle: string,
+  stat: string,
+  message: string,
+  db: string,
+  rawHits: RawBlastHit[],
+}
+
+/**
+ * Pure XML2 -> struct step: parses the `-outfmt 16` document and normalizes the
+ * single-vs-array shapes (xml-js collapses a lone <Hit> to an object). No DB
+ * access, so it can be unit-tested directly on fixture XML (see
+ * formatResults.test.ts). Taxonomy enrichment stays in `formatResults`.
+ */
+export function parseBlastXml(blastResults: string): ParsedBlastXml {
   // parse blast XML and use destructuring assignment to extract all useful parts
   const results = xml2js(blastResults, { compact: true, trim: true, textFn: replaceJsonTextAttribute })
-  const {   
-    BlastXML2: { 
+  const {
+    BlastXML2: {
       BlastOutput2: {
         report: { Report: {
           params,
@@ -316,12 +336,19 @@ export default async function formatResults(blastResults: string): Promise<Forma
           }
         } }
       }
-    } 
+    }
   } = results as any as BlastResult;
+
+  const rawHits = Array.isArray(_rawHits) ? _rawHits : [_rawHits];
+  return { params, program, version, queryId, queryLen, queryTitle, stat, message, db, rawHits }
+}
+
+export default async function formatResults(blastResults: string): Promise<FormattedBlastResults> {
+  const { params, program, version, queryId, queryLen, queryTitle, stat, message, db, rawHits } =
+    parseBlastXml(blastResults);
 
   let hits: BlastHit[] | undefined;
   let taxonomyTrees: TaxonomyNode[] | undefined;
-  const rawHits = Array.isArray(_rawHits) ? _rawHits : [_rawHits];
   if (!message) {
     // initial result parsing to summarize useful information per hit
     const intermediateHits: BlastHitNoTaxInfo[] = rawHits.map(rawHit => (
