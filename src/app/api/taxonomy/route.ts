@@ -14,9 +14,11 @@ const MIN_QUERY_LENGTH = 3;
 /**
  * Suggests taxonomy entries for the submission form's organism filter.
  *
- * A numeric query is treated as a taxid and matched by prefix on the primary
- * key; anything else is matched against `name` with a case-insensitive
- * `contains`, which is backed by the pg_trgm GIN index (taxonomy_name_trgm).
+ * A numeric query is treated as a taxid and matched exactly on the integer
+ * primary key (prefix matching isn't meaningful for taxids, which aren't
+ * prefix-hierarchical); anything else is matched against `name` with a
+ * case-insensitive `contains`, backed by the pg_trgm GIN index
+ * (taxonomy_name_trgm).
  */
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("query")?.trim() ?? "";
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   const where = /^\d+$/.test(query)
-    ? { id: { startsWith: query } }
+    ? { id: Number(query) }
     : { name: { contains: query, mode: "insensitive" as const } };
 
   const taxonomyEntries = await prisma.taxonomy.findMany({

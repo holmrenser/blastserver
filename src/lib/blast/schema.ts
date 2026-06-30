@@ -110,7 +110,9 @@ const baseShape = {
     .number()
     .min(0, "Max. matches in query range cannot be negative")
     .default(0),
-  taxids: z.array(z.string()).default([]),
+  // Taxids are integers; coerce the string the form/combobox sends so the
+  // validated params store numbers (consistent with the integer taxonomy table).
+  taxids: z.array(z.coerce.number().int().positive()).default([]),
   excludeTaxids: z.boolean().default(false),
   softMasking: z.boolean().default(false),
   lcaseMasking: z.boolean().default(false),
@@ -219,7 +221,7 @@ const baseDefaults = {
   maxTargetSeqs: 100,
   expectThreshold: 0.05,
   maxMatchesInQueryRange: 0,
-  taxids: [] as string[],
+  taxids: [] as number[],
   excludeTaxids: false,
   softMasking: false,
   lcaseMasking: false,

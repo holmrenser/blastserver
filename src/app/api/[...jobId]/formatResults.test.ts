@@ -95,7 +95,8 @@ describe("processRawHit", () => {
     );
     expect(Array.isArray(hit.hsps)).toBe(true);
     expect(hit.hsps).toHaveLength(1);
-    expect(hit.taxid).toBe("9606");
+    // taxid is parsed to a number at this boundary
+    expect(hit.taxid).toBe(9606);
   });
 
   it("computes query coverage and percent identity from one HSP", () => {
@@ -120,6 +121,53 @@ describe("processRawHit", () => {
     expect(hit.queryCover).toBe(73);
     // identity = (18 + 14) / (20 + 16) * 100
     expect(hit.percentIdentity).toBeCloseTo((32 / 36) * 100);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * processRawHit — cluster members (clustered_nr) vs plain databases
+ * ------------------------------------------------------------------ */
+// A clustered hit carries one <HitDescr> per cluster member (first = representative).
+const clusteredRawHit = (
+  members: { accession: string; title: string; taxid: string }[]
+): RawBlastHit =>
+  ({
+    description: { HitDescr: members },
+    hsps: {
+      Hsp: { queryFrom: "1", queryTo: "20", alignLen: "20", identity: "18" },
+    },
+    len: "200",
+    num: "1",
+    accession: members[0].accession,
+    title: members[0].title,
+    queryLen: 40,
+  }) as unknown as RawBlastHit;
+
+describe("processRawHit cluster members", () => {
+  it("treats a plain hit as a single-member cluster", () => {
+    const hit = processRawHit(
+      rawHit({ queryFrom: "1", queryTo: "20", alignLen: "20", identity: "18" })
+    );
+    expect(hit.clusterSize).toBe(1);
+    expect(hit.members).toHaveLength(1);
+    expect(hit.members[0]).toMatchObject({ accession: "P1", taxid: 9606 });
+  });
+
+  it("keeps every <HitDescr> as a member with numeric taxids", () => {
+    const hit = processRawHit(
+      clusteredRawHit([
+        { accession: "P1", title: "representative", taxid: "9606" },
+        { accession: "P2", title: "member two", taxid: "10090" },
+        { accession: "P3", title: "member three", taxid: "9598" },
+      ])
+    );
+    expect(hit.clusterSize).toBe(3);
+    expect(hit.members.map((member) => member.taxid)).toEqual([
+      9606, 10090, 9598,
+    ]);
+    // representative top-level fields mirror members[0]
+    expect(hit.accession).toBe("P1");
+    expect(hit.taxid).toBe(9606);
   });
 });
 

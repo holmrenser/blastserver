@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ function useSelectionSet<T>(): [Set<T>, Function, Function, Function] {
 const COLUMNS = [
   "Description",
   "Scientific Name",
+  "Cluster",
   "Max Score",
   "Total Score",
   "Query Cover",
@@ -78,6 +80,16 @@ export default function Descriptions({
 
   const [selectionSet, toggleSelection, clearSelection, addItem] =
     useSelectionSet<string>();
+  // Rows whose cluster member list is expanded (keyed by hit `num`).
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  function toggleExpanded(key: string): void {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
   // "Select all" is fully derived from the selection: checked iff every hit is
   // currently selected (vacuously true when there are no hits, matching the
   // previous effect-synced behavior).
@@ -158,6 +170,8 @@ export default function Descriptions({
               len,
               hsps,
               percentIdentity,
+              members,
+              clusterSize,
             }) => {
               const scores = hsps.map(({ bitScore }) => Number(bitScore));
               const maxScore = Math.floor(Math.max(...scores));
@@ -168,54 +182,130 @@ export default function Descriptions({
               const evalue = Math.min(...evalues);
               const formattedEvalue =
                 evalue === 0 ? evalue : evalue.toExponential(0);
+              // Distinct taxa across the cluster (representative + members).
+              const extraTaxa =
+                new Set(members.map((member) => member.taxid)).size - 1;
+              const isExpanded = expanded.has(num);
+              const isCluster = clusterSize > 1;
               return (
-                <TableRow key={num}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectionSet.has(accession)}
-                      onCheckedChange={() => toggleSelection(accession)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      className="text-primary hover:underline"
-                      href={{
-                        pathname,
-                        query: { panel: "alignments" },
-                        hash: accession,
-                      }}
-                    >
-                      {title.slice(0, 100)}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <a
-                      className="text-primary hover:underline"
-                      href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${taxid}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={name}
-                    >
-                      {truncate(name)}
-                    </a>
-                  </TableCell>
-                  <TableCell>{maxScore}</TableCell>
-                  <TableCell>{totalScore}</TableCell>
-                  <TableCell>{queryCover}%</TableCell>
-                  <TableCell>{formattedEvalue}</TableCell>
-                  <TableCell>{percentIdentity.toFixed(2)}%</TableCell>
-                  <TableCell>{len}</TableCell>
-                  <TableCell>
-                    <a
-                      className="text-primary hover:underline"
-                      href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {accession}
-                    </a>
-                  </TableCell>
-                </TableRow>
+                <React.Fragment key={num}>
+                  <TableRow>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectionSet.has(accession)}
+                        onCheckedChange={() => toggleSelection(accession)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        className="text-primary hover:underline"
+                        href={{
+                          pathname,
+                          query: { panel: "alignments" },
+                          hash: accession,
+                        }}
+                      >
+                        {title.slice(0, 100)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        className="text-primary hover:underline"
+                        href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${taxid}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={name}
+                      >
+                        {truncate(name)}
+                      </a>
+                      {extraTaxa > 0 && (
+                        <span className="ml-1 text-muted-foreground">
+                          (+{extraTaxa} taxa)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isCluster ? (
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-primary hover:underline"
+                          onClick={() => toggleExpanded(num)}
+                          aria-expanded={isExpanded}
+                          title={`${clusterSize} sequences in this cluster`}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="size-3" />
+                          ) : (
+                            <ChevronRight className="size-3" />
+                          )}
+                          {clusterSize}
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">1</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{maxScore}</TableCell>
+                    <TableCell>{totalScore}</TableCell>
+                    <TableCell>{queryCover}%</TableCell>
+                    <TableCell>{formattedEvalue}</TableCell>
+                    <TableCell>{percentIdentity.toFixed(2)}%</TableCell>
+                    <TableCell>{len}</TableCell>
+                    <TableCell>
+                      <a
+                        className="text-primary hover:underline"
+                        href={`https://www.ncbi.nlm.nih.gov/protein/${accession}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {accession}
+                      </a>
+                    </TableCell>
+                  </TableRow>
+                  {isCluster && isExpanded && (
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableCell />
+                      <TableCell colSpan={COLUMNS.length}>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold">
+                            Cluster members ({clusterSize})
+                          </span>
+                          <Table className="text-xs">
+                            <TableBody>
+                              {members.map((member) => (
+                                <TableRow key={member.accession}>
+                                  <TableCell className="w-32">
+                                    <a
+                                      className="text-primary hover:underline"
+                                      href={`https://www.ncbi.nlm.nih.gov/protein/${member.accession}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {member.accession}
+                                    </a>
+                                  </TableCell>
+                                  <TableCell className="w-48">
+                                    <a
+                                      className="text-primary hover:underline"
+                                      href={`https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=${member.taxid}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title={member.name}
+                                    >
+                                      {truncate(member.name)}
+                                    </a>
+                                  </TableCell>
+                                  <TableCell>
+                                    {member.title.slice(0, 100)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               );
             }
           )}

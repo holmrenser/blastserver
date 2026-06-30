@@ -25,8 +25,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-type TaxonomyEntry = { id: string; name: string };
-type Option = { value: string; label: string };
+type TaxonomyEntry = { id: number; name: string };
+type Option = { value: number; label: string };
 
 // Below this length a pg_trgm index can't back the search (it would full-scan
 // ~2.7M rows), and 1-2 char queries match too much to be useful anyway. Keep in
@@ -50,13 +50,13 @@ function TaxonomyCombobox({
   value,
   onChange,
 }: {
-  value: string[];
-  onChange: (value: string[]) => void;
+  value: number[];
+  onChange: (value: number[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   // Remember labels for selected ids so badges stay readable across searches.
-  const [labels, setLabels] = useState<Record<string, string>>({});
+  const [labels, setLabels] = useState<Record<number, string>>({});
   // Per-query result cache: retyping / backtracking doesn't refetch, and it
   // doubles as the source for the rendered options + loading state below.
   const [results, setResults] = useState<Map<string, Option[]>>(
@@ -147,7 +147,7 @@ function TaxonomyCombobox({
                   {options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      value={opt.value}
+                      value={String(opt.value)}
                       onSelect={() => toggle(opt)}
                     >
                       <Check
@@ -200,7 +200,7 @@ export function TaxonomySelect({
         name="taxids"
         render={({ field: { value, onChange } }) => (
           <TaxonomyCombobox
-            value={(value as string[]) ?? []}
+            value={(value as number[]) ?? []}
             onChange={onChange}
           />
         )}

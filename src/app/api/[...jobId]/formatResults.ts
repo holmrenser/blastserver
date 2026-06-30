@@ -3,11 +3,24 @@ import { camelCase, mapKeys, partition } from 'lodash';
 
 import prisma from '../database';
 
+// Raw <HitDescr> shape straight from the XML (taxid is the numeric string the
+// document carries). For clustered databases (clustered_nr) a single <Hit> has
+// one <HitDescr> per cluster member.
 type HitDescription = {
   accession: string,
   title: string,
   taxid: string
 }
+
+/** A cluster member after processing: taxid is numeric, name added on enrichment. */
+export type HitMember = {
+  accession: string,
+  title: string,
+  taxid: number,
+  name: string,
+}
+
+type HitMemberNoName = Omit<HitMember, 'name'>;
 
 export type Hsp = {
   queryFrom: string,
@@ -41,14 +54,18 @@ export type RawBlastHit = {
 
 type BlastHitNoTaxInfo = Omit<RawBlastHit, 'description' | 'hsps' | 'queryLen'> & {
   hsps: Hsp[],
-  taxid: string,
+  // Representative (members[0]) taxid; drives scoring, alignments and download.
+  taxid: number,
+  members: HitMemberNoName[],
+  clusterSize: number,
   queryCover: number,
   percentIdentity: number,
 }
 
-export type BlastHit = BlastHitNoTaxInfo & {
-  ancestors: string[],
-  name: string
+export type BlastHit = Omit<BlastHitNoTaxInfo, 'members'> & {
+  ancestors: number[],
+  name: string,
+  members: HitMember[],
 }
 
 type BlastResult = {
@@ -87,19 +104,22 @@ type BlastResult = {
 }
 
 export type TaxonomyNode = {
-  id: string,
+  id: number,
   name: string,
-  ancestors: string[],
+  ancestors: number[],
   children?: TaxonomyNode[],
   depth?: number,
   count?: number
 }
 
+// Keyed by taxid. JS object keys are always strings, so a string index signature
+// is kept even though the taxids themselves are numbers (indexing with a number
+// coerces); the stored ids/ancestors are numeric.
 type TaxidMap = {
   [k: string] : {
-    id: string,
+    id: number,
     name: string,
-    ancestors: string[]
+    ancestors: number[]
   }
 }
 
@@ -136,12 +156,20 @@ export function mergeIntervals(intervals: Interval[]): Interval[] {
 }
 
 export function processRawHit({ description, hsps, len, num, queryLen }: RawBlastHit): BlastHitNoTaxInfo {
-  // extract descriptions
-  const hitDescription = Array.isArray(description.HitDescr)
-    ? description.HitDescr 
+  // extract descriptions — for clustered databases (clustered_nr) every
+  // <HitDescr> is a cluster member; the first is the representative. Plain
+  // databases yield a single member. Taxids are parsed to numbers here, the one
+  // boundary where the XML hands us numeric strings, so the rest of the pipeline
+  // stays uniformly numeric.
+  const hitDescriptions = Array.isArray(description.HitDescr)
+    ? description.HitDescr
     : [description.HitDescr]
-  const { accession, title, taxid } = hitDescription[0];
-  
+  const members: HitMemberNoName[] = hitDescriptions.map(
+    ({ accession, title, taxid }) => ({ accession, title, taxid: Number(taxid) })
+  );
+  const clusterSize = members.length;
+  const { accession, title, taxid } = members[0];
+
   // extract HSPs
   const rawHsps: Hsp[] = Array.isArray(hsps.Hsp) ? hsps.Hsp : [hsps.Hsp]
   const formattedHsps: Hsp[] = rawHsps.map(hsp => mapKeys(hsp, (_, key) => camelCase(key))) as any[];
@@ -163,7 +191,7 @@ export function processRawHit({ description, hsps, len, num, queryLen }: RawBlas
   }, [0,0]);
   const percentIdentity = (identity / alignLen) * 100;
 
-  return { accession, title, taxid, percentIdentity, queryCover, num, len, hsps: formattedHsps }
+  return { accession, title, taxid, members, clusterSize, percentIdentity, queryCover, num, len, hsps: formattedHsps }
 }
 
 function addChildren(root: TaxonomyNode, childOptions: TaxonomyNode[]) {
@@ -183,11 +211,11 @@ function addChildren(root: TaxonomyNode, childOptions: TaxonomyNode[]) {
   })
 }
 
-async function getTaxIdMap(taxids: string[]): Promise<TaxidMap> {
+async function getTaxIdMap(taxids: number[]): Promise<TaxidMap> {
   let taxInfo: {
-    id: string;
+    id: number;
     name: string;
-    ancestors: string[];
+    ancestors: number[];
   }[];
   try {
     taxInfo = await prisma.taxonomy.findMany({ where: { id: { in: taxids }}})
@@ -196,7 +224,7 @@ async function getTaxIdMap(taxids: string[]): Promise<TaxidMap> {
     taxInfo = []
   }
     const taxidMap = Object.fromEntries(taxInfo.map(
-    ({id, name, ancestors}: {id: string, name: string, ancestors: string[]}) => {
+    ({id, name, ancestors}: {id: number, name: string, ancestors: number[]}) => {
       return [id, {id, name, ancestors}]
     }
   ))
@@ -210,20 +238,26 @@ function addTaxInfo({
   hit: BlastHitNoTaxInfo,
   hitTaxidMap: TaxidMap,
 }): BlastHit {
-  const { taxid } = hit;
+  const { taxid, members } = hit;
   const taxonomyInfo = hitTaxidMap[taxid];
-  const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: ['NotFound'] };
-  return { name, ancestors, ...hit }
+  const { name, ancestors } = taxonomyInfo ? taxonomyInfo : { name: 'NotFound', ancestors: [] };
+  // Resolve a scientific name for each cluster member too, so clustered_nr hits
+  // can show their member taxa.
+  const enrichedMembers: HitMember[] = members.map((member) => ({
+    ...member,
+    name: hitTaxidMap[member.taxid]?.name ?? 'NotFound',
+  }));
+  return { name, ancestors, ...hit, members: enrichedMembers }
 }
 
 async function buildTaxTrees(hits: BlastHit[]) {
   // find taxonomy info for ancestors of all hits
-  const ancestorIds: Set<string> = new Set(hits
+  const ancestorIds: Set<number> = new Set(hits
     .map(({ ancestors }) => ancestors)
     .flat());
-  
-  const hitTaxids = hits.map(({ taxid }: { taxid: string }) => taxid);
-  
+
+  const hitTaxids = hits.map(({ taxid }: { taxid: number }) => taxid);
+
   const allTaxIds = [...ancestorIds, ...hitTaxids];
   
   let taxonomy: TaxonomyNode[];
@@ -238,8 +272,8 @@ async function buildTaxTrees(hits: BlastHit[]) {
   // count all taxids and their ancestors, we only keep taxids that are not present in all hits
   const ancestorIdCounts: Record<string, number> = hits
     .map(({ ancestors }) => ancestors)
-    .reduce((allTaxidCounts: Record<string, number>, taxids: Array<string>) => {
-      return taxids.reduce((taxidCounts: Record<string, number>, taxid: string) => {
+    .reduce((allTaxidCounts: Record<string, number>, taxids: Array<number>) => {
+      return taxids.reduce((taxidCounts: Record<string, number>, taxid: number) => {
         const currCount = taxidCounts[taxid] ?? 0;
         return {
           ...taxidCounts,
@@ -355,13 +389,18 @@ export default async function formatResults(blastResults: string): Promise<Forma
       processRawHit({ ...rawHit, queryLen: Number(queryLen) })
     ))
   
-    // add taxonomy info for all hits
-    const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
-      .filter(taxid => typeof taxid !== 'undefined');
-    const hitTaxidMap = await getTaxIdMap(hitTaxids);
+    // Resolve names for every cluster member taxid (members[0] is the
+    // representative, so this is a superset of the per-hit representative taxids).
+    const memberTaxids = Array.from(
+      new Set(intermediateHits.flatMap(({ members }) => members.map(({ taxid }) => taxid)))
+    ).filter((taxid) => Number.isFinite(taxid));
+    const hitTaxidMap = await getTaxIdMap(memberTaxids);
     hits = intermediateHits.map(hit => addTaxInfo({ hit, hitTaxidMap }))
-    
-    // get taxonomy trees for all hit taxids
+
+    // Build the taxonomy tree from representative taxids so "Number of Hits"
+    // stays "number of clusters".
+    const hitTaxids = Array.from(new Set(intermediateHits.map(({ taxid }) => taxid)))
+      .filter((taxid) => Number.isFinite(taxid));
     try {
       taxonomyTrees = hitTaxids.length === 1
         ? [hitTaxidMap[hitTaxids[0]]]

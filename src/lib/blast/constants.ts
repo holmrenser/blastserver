@@ -23,6 +23,7 @@ export const NUCLEOTIDE_DBS = new Map<string, string>([
 
 export const PROTEIN_DBS = new Map<string, string>([
   ["nr", "Non-redundant protein sequences"],
+  ["clustered_nr", "Clustered non-redundant protein sequences"],
   ["refseq_select_prot", "RefSeq Select proteins"],
   ["refseq_protein", "Reference proteins"],
   ["landmark", "Model organisms"],

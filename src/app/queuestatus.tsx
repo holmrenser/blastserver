@@ -4,31 +4,7 @@ import useSWR from "swr";
 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
-class DataFetchError extends Error {
-  info: string | undefined = undefined;
-  status: number | undefined = undefined;
-}
-
-async function fetcher(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    method: "GET",
-  });
-
-  if (!res.ok) {
-    const error = new DataFetchError(
-      "An error occured while fetching the data."
-    );
-    error.info = await res.json();
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
-}
+import { fetcher } from "@/lib/fetcher";
 
 export function QueueStatus() {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";

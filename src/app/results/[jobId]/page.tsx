@@ -203,7 +203,7 @@ export default async function ResultsWrapper({
         {finished ? (
           <ResultsPage data={data} jobId={jobId} activePanel={activePanel} />
         ) : (
-          <ResultsPoller />
+          <ResultsPoller jobId={jobId} />
         )}
       </div>
     </div>

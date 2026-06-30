@@ -30,9 +30,11 @@ model blastjob {
 }
 
 model taxonomy {
-  id        String   @id @unique
+  // NCBI taxids are inherently small integers, so store them as Int (and the
+  // ancestor chain as Int[]) for a compact, index-friendly ~2.7M-row table.
+  id        Int      @id @unique
   name      String
-  ancestors String[]
+  ancestors Int[]
   // A pg_trgm GIN index on `name` (taxonomy_name_trgm) backs the autocomplete's
   // case-insensitive `contains` search. Prisma's schema DSL can't express GIN
   // trigram indexes, so it lives in a raw migration

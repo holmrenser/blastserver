@@ -9,31 +9,7 @@ import type { download } from "@/app/api/download/[...downloadId]/route"; //"@pr
 import ErrorComponent from "../error";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-
-class DataFetchError extends Error {
-  info: string | undefined = undefined;
-  status: number | undefined = undefined;
-}
-
-async function fetcher(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    method: "GET",
-  });
-
-  if (!res.ok) {
-    const error = new DataFetchError(
-      "An error occured while fetching the data."
-    );
-    error.info = await res.json();
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
-}
+import { fetcher } from "@/lib/fetcher";
 
 function PreparingDownload({ message }: { message: string }) {
   return (
