@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 
 const srcDir = fileURLToPath(new URL("./src", import.meta.url));
 
-// Smoke suite: runs a REAL blast+ binary against the committed blastdb/landmark
+// Smoke suite: runs a REAL blast+ binary against the testdata/blastdb/landmark
 // database and pipes its output through the parser. Needs blast+ on PATH and the
 // database on disk, so it only runs deliberately (RUN_BLAST_SMOKE=1) inside the
 // worker Docker image — never in the default `npm test` / `npm run test:integration`.

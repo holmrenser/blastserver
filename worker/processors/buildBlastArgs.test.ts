@@ -10,7 +10,11 @@ import {
   BLASTFLAVOUR_DEFAULTS,
   PROTEIN_MATRICES,
   PROTEIN_GAP_COSTS,
+  MATCH_MISMATCH,
   MAX_TARGET_SEQS,
+  COMPOSITIONAL_ADJUSTMENTS,
+  COMP_BASED_STATS,
+  BLASTN_TASK_PRESETS,
   type BlastFlavour,
   type BlastParameters,
 } from "@/lib/blast/schema";
@@ -147,5 +151,213 @@ describe("buildBlastArgs", () => {
     expect(args).not.toContain("-taxidlist");
     expect(args).not.toContain("-negative_taxidlist");
     expect(args).not.toContain("-no_taxid_expansion");
+  });
+
+  it.each(MATCH_MISMATCH)(
+    "splits blastn matchMismatch %s into -reward/-penalty",
+    (mm) => {
+      const [reward, penalty] = mm.split(",");
+      const args = buildBlastArgs(params("blastn", { matchMismatch: mm }), ctx);
+      expect(flagValue(args, "-reward")).toBe(reward);
+      expect(flagValue(args, "-penalty")).toBe(penalty);
+    }
+  );
+
+  it("omits -reward/-penalty for tblastx (translated, uses a protein matrix)", () => {
+    const args = buildBlastArgs(params("tblastx"), ctx);
+    expect(args).not.toContain("-reward");
+    expect(args).not.toContain("-penalty");
+  });
+
+  it("omits -gapopen/-gapextend for blastn when gap costs are 'linear'", () => {
+    const args = buildBlastArgs(params("blastn", { gapCosts: "linear" }), ctx);
+    expect(args).not.toContain("-gapopen");
+    expect(args).not.toContain("-gapextend");
+  });
+
+  it("still emits affine gap costs for blastn (e.g. 5,2)", () => {
+    const args = buildBlastArgs(params("blastn", { gapCosts: "5,2" }), ctx);
+    expect(flagValue(args, "-gapopen")).toBe("5");
+    expect(flagValue(args, "-gapextend")).toBe("2");
+  });
+
+  it("adds -culling_limit only when maxMatchesInQueryRange is positive", () => {
+    expect(
+      flagValue(
+        buildBlastArgs(params("blastp", { maxMatchesInQueryRange: 50 }), ctx),
+        "-culling_limit"
+      )
+    ).toBe("50");
+    expect(
+      buildBlastArgs(params("blastp", { maxMatchesInQueryRange: 0 }), ctx)
+    ).not.toContain("-culling_limit");
+  });
+
+  it.each(COMPOSITIONAL_ADJUSTMENTS)(
+    "maps protein compositionalAdjustment %s to -comp_based_stats",
+    (adj) => {
+      const args = buildBlastArgs(
+        params("blastp", { compositionalAdjustment: adj }),
+        ctx
+      );
+      expect(flagValue(args, "-comp_based_stats")).toBe(COMP_BASED_STATS[adj]);
+    }
+  );
+
+  it("omits -comp_based_stats for nucleotide flavours (blastn)", () => {
+    expect(buildBlastArgs(params("blastn"), ctx)).not.toContain(
+      "-comp_based_stats"
+    );
+  });
+
+  it("uses -dust for blastn and -seg for protein/translated flavours", () => {
+    expect(
+      flagValue(
+        buildBlastArgs(params("blastn", { filterLowComplexity: true }), ctx),
+        "-dust"
+      )
+    ).toBe("yes");
+    expect(
+      flagValue(
+        buildBlastArgs(params("blastn", { filterLowComplexity: false }), ctx),
+        "-dust"
+      )
+    ).toBe("no");
+    expect(
+      flagValue(
+        buildBlastArgs(params("blastp", { filterLowComplexity: true }), ctx),
+        "-seg"
+      )
+    ).toBe("yes");
+    expect(
+      flagValue(
+        buildBlastArgs(params("tblastx", { filterLowComplexity: false }), ctx),
+        "-seg"
+      )
+    ).toBe("no");
+  });
+
+  it("emits -soft_masking with the explicit boolean", () => {
+    expect(
+      flagValue(buildBlastArgs(params("blastp", { softMasking: true }), ctx), "-soft_masking")
+    ).toBe("true");
+    expect(
+      flagValue(buildBlastArgs(params("blastp", { softMasking: false }), ctx), "-soft_masking")
+    ).toBe("false");
+  });
+
+  it("defaults -soft_masking to true for blastn only (matches each program's NCBI/BLAST+ default)", () => {
+    // blastn (incl. megablast) is the one flavour whose engine default is `true`;
+    // tblastx and the protein flavours default it off.
+    expect(
+      flagValue(buildBlastArgs(params("blastn"), ctx), "-soft_masking")
+    ).toBe("true");
+    expect(
+      flagValue(buildBlastArgs(params("tblastx"), ctx), "-soft_masking")
+    ).toBe("false");
+    expect(
+      flagValue(buildBlastArgs(params("blastp"), ctx), "-soft_masking")
+    ).toBe("false");
+  });
+
+  // A query long enough that the short-query toggle never fires (> both thresholds).
+  const LONG_QUERY = "A".repeat(60);
+  // A query short enough to trigger the *-short tasks (< both thresholds).
+  const SHORT_QUERY = "ACGTACGTAC";
+
+  it.each(Object.entries(BLASTN_TASK_PRESETS))(
+    "maps blastn program %s to its -task (long query)",
+    (program, preset) => {
+      const args = buildBlastArgs(
+        params("blastn", { program, query: LONG_QUERY }),
+        ctx
+      );
+      expect(flagValue(args, "-task")).toBe(preset.task);
+    }
+  );
+
+  it("builds the full NCBI megablast arg set when the megablast preset is applied", () => {
+    // Mirror the frontend program swap (page.tsx ProgramSelection): selecting
+    // megablast applies its preset word size / match-mismatch / gap costs. The
+    // resulting command line must match NCBI's web megablast defaults.
+    const preset = BLASTN_TASK_PRESETS["Megablast (Highly similar sequences)"];
+    const args = buildBlastArgs(
+      params("blastn", {
+        program: "Megablast (Highly similar sequences)",
+        query: LONG_QUERY,
+        wordSize: preset.wordSize,
+        matchMismatch: preset.matchMismatch,
+        gapCosts: preset.gapCosts,
+      }),
+      ctx
+    );
+    expect(flagValue(args, "-task")).toBe("megablast");
+    expect(flagValue(args, "-word_size")).toBe("28");
+    expect(flagValue(args, "-reward")).toBe("1");
+    expect(flagValue(args, "-penalty")).toBe("-2");
+    expect(flagValue(args, "-soft_masking")).toBe("true");
+    expect(flagValue(args, "-dust")).toBe("yes");
+    // Linear gaps -> greedy model, so no affine gap flags.
+    expect(args).not.toContain("-gapopen");
+    expect(args).not.toContain("-gapextend");
+  });
+
+  it("uses -task blastn-short for a short query (wins over the program preset)", () => {
+    const args = buildBlastArgs(
+      params("blastn", {
+        program: "Megablast (Highly similar sequences)",
+        shortQueries: true,
+        query: SHORT_QUERY,
+      }),
+      ctx
+    );
+    expect(flagValue(args, "-task")).toBe("blastn-short");
+  });
+
+  it("uses -task blastp-short for a short blastp query", () => {
+    expect(
+      flagValue(
+        buildBlastArgs(
+          params("blastp", { shortQueries: true, query: SHORT_QUERY }),
+          ctx
+        ),
+        "-task"
+      )
+    ).toBe("blastp-short");
+  });
+
+  it("does not switch to a *-short task for a long query even when the toggle is on", () => {
+    // blastp: no short task -> no -task at all; blastn: falls back to its preset.
+    expect(
+      buildBlastArgs(
+        params("blastp", { shortQueries: true, query: LONG_QUERY }),
+        ctx
+      )
+    ).not.toContain("-task");
+    expect(
+      flagValue(
+        buildBlastArgs(
+          params("blastn", { shortQueries: true, query: LONG_QUERY }),
+          ctx
+        ),
+        "-task"
+      )
+    ).toBe("blastn");
+  });
+
+  it.each(["blastp", "blastx", "tblastn", "tblastx"] as const)(
+    "emits no -task for a normal (long-query) %s search",
+    (flavour) => {
+      expect(
+        buildBlastArgs(params(flavour, { query: LONG_QUERY }), ctx)
+      ).not.toContain("-task");
+    }
+  );
+
+  it("emits -word_size for blastn but not for tblastx", () => {
+    expect(
+      flagValue(buildBlastArgs(params("blastn", { wordSize: 28 }), ctx), "-word_size")
+    ).toBe("28");
+    expect(buildBlastArgs(params("tblastx"), ctx)).not.toContain("-word_size");
   });
 });

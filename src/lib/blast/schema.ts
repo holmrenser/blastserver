@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { BLAST_DBS, PROGRAMS } from "./constants";
+import {
+  BLAST_DBS,
+  PROGRAMS,
+  COMPOSITIONAL_ADJUSTMENTS,
+  BLASTN_WORD_SIZES,
+  MEGABLAST_WORD_SIZES,
+  DC_MEGABLAST_WORD_SIZES,
+} from "./constants";
 import type { BlastFlavour } from "./constants";
 
 // Re-export the zod-free domain constants so existing `@/lib/blast/schema`
@@ -34,13 +41,19 @@ export const PROTEIN_GAP_COSTS = [
   "10,1",
   "9,1",
 ] as const;
-export const COMPOSITIONAL_ADJUSTMENTS = [
-  "No adjustment",
-  "Compositon-based statistics",
-  "Conditional compositional score matrix adjustment",
-  "Universal compositional score matrix adjustment",
-] as const;
-export const NUCLEOTIDE_WORD_SIZES = [7, 11, 15] as const;
+// Word-size options shown for the default (traditional blastn) preset. The other
+// blastn presets (megablast / dc-megablast) offer different sizes; the form swaps
+// the option list per preset (see BLASTN_TASK_PRESETS in constants.ts).
+export const NUCLEOTIDE_WORD_SIZES = BLASTN_WORD_SIZES;
+// Every word size any blastn preset can produce — the set server-side validation
+// must accept (e.g. megablast's default 28).
+export const NUCLEOTIDE_WORD_SIZES_ALL: readonly number[] = [
+  ...new Set<number>([
+    ...BLASTN_WORD_SIZES,
+    ...MEGABLAST_WORD_SIZES,
+    ...DC_MEGABLAST_WORD_SIZES,
+  ]),
+];
 export const MATCH_MISMATCH = [
   "1,-2",
   "1,-3",
@@ -130,7 +143,8 @@ const proteinScoringShape = {
 };
 
 const nucleotideScoringShape = {
-  wordSize: numericOneOf(NUCLEOTIDE_WORD_SIZES, 11),
+  // Accept any preset's word size (blastn 7/11/15, megablast 16..64, dc 11/12).
+  wordSize: numericOneOf(NUCLEOTIDE_WORD_SIZES_ALL, 11),
   matchMismatch: tuple(MATCH_MISMATCH).default("2,-3"),
   gapCosts: tuple(NUCLEOTIDE_GAP_COSTS).default("5,2"),
 };
@@ -168,6 +182,12 @@ export const blastnForm = z.object({
   ...nucleotideScoringShape,
   ...flavourSpecifics("blastn"),
   filterLowComplexity: z.boolean().default(true),
+  // blastn (incl. the megablast/dc-megablast tasks) is the one flavour whose BLAST+
+  // `-soft_masking` default is `true`; every protein/translated flavour — tblastx
+  // included — defaults it off. buildBlastArgs emits -soft_masking unconditionally,
+  // so this default is what actually reaches the binary: keep it on to match NCBI's
+  // web nucleotide search (which uses the engine default). See buildBlastArgs.
+  softMasking: z.boolean().default(true),
 });
 
 export const tblastxForm = z.object({
@@ -271,6 +291,9 @@ export const BLASTFLAVOUR_DEFAULTS: Record<BlastFlavour, BlastParameters> = {
     ...baseDefaults,
     ...nucleotideScoringDefaults,
     ...flavourDefaults("blastn"),
+    // Soft masking is on by default for blastn only (see blastnForm); the shared
+    // nucleotideScoringDefaults can't set it because tblastx must stay off.
+    softMasking: true,
   },
   tblastx: {
     ...baseDefaults,

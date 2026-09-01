@@ -8,6 +8,7 @@ import type { Route } from "next";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { BlastHit } from "../../api/[...jobId]/formatResults";
+import { isClusteredDatabase } from "@/lib/blast/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,10 +107,13 @@ export default function Descriptions({
   }
 
   function submitSelection() {
+    // clustered_nr holds only representative sequences, so cluster members (and the
+    // reps) are fetched from nr instead — both are retrievable there.
+    const downloadDatabase = isClusteredDatabase(database) ? "nr" : database;
     fetch(`${basePath}/api/download`, {
       body: JSON.stringify({
         sequenceIds: Array.from(selectionSet),
-        database,
+        database: downloadDatabase,
       }),
       headers: {
         Accept: "application/json",
@@ -273,6 +277,16 @@ export default function Descriptions({
                             <TableBody>
                               {members.map((member) => (
                                 <TableRow key={member.accession}>
+                                  <TableCell className="w-8">
+                                    <Checkbox
+                                      checked={selectionSet.has(
+                                        member.accession
+                                      )}
+                                      onCheckedChange={() =>
+                                        toggleSelection(member.accession)
+                                      }
+                                    />
+                                  </TableCell>
                                   <TableCell className="w-32">
                                     <a
                                       className="text-primary hover:underline"

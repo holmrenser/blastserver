@@ -43,15 +43,17 @@ next-env.d.ts
 # vscode
 .vscode
 
-# local data
+# Swappable test datasets (gitignored): BLAST DBs + cluster metadata (landmark,
+# clustered_nr subset) that production replaces with the full NCBI DBs. The
+# clustered_nr fixture under testdata/ is regenerated with
+# scripts/make-clustered-fixture.py.
+/testdata/
+# Full NCBI taxonomy (dumps + Postgres seed) — always used by the app, every env.
+/taxonomy/
 names.tsv
 
-taxonomy/*
-blastdb/*
-
-data/*
-
-experiments/*
+# python bytecode from scripts/
+__pycache__/
 
 # env files (local, never committed) — but keep the documented template
 .env*

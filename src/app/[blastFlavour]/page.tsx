@@ -3,7 +3,7 @@
 import React from "react";
 import { notFound, useParams, useRouter } from "next/navigation";
 import type { Route } from "next";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import type {
   Control,
   FieldErrors,
@@ -11,6 +11,7 @@ import type {
   SubmitErrorHandler,
   SubmitHandler,
   UseFormRegister,
+  UseFormSetValue,
   UseFormWatch,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +25,7 @@ import {
   PROGRAMS,
   BLASTFLAVOUR_FORMS,
   BLASTFLAVOUR_DEFAULTS,
+  BLASTN_TASK_PRESETS,
   getFieldOptions,
 } from "./parameters";
 import type { BlastParameters, BlastFlavour, FieldOptions } from "./parameters";
@@ -61,6 +63,7 @@ import {
 type BlastControl = Control<BlastParameters, any, unknown>;
 type BlastRegister = UseFormRegister<BlastParameters>;
 type BlastWatch = UseFormWatch<BlastParameters>;
+type BlastSetValue = UseFormSetValue<BlastParameters>;
 
 /** Compact field groups stack on mobile and pair two-per-row on wider screens. */
 const FIELD_GRID = "grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2";
@@ -229,9 +232,11 @@ function ChooseSearchSet({
 function ProgramSelection({
   blastFlavour,
   watch,
+  setValue,
 }: {
   blastFlavour: BlastFlavour;
   watch: BlastWatch;
+  setValue: BlastSetValue;
 }) {
   if (blastFlavour !== "blastn") return null;
   const selectedProgram = watch("program");
@@ -244,7 +249,20 @@ function ProgramSelection({
           type="single"
           variant="outline"
           value={selectedProgram}
-          disabled
+          onValueChange={(program) => {
+            // A single ToggleGroup emits "" when the active item is toggled off;
+            // NCBI always keeps a program selected, so ignore the empty case.
+            if (!program) return;
+            setValue("program", program);
+            // Each preset carries its own scoring defaults — apply them so the
+            // form reflects the parameters the chosen program actually uses.
+            const preset = BLASTN_TASK_PRESETS[program];
+            if (preset) {
+              setValue("wordSize", preset.wordSize);
+              setValue("matchMismatch", preset.matchMismatch);
+              setValue("gapCosts", preset.gapCosts);
+            }
+          }}
           className="flex-wrap justify-start"
         >
           {PROGRAMS.get(blastFlavour)?.map((program) => (
@@ -274,43 +292,50 @@ function SubmitButton({ watch }: { watch: BlastWatch }) {
   );
 }
 
-function DisabledCheckboxField({
+function CheckboxField({
+  control,
+  name,
   label,
   description,
-  checked,
   className,
 }: {
+  control: BlastControl;
+  name: FieldPath<BlastParameters>;
   label: string;
   description: string;
-  checked: boolean;
   className?: string;
 }) {
   return (
-    <Label
-      className={cn(
-        "flex items-start gap-2 font-normal text-muted-foreground",
-        className
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Label className={cn("flex items-start gap-2 font-normal", className)}>
+          <Checkbox
+            checked={Boolean(field.value)}
+            onCheckedChange={(checked) => field.onChange(checked === true)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="block">{label}</span>
+            <span className="block text-xs text-muted-foreground">
+              {description}
+            </span>
+          </span>
+        </Label>
       )}
-    >
-      <Checkbox checked={checked} disabled className="mt-0.5" />
-      <span>
-        <span className="block">{label}</span>
-        <span className="block text-xs">{description}</span>
-      </span>
-    </Label>
+    />
   );
 }
 
 function AlgorithmParameters({
   control,
   register,
-  watch,
   fieldOptions,
   blastFlavour,
 }: {
   control: BlastControl;
   register: BlastRegister;
-  watch: BlastWatch;
   fieldOptions: FieldOptions;
   blastFlavour: BlastFlavour;
 }) {
@@ -381,10 +406,11 @@ function AlgorithmParameters({
                 <FieldDescription>0 means no limit.</FieldDescription>
               </Field>
 
-              <DisabledCheckboxField
+              <CheckboxField
+                control={control}
+                name="shortQueries"
                 label="Short queries"
                 description="Automatically adjust parameters for short input sequences"
-                checked={Boolean(watch("shortQueries"))}
                 className="sm:col-span-2"
               />
             </FieldGroup>
@@ -433,7 +459,6 @@ function AlgorithmParameters({
                     control={control}
                     name="compositionalAdjustment"
                     options={fieldOptions.compositionalAdjustment}
-                    disabled
                     className="w-full"
                   />
                 </Field>
@@ -446,20 +471,23 @@ function AlgorithmParameters({
           <AccordionTrigger>Filters and masking</AccordionTrigger>
           <AccordionContent>
             <FieldGroup>
-              <DisabledCheckboxField
+              <CheckboxField
+                control={control}
+                name="filterLowComplexity"
                 label="Filter"
                 description="Low complexity regions"
-                checked={Boolean(watch("filterLowComplexity"))}
               />
-              <DisabledCheckboxField
+              <CheckboxField
+                control={control}
+                name="softMasking"
                 label="Mask"
                 description="Mask for lookup table only"
-                checked={false}
               />
-              <DisabledCheckboxField
+              <CheckboxField
+                control={control}
+                name="lcaseMasking"
                 label="Mask lower case letters"
                 description="Mask lower case letters"
-                checked={Boolean(watch("lcaseMasking"))}
               />
             </FieldGroup>
           </AccordionContent>
@@ -479,7 +507,6 @@ export default function BlastFlavourPage() {
   }
 
   const blastForm = BLASTFLAVOUR_FORMS.get(blastFlavour)!;
-  const fieldOptions = getFieldOptions(blastFlavour);
   const defaults = BLASTFLAVOUR_DEFAULTS[blastFlavour];
 
   const {
@@ -488,6 +515,7 @@ export default function BlastFlavourPage() {
     formState: { errors },
     control,
     watch,
+    setValue,
   } = useForm<BlastParameters>({
     //@ts-ignore - per-flavour schema resolves to a member of the union
     resolver: zodResolver(blastForm),
@@ -496,6 +524,19 @@ export default function BlastFlavourPage() {
     //@ts-ignore
     values: defaults,
   });
+
+  // blastn's program preset swaps the word-size options (megablast uses 28 etc.),
+  // so the field options depend on the selected program for blastn. useWatch (not
+  // watch()) keeps this subscription React Compiler-friendly.
+  const selectedProgram = useWatch({ control, name: "program" });
+  const fieldOptions = React.useMemo(() => {
+    const base = getFieldOptions(blastFlavour);
+    if (blastFlavour === "blastn") {
+      const preset = BLASTN_TASK_PRESETS[selectedProgram as string];
+      if (preset) return { ...base, wordSize: preset.wordSizes };
+    }
+    return base;
+  }, [blastFlavour, selectedProgram]);
 
   const onSubmit: SubmitHandler<any> = (formData: BlastParameters) => {
     fetch(`${basePath}/api/submit`, {
@@ -526,12 +567,15 @@ export default function BlastFlavourPage() {
         <div className="flex flex-col gap-6">
           <EnterQuery register={register} errors={errors} />
           <ChooseSearchSet control={control} blastFlavour={blastFlavour} />
-          <ProgramSelection blastFlavour={blastFlavour} watch={watch} />
+          <ProgramSelection
+            blastFlavour={blastFlavour}
+            watch={watch}
+            setValue={setValue}
+          />
           <SubmitButton watch={watch} />
           <AlgorithmParameters
             control={control}
             register={register}
-            watch={watch}
             fieldOptions={fieldOptions}
             blastFlavour={blastFlavour}
           />

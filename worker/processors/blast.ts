@@ -9,8 +9,17 @@ import type { BlastParameters } from "../../src/lib/blast/schema";
 import {
   isAllowedDatabase,
   isAllowedFlavour,
+  BLASTN_TASKS,
+  COMP_BASED_STATS,
 } from "../../src/lib/blast/constants.js";
 import { MAX_BUFFER } from "../limits.js";
+
+// NCBI's "adjust for short input sequences" toggle is on by default but only takes
+// effect for genuinely short queries; BLAST+'s *-short tasks are tuned for queries
+// below these lengths. Forcing short mode on longer queries would change every
+// default search, so the toggle is gated on the query length.
+const SHORT_QUERY_MAX_PROTEIN = 30;
+const SHORT_QUERY_MAX_NUCLEOTIDE = 50;
 
 /** Resolved, side-effecting context the pure arg builder can't derive itself. */
 export interface BlastArgsContext {
@@ -42,13 +51,19 @@ export function buildBlastArgs(
   const {
     flavour,
     query,
+    program,
     expectThreshold,
     gapCosts,
     maxTargetSeqs,
+    maxMatchesInQueryRange,
     queryTo,
     queryFrom,
     excludeTaxids,
     lcaseMasking,
+    softMasking,
+    filterLowComplexity,
+    shortQueries,
+    wordSize,
   } = data;
 
   const [gapOpen, gapExtend] = gapCosts.split(",");
@@ -67,7 +82,27 @@ export function buildBlastArgs(
     `${queryFrom || 1}-${queryTo || query.length}`,
   ];
 
-  if (flavour !== "tblastx") {
+  // -task: blastn's program preset (megablast/dc-megablast/blastn) maps here. The
+  // "adjust for short input sequences" toggle switches to the *-short variant, but
+  // only when the query really is short (the toggle wins over the blastn preset).
+  // Only blastn and blastp have a short task; other flavours have none.
+  const shortProtein = shortQueries && query.length < SHORT_QUERY_MAX_PROTEIN;
+  const shortNucleotide =
+    shortQueries && query.length < SHORT_QUERY_MAX_NUCLEOTIDE;
+  let task: string | undefined;
+  if (flavour === "blastn") {
+    task = shortNucleotide ? "blastn-short" : BLASTN_TASKS[program];
+  } else if (flavour === "blastp" && shortProtein) {
+    task = "blastp-short";
+  }
+  if (task) {
+    args.push("-task", task);
+  }
+
+  // Gap costs. "linear" (a nucleotide option) isn't an "open,extend" pair, so emit
+  // no -gapopen/-gapextend for it and let BLAST+ use its greedy gap model. tblastx
+  // is ungapped and takes no gap costs.
+  if (flavour !== "tblastx" && gapCosts !== "linear") {
     args.push("-gapopen", gapOpen, "-gapextend", gapExtend);
   }
 
@@ -75,10 +110,35 @@ export function buildBlastArgs(
     args.push("-lcase_masking");
   }
 
-  // Protein searches (blastp/blastx/tblastn) carry a scoring matrix; nucleotide
-  // ones don't. `"matrix" in data` narrows the discriminated union structurally.
+  // Soft masking + low-complexity filtering (DUST for nucleotide, SEG for
+  // protein/translated). Both accepted by every flavour; emit the explicit choice.
+  args.push("-soft_masking", String(softMasking));
+  args.push(flavour === "blastn" ? "-dust" : "-seg", filterLowComplexity ? "yes" : "no");
+
+  // "Max matches in a query range": 0 means no limit, so only cull when positive.
+  if (maxMatchesInQueryRange > 0) {
+    args.push("-culling_limit", String(maxMatchesInQueryRange));
+  }
+
+  // Protein searches (blastp/blastx/tblastn) carry a scoring matrix + word size and
+  // composition-based statistics; nucleotide ones don't. `"x" in data` narrows the
+  // discriminated union structurally.
   if ("matrix" in data) {
     args.push("-matrix", data.matrix, "-word_size", String(data.wordSize));
+  }
+  if ("compositionalAdjustment" in data) {
+    args.push("-comp_based_stats", COMP_BASED_STATS[data.compositionalAdjustment]);
+  }
+
+  // blastn's word size + reward/penalty (the protein block above doesn't run for it;
+  // tblastx is left unset because its schema shares nucleotide word sizes that are
+  // wrong for a translated protein search, and it rejects -reward/-penalty).
+  if (flavour === "blastn") {
+    args.push("-word_size", String(wordSize));
+    if ("matchMismatch" in data) {
+      const [reward, penalty] = data.matchMismatch.split(",");
+      args.push("-reward", reward, "-penalty", penalty);
+    }
   }
 
   if (ctx.taxidListFile) {

@@ -12,6 +12,8 @@ import {
   mergeIntervals,
   processRawHit,
   parseBlastXml,
+  toSaccver,
+  enrichClusters,
   type Hsp,
   type RawBlastHit,
 } from "./formatResults";
@@ -168,6 +170,99 @@ describe("processRawHit cluster members", () => {
     // representative top-level fields mirror members[0]
     expect(hit.accession).toBe("P1");
     expect(hit.taxid).toBe(9606);
+  });
+
+  it("derives the saccver join key from <id>, preserving the version", () => {
+    const raw = {
+      description: {
+        HitDescr: {
+          id: "ref|XP_013375972.1|",
+          accession: "XP_013375972",
+          title: "t",
+          taxid: "9606",
+        },
+      },
+      hsps: {
+        Hsp: { queryFrom: "1", queryTo: "20", alignLen: "20", identity: "18" },
+      },
+      len: "200",
+      num: "1",
+      accession: "XP_013375972",
+      title: "t",
+      queryLen: 40,
+    } as unknown as RawBlastHit;
+    // <accession> is version-stripped; saccver recovers the version from <id>.
+    expect(processRawHit(raw).accession).toBe("XP_013375972");
+    expect(processRawHit(raw).saccver).toBe("XP_013375972.1");
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * toSaccver — version-preserving join key derivation
+ * ------------------------------------------------------------------ */
+describe("toSaccver", () => {
+  it("recovers the version for standard accessions from <id>", () => {
+    expect(toSaccver("ref|XP_013375972.1|", "XP_013375972")).toBe(
+      "XP_013375972.1"
+    );
+    expect(toSaccver("gb|MEF2594332.1|", "MEF2594332")).toBe("MEF2594332.1");
+  });
+
+  it("leaves version-less legacy / PRF IDs bare", () => {
+    expect(toSaccver("0405229A", "0405229A")).toBe("0405229A");
+    expect(toSaccver("prf||0804800D", "0804800D")).toBe("0804800D");
+  });
+
+  it("falls back to the accession when <id> is missing or unrelated", () => {
+    expect(toSaccver(undefined, "P1")).toBe("P1");
+    expect(toSaccver("", "P1")).toBe("P1");
+    expect(toSaccver("gb|OTHER.2|", "P1")).toBe("P1");
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * enrichClusters — clustered_nr LCA override + member replacement
+ * ------------------------------------------------------------------ */
+describe("enrichClusters", () => {
+  // saccver === "P1" (accession, since rawHit carries no <id>); taxid === 9606.
+  const baseHit = () =>
+    processRawHit(
+      rawHit({ queryFrom: "1", queryTo: "20", alignLen: "20", identity: "18" })
+    );
+
+  it("overrides the hit taxid with the LCA and replaces members", () => {
+    const [hit] = enrichClusters(
+      [baseHit()],
+      { P1: 7150 },
+      {
+        P1: [
+          { accession: "P1", title: "rep", taxid: 9606 },
+          { accession: "M2", title: "m2", taxid: 10090 },
+        ],
+      }
+    );
+    expect(hit.taxid).toBe(7150);
+    expect(hit.clusterSize).toBe(2);
+    expect(hit.members.map((m) => m.accession)).toEqual(["P1", "M2"]);
+    // representative accession is untouched (still the BLAST-aligned subject)
+    expect(hit.accession).toBe("P1");
+  });
+
+  it("keeps the representative taxid when the cluster LCA is null", () => {
+    const [hit] = enrichClusters(
+      [baseHit()],
+      { P1: null },
+      { P1: [{ accession: "P1", title: "rep", taxid: 9606 }] }
+    );
+    expect(hit.taxid).toBe(9606);
+    expect(hit.clusterSize).toBe(1);
+  });
+
+  it("leaves a hit with no cluster metadata as a single-member cluster", () => {
+    const [hit] = enrichClusters([baseHit()], {}, {});
+    expect(hit.taxid).toBe(9606);
+    expect(hit.members).toHaveLength(1);
+    expect(hit.clusterSize).toBe(1);
   });
 });
 

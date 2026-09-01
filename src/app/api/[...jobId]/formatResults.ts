@@ -2,11 +2,13 @@ import { xml2js, ElementCompact } from 'xml-js';
 import { camelCase, mapKeys, partition } from 'lodash';
 
 import prisma from '../database';
+import { isClusteredDatabase } from '@/lib/blast/constants';
 
 // Raw <HitDescr> shape straight from the XML (taxid is the numeric string the
-// document carries). For clustered databases (clustered_nr) a single <Hit> has
-// one <HitDescr> per cluster member.
+// document carries). `id` is the full seqid (e.g. "ref|XP_013375972.1|") and is the
+// only field that preserves the accession version; `accession` is version-stripped.
 type HitDescription = {
+  id: string,
   accession: string,
   title: string,
   taxid: string
@@ -55,7 +57,11 @@ export type RawBlastHit = {
 type BlastHitNoTaxInfo = Omit<RawBlastHit, 'description' | 'hsps' | 'queryLen'> & {
   hsps: Hsp[],
   // Representative (members[0]) taxid; drives scoring, alignments and download.
+  // For clustered_nr this is overwritten with the cluster LCA during enrichment.
   taxid: number,
+  // The representative's saccver (version-preserving) accession — the key used to
+  // join cluster_lca / cluster_member. Never version-stripped.
+  saccver: string,
   members: HitMemberNoName[],
   clusterSize: number,
   queryCover: number,
@@ -155,6 +161,21 @@ export function mergeIntervals(intervals: Interval[]): Interval[] {
   return mergedIntervals
 }
 
+/**
+ * Recovers the `saccver` (accession.version) form from a hit's `<id>`. The XML's
+ * `<accession>` is version-stripped ("XP_013375972"), but cluster metadata is keyed on
+ * the full saccver ("XP_013375972.1" for standard accessions, bare "0405229A" for
+ * legacy IDs). We locate `accession` inside `id` and append any ".<version>" that
+ * follows it — never stripping a version that's present. Falls back to `accession`
+ * when `id` is absent or doesn't contain it.
+ */
+export function toSaccver(id: string | undefined, accession: string): string {
+  if (!id) return accession;
+  const escaped = accession.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = id.match(new RegExp(`${escaped}(\\.\\d+)?`));
+  return match ? accession + (match[1] ?? '') : accession;
+}
+
 export function processRawHit({ description, hsps, len, num, queryLen }: RawBlastHit): BlastHitNoTaxInfo {
   // extract descriptions — for clustered databases (clustered_nr) every
   // <HitDescr> is a cluster member; the first is the representative. Plain
@@ -169,6 +190,7 @@ export function processRawHit({ description, hsps, len, num, queryLen }: RawBlas
   );
   const clusterSize = members.length;
   const { accession, title, taxid } = members[0];
+  const saccver = toSaccver(hitDescriptions[0].id, accession);
 
   // extract HSPs
   const rawHsps: Hsp[] = Array.isArray(hsps.Hsp) ? hsps.Hsp : [hsps.Hsp]
@@ -191,7 +213,68 @@ export function processRawHit({ description, hsps, len, num, queryLen }: RawBlas
   }, [0,0]);
   const percentIdentity = (identity / alignLen) * 100;
 
-  return { accession, title, taxid, members, clusterSize, percentIdentity, queryCover, num, len, hsps: formattedHsps }
+  return { accession, title, taxid, saccver, members, clusterSize, percentIdentity, queryCover, num, len, hsps: formattedHsps }
+}
+
+// Cluster metadata keyed by representative saccver. lcaTaxid may be null (no LCA in
+// the source); members are the full cluster membership in source (seed) order.
+export type ClusterLcaMap = { [representative: string]: number | null };
+export type ClusterMemberMap = { [representative: string]: HitMemberNoName[] };
+
+/**
+ * Pure clustered_nr enrichment. For each hit whose representative saccver has cluster
+ * metadata: overwrite the hit-level taxid with the cluster LCA (so the hit is labelled
+ * by the cluster, not the representative's species), and replace `members` with the
+ * full cluster membership from Postgres (the BLAST XML carries only the representative).
+ * Hits with no metadata are left as single-member clusters. DB-free, so it's unit
+ * tested directly against injected maps.
+ */
+export function enrichClusters(
+  hits: BlastHitNoTaxInfo[],
+  lcaMap: ClusterLcaMap,
+  memberMap: ClusterMemberMap,
+): BlastHitNoTaxInfo[] {
+  return hits.map((hit) => {
+    const lca = lcaMap[hit.saccver];
+    const clusterMembers = memberMap[hit.saccver];
+    const members = clusterMembers && clusterMembers.length ? clusterMembers : hit.members;
+    return {
+      ...hit,
+      taxid: lca != null ? lca : hit.taxid,
+      members,
+      clusterSize: members.length,
+    };
+  });
+}
+
+async function getClusterMaps(
+  representatives: string[],
+): Promise<[ClusterLcaMap, ClusterMemberMap]> {
+  let lcaRows: { representative: string; lcaTaxid: number | null }[];
+  let memberRows: { representative: string; accession: string; taxid: number | null; title: string }[];
+  try {
+    [lcaRows, memberRows] = await Promise.all([
+      prisma.cluster_lca.findMany({ where: { representative: { in: representatives } } }),
+      prisma.cluster_member.findMany({
+        where: { representative: { in: representatives } },
+        // id is autoincrement seeded in source order, so this keeps the representative
+        // first in each cluster's member list.
+        orderBy: { id: 'asc' },
+      }),
+    ]);
+  } catch (err) {
+    console.error(`cluster metadata lookup failed: ${err}`);
+    return [{}, {}];
+  }
+
+  const lcaMap: ClusterLcaMap = Object.fromEntries(
+    lcaRows.map(({ representative, lcaTaxid }) => [representative, lcaTaxid]),
+  );
+  const memberMap: ClusterMemberMap = {};
+  for (const { representative, accession, taxid, title } of memberRows) {
+    (memberMap[representative] ??= []).push({ accession, title, taxid: taxid ?? 0 });
+  }
+  return [lcaMap, memberMap];
 }
 
 function addChildren(root: TaxonomyNode, childOptions: TaxonomyNode[]) {
@@ -377,7 +460,10 @@ export function parseBlastXml(blastResults: string): ParsedBlastXml {
   return { params, program, version, queryId, queryLen, queryTitle, stat, message, db, rawHits }
 }
 
-export default async function formatResults(blastResults: string): Promise<FormattedBlastResults> {
+export default async function formatResults(
+  blastResults: string,
+  database?: string,
+): Promise<FormattedBlastResults> {
   const { params, program, version, queryId, queryLen, queryTitle, stat, message, db, rawHits } =
     parseBlastXml(blastResults);
 
@@ -385,16 +471,24 @@ export default async function formatResults(blastResults: string): Promise<Forma
   let taxonomyTrees: TaxonomyNode[] | undefined;
   if (!message) {
     // initial result parsing to summarize useful information per hit
-    const intermediateHits: BlastHitNoTaxInfo[] = rawHits.map(rawHit => (
+    let intermediateHits: BlastHitNoTaxInfo[] = rawHits.map(rawHit => (
       processRawHit({ ...rawHit, queryLen: Number(queryLen) })
     ))
-  
-    // Resolve names for every cluster member taxid (members[0] is the
-    // representative, so this is a superset of the per-hit representative taxids).
-    const memberTaxids = Array.from(
-      new Set(intermediateHits.flatMap(({ members }) => members.map(({ taxid }) => taxid)))
+
+    // clustered_nr: the BLAST XML carries only the representative, so pull the cluster
+    // LCA + member list from Postgres (keyed by representative saccver) and fold them in.
+    if (database && isClusteredDatabase(database)) {
+      const representatives = Array.from(new Set(intermediateHits.map(({ saccver }) => saccver)));
+      const [lcaMap, memberMap] = await getClusterMaps(representatives);
+      intermediateHits = enrichClusters(intermediateHits, lcaMap, memberMap);
+    }
+
+    // Resolve names for every cluster member taxid AND every hit-level taxid (the
+    // latter is the cluster LCA after enrichment, which need not be a member taxid).
+    const namedTaxids = Array.from(
+      new Set(intermediateHits.flatMap(({ taxid, members }) => [taxid, ...members.map((m) => m.taxid)]))
     ).filter((taxid) => Number.isFinite(taxid));
-    const hitTaxidMap = await getTaxIdMap(memberTaxids);
+    const hitTaxidMap = await getTaxIdMap(namedTaxids);
     hits = intermediateHits.map(hit => addTaxInfo({ hit, hitTaxidMap }))
 
     // Build the taxonomy tree from representative taxids so "Number of Hits"

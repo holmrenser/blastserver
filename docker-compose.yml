@@ -19,8 +19,9 @@ services:
       - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # COPY runs server-side, so the taxonomy file must live on the DB host.
+      # COPY runs server-side, so the seed files must live on the DB host.
       - ./taxonomy:/app/taxonomy:ro
+      - ./testdata/cluster:/app/cluster:ro
     healthcheck:
       test:
         ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-blastserver}"]
@@ -44,6 +45,9 @@ services:
     environment:
       <<: *db-url
       TAXONOMY_FILE: /app/taxonomy/taxonomy.tsv
+      # clustered_nr cluster metadata (optional; seeded if present).
+      CLUSTER_LCA_FILE: /app/cluster/test_cluster_lca.tsv
+      CLUSTER_MEMBERS_FILE: /app/cluster/test_cluster_members.tsv
     command: ["npm", "run", "migrate:deploy"]
     restart: "no"
 
@@ -78,7 +82,7 @@ services:
       APP_BLAST_DB_PATH: /blastdb
       NUM_BLAST_THREADS: ${NUM_BLAST_THREADS:-4}
     volumes:
-      - "${BLAST_DB_PATH:-./blastdb}:/blastdb:ro"
+      - "${BLAST_DB_PATH:-./testdata/blastdb}:/blastdb:ro"
     # Exec form + single process so SIGTERM reaches Node for graceful drain.
     command: ["node", "worker/build/worker/blastworker.js"]
 
@@ -94,7 +98,7 @@ services:
       <<: *db-url
       APP_BLAST_DB_PATH: /blastdb
     volumes:
-      - "${BLAST_DB_PATH:-./blastdb}:/blastdb:ro"
+      - "${BLAST_DB_PATH:-./testdata/blastdb}:/blastdb:ro"
     command: ["node", "worker/build/worker/downloadworker.js"]
 
 volumes:

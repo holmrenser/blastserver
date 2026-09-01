@@ -25,7 +25,7 @@ The fastest way to see it running is the full container stack:
 docker compose up --build      # → http://localhost:3000
 ```
 
-This brings up Postgres, a one-shot migrate/seed job, then the app, `blastworker` and `downloadworker` — the same images that ship to production. A small `landmark` protein DB ships in [`blastdb/`](blastdb/) so it works out of the box; point it at your own databases with `BLAST_DB_PATH=/path/to/blastdb`.
+This brings up Postgres, a one-shot migrate/seed job, then the app, `blastworker` and `downloadworker` — the same images that ship to production. Test BLAST databases live under the gitignored [`testdata/blastdb/`](testdata/blastdb/) (add a small `landmark` protein DB there to try it out); in production point `BLAST_DB_PATH=/path/to/blastdb` at the full NCBI databases instead.
 
 > **Apple Silicon:** enable Docker Desktop's Rosetta emulation (*Settings → General → Use Rosetta for x86/amd64 emulation*). The images are `linux/amd64` because the BLAST+ binaries are x86_64; Compose sets `platform` for you. (Prisma 7 is Rust-free, so it no longer pins a CPU architecture.)
 

@@ -2,23 +2,26 @@
 
 ## Must
 
-- Run BLAST jobs of various flavors (blastp, blastn, etc.) against all relevant databases
-- Use NCBI taxonomy (could simply be linking to NCBI)
-- Use Diamond instead of NCBI BLAST
+- [x] Run BLAST jobs of various flavors (blastp, blastn, etc.) against all relevant databases
+- [x] Use NCBI taxonomy (could simply be linking to NCBI)
+- [x] Mimic NCBI blast's web interface as much as possible for educational purposes
+- [x] Download (selected) sequences of BLAST hits
 
 ## Should
 
-- Load balancing to allow (many) simultaneous jobs
-- Taxonomy distribution of hits
-- Diamond formatted database for using database
+- [x] Implement distributed architecture to run multiple simultaneous BLAST jobs
+- [x] Taxonomy distribution of hits
+- [ ] Use clustered NR for speed ups
 
 ## Could
 
-- Email notification when job finishes
-- Integraded taxonomy browsing
-- Filtering of blast results
+- [ ] Email notification when job finishes
+- [ ] Integraded taxonomy browsing
+- [ ] Filtering of blast results
+- [ ] Allow various download formats of BLAST hits
 
 ## Will not
+- Use Diamond instead of NCBI BLAST
 
 # Similar work
 
@@ -41,9 +44,8 @@
 
 - Next.js API routes (App Router) — no separate Express server
 - pg-boss for the job queue, running on Postgres — no separate broker (https://github.com/timgit/pg-boss). Provides retries, exponential backoff, and per-job timeouts.
-- Two pg-boss workers: `blastworker` (runs BLAST+ binaries) and `downloadworker` (`blastdbcmd`)
+- Two pg-boss workers: `blastworker` (runs BLAST+ binaries) and `downloadworker` (using `blastdbcmd`)
 - PostgreSQL via Prisma; NCBI BLAST databases on disk
-- Diamond support: not yet implemented
 
 ## Deployment / scaling
 

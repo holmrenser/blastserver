@@ -51,3 +51,31 @@ model download {
   log         String?
   err         String?
 }
+
+// clustered_nr cluster metadata, sourced from NCBI's cluster sqlite and seeded by
+// scripts/migrate-and-seed.js. A clustered_nr BLAST hit is one cluster; these tables
+// supply the member list + LCA that the BLAST XML doesn't carry, joined by the
+// representative accession.
+//
+// `representative` is the saccver form (e.g. "XP_013375972.1" for standard accessions,
+// bare "0405229A" for legacy IDs) stored VERBATIM from the source. The hit's join key
+// is derived as the saccver form too — versions must never be stripped, or every
+// versioned-standard cluster silently fails to match.
+
+model cluster_lca {
+  representative String @id
+  lcaTaxid       Int? // empty for some clusters in the source
+}
+
+model cluster_member {
+  // Surrogate PK: (representative, accession) could in principle repeat in the source,
+  // and a surrogate keeps the server-side COPY seed from ever failing on a dup key.
+  id             Int     @id @default(autoincrement())
+  representative String
+  accession      String
+  taxid          Int?
+  title          String
+
+  @@index([representative]) // forward enrichment lookup: rep -> members
+  @@index([accession]) // reverse lookup: member -> cluster
+}

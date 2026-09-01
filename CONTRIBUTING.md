@@ -12,8 +12,8 @@ together, see the [README](README.md).
   x86/amd64 emulation* (the images are `linux/amd64`; the BLAST+ binaries are
   x86_64).
 - **BLAST data:** BLAST databases under the directory referenced by
-  `APP_BLAST_DB_PATH` (a small `landmark` protein DB ships in
-  [`blastdb/`](blastdb/) for testing) and the NCBI taxonomy TSV at
+  `APP_BLAST_DB_PATH` (defaults to the gitignored test DBs in
+  [`testdata/blastdb/`](testdata/blastdb/)) and the full NCBI taxonomy TSV at
   `TAXONOMY_FILE`.
 
 To run the **workers on the host** instead of in Docker (see below), you also need
